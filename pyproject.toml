@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lizzy"
+version = "0.0.1"
+authors = [{ name = "Simone Bancora", email = "simone.bancora@gmail.com" }]
+requires-python = ">=3.10"
+dependencies = [
+    "meshio==5.3.5",
+    "numpy",
+    "scipy",
+    "h5py"
+]
+
+[tool.setuptools]
+packages = ["lizzy", "lizzy.IO", "lizzy.cvmesh", "lizzy.solver", "lizzy.controls", "lizzy.solver.builtin", "lizzy.solver.external"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--verbose"
