@@ -1,9 +1,9 @@
 # Channel flow experiment
-In this basic example we will simulate the filling of a rectangular panel. The mesh file used in this example is provided in the folder "_example_meshes_"
+In this basic example we will simulate the filling of a rectangular panel. The mesh file used in this example is [`Rect1M_R1.msh`](../../examples/meshes/Rect1M_R1.msh).
 
 ## Copy the mesh file
-Create a folder in a preferred location. In this example, we will create a folder named "_rect_panel_" for reference, but pick any name. We will refer to this folder as the "working folder".
-Copy the file `example_meshes/Rect1M_R1.msh` in the new directory "_rect_panel_".
+Create a folder in a preferred location. In this example, we will create a folder named "_channel_flow_" for reference, but pick any name. We will refer to this folder as the "working folder".
+Copy the file [`Rect1M_R1.msh`](../../examples/meshes/Rect1M_R1.msh) in the new directory "_channel_flow_".
 
 <div style="display: flex; justify-content: center;">
 <img src="./images/Rect1M_R1_mesh.jpg" alt="Alt text" width="720">
@@ -17,7 +17,7 @@ The mesh contains 3 domain tags ("physical groups" in msh format):
 These tags will be used to identify regions of the mesh for assignment of material properties and boundary conditions.
 
 ## Create the script file
-Create a new python script in the new directory "_rect_panel_". In this example, the file is named `example_rect_panel`, but any name will do.
+Create a new python script in the new directory "_channel_flow_". In this example, the file is named `channel_infusion.py`, but any name will do.
 In the first line of the script, let's import Lizzy by:
 ```
 import lizzy as liz
@@ -35,9 +35,10 @@ Next, we need to define a few material and process properties. To do so, we use 
 ```
 liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
 ```
-Next, we can define the properties of the materials in the mesh. At the moment, material definition is handled in the script (in the future this will change). We can do so by using the `add_material` method of the `MaterialManager` singleton for each material that we want to add:
+Next, we can define the properties of the materials in the mesh. At the moment, material definition is handled in the script (in the future this will change). We can do so by creating a `PorousMaterial` and then using the `add_material` method of the `MaterialManager` singleton for each material that we want to add:
 ```
-liz.MaterialManager.add_material('domain', liz.PorousMaterial(1E-10, 1E-10, 1.0E-10, 0.5, 1.0))
+material = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
+liz.MaterialManager.add_material('domain', material)
 ```
 We use the class `PorousMaterial` to create a porous material associated to the material key. In absence of a proper documentation, the arguments of `PorousMaterial` are:
 - `k1` (float): principal permeability value in local direction **e**1.
@@ -88,20 +89,20 @@ The `save_results` method takes the `solution` returned by the solver, and one s
 import lizzy as liz
 
 # read the mesh
-mesh_reader = liz.Reader("Rect1M_R1.msh")
+mesh_reader = liz.Reader("../meshes/Rect1M_R1.msh")
 
-# assign some process parameters
 liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
 
 # add a material to each material tag present in the mesh
-liz.MaterialManager.add_material('domain', liz.PorousMaterial(1E-10, 1E-10, 0.0, 0.5, 1.0))
+material = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
+liz.MaterialManager.add_material('domain', material)
 
 # Create a mesh object and a boundary conditions manager
 mesh = liz.Mesh(mesh_reader)
 bc_manager = liz.BCManager()
 
 # Create an Inlet (or more) and add it to the inlets group
-inlet_1 = liz.Inlet('left_edge', 1E+05)
+inlet_1 = liz.Inlet('left_edge', 1E+04)
 bc_manager.add_inlet(inlet_1)
 
 # Instantiate a solver and solve
@@ -122,7 +123,7 @@ Lizzy will save the following fields: "FillFactor", "FreeSurface", "Pressure", "
 </div>
 
 ### Pro tip:
-The mesh of control volumes can be saved by adding the optional argument `writer.save_results(solution, "Rect1M_R1", save_cv_mesh=True)` in the `Writer.save_results()` method. Doing so will also export a file `Rect1M_R1_CV.vtk` that can be loaded as a superimposed mesh in Paraview:
+The mesh of control volumes can be saved by adding the optional argument `writer.save_results(solution, "Rect1M_R1", save_cv_mesh=True)` in the `Writer.save_results()` method. Doing so will also export a file `Rect1M_R1_CV.vtk` that can be loaded in Paraview as a superimposed mesh:
 
 <div style="display: flex; justify-content: center;">
 <img src="./images/Rect1M_R1_CV.png" alt="Alt text" width="720">

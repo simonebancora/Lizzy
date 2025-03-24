@@ -5,21 +5,21 @@ Welcome to Lizzy, a Liquid Composite Molding (LCM) simulation package written in
 "Lizzy" is inspired by the character of Elizabeth Bennet, companion of Mr Darcy in Jane Austen's novel _Pride and Prejudice_.
 
 ### Development stage
-Lizzy is currently in alpha development stage has not reached a release version yet.
-This project is still in active development.
+This project is still in early development stage and has not reached a release version yet.
+While the solver results are generally correct, there may be cases where it fails.
 
 ## Installation
 Lizzy is provided as a package.
-It is advised to create a python environment and use `pip` to install in the environment.
-However, since Lizzy is still in early development and receives frequent updates, package versioning **is not adopted yet**.
-Therefore, it is recommended to install the package in [editable mode](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#working-in-development-mode) by navigating inside the cloned `Lizzy` folder and running the command: `pip install -e .`. By doing so, a simple `git pull` inside the cloned repository will update the package to the latest commit.
+It is advised to create a dedicated Python environment and use `pip` to install Lizzy in it.
+Since Lizzy is still in early development and receives frequent updates, package versioning **is not adopted yet**.
+Therefore, it is recommended to install the package in [editable mode](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#working-in-development-mode) by navigating inside the cloned `Lizzy` folder and running the command: `pip install -e .`. By doing so, a simple `git pull` inside the cloned repository will update the package to the latest commit. This is the recommended solution to keep Lizzy up to date until a version number will be released.
 
 ## Visualisation
 The recommended software to visualise results from Lizzy is Paraview:
 https://www.paraview.org
 
 ## Tutorials:
-Some tutorial cases are provided below. The scripts from the tutorials are available in [`/examples`](./examples).The mesh files used in these examples are provided inside the folder [`/examples/example_meshes`](./examples/example_meshes). 
+Some tutorial cases are provided below. The mesh files used in these examples are provided inside the folder [`/examples/meshes`](./examples/meshes). 
 
 - [Channel flow experiment](docs/tutorials/rect.md)
 - [Radial flow experiment](docs/tutorials/radial_aniso.md)
