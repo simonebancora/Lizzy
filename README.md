@@ -2,11 +2,17 @@
 
 # Lizzy
 Welcome to Lizzy, a Liquid Composite Molding (LCM) simulation package written in Python.  
-"Lizzy" is inspired by the character of Elizabeth Bennet, companion of Mr Darcy in Jane Austen's novel _Pride and Prejudice_.
+The solver name "Lizzy" is inspired by the character of Elizabeth Bennet, companion of Mr Darcy in Jane Austen's novel _Pride and Prejudice_.
 
-### Development stage
-This project is still in early development stage and has not reached a release version yet.
-While the solver results are generally correct, there may be cases where it fails.
+<div style="display: flex; justify-content: center;">
+<img src="docs/tutorials/images/lizzy_logo_80.gif" alt="Lizzy logo" width="500">
+</div>
+
+### Development stage and Issues
+This project is still in early development stage and has **not reached a release version** yet.
+While the solver results are generally correct, there may still be cases where it fails.
+
+It is recommended to wait for a first release before using Lizzy for your research. On the other hand, use of Lizzy for testing is welcome. If you do use Lizzy and encounter some issue, you can help improve the software faster by reporting what you encountered in the Issues sections.
 
 ## Installation
 Lizzy is provided as a package.
@@ -27,7 +33,6 @@ Some tutorial cases are provided below. The mesh files used in these examples ar
 - [Multi-inlet example](docs/tutorials/multi_inlet.md)
 
 ## Validation
-Validation of the solver can be found [here](docs/validation.md). This section will expand together with the improvement of Lizzy.
+Validation of the solver can be found [here](docs/validation.md). This section will expand as more features are added.
 
-## The Lizzy way
-The core focus of Lizzy is scriptability. The modukes
+# UNDER CONSTRUCTION

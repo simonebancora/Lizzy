@@ -59,7 +59,7 @@ writer.save_results(solution, "Radial")
 ```
 import lizzy as liz
 
-# read the mesh
+# read the mesh file: adjust path if needed
 mesh_reader = liz.Reader("../meshes/Radial.msh")
 
 # assign some process parameters

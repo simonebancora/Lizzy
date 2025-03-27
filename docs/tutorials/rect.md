@@ -88,7 +88,7 @@ The `save_results` method takes the `solution` returned by the solver, and one s
 ```
 import lizzy as liz
 
-# read the mesh
+# read the mesh file: adjust path if needed
 mesh_reader = liz.Reader("../meshes/Rect1M_R1.msh")
 
 liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
