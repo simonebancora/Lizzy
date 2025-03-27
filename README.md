@@ -1,7 +1,8 @@
 [![Tests](https://github.com/simonebancora/Lizzy/actions/workflows/tests.yaml/badge.svg)](https://github.com/simonebancora/Lizzy/actions/workflows/tests.yaml)
 
 # Lizzy
-Welcome to Lizzy, a Liquid Composite Molding (LCM) simulation package written in Python.  
+Welcome to Lizzy, a Liquid Composite Molding (LCM) simulation package written in Python.
+Lizzy uses the FE/CV method to solve a macro-scale infusion problem in porous media. The solver is mainly designed to simulate composite resin infusion processes, but it can be generalised to other porous media like soils.
 The solver name "Lizzy" is inspired by the character of Elizabeth Bennet, companion of Mr Darcy in Jane Austen's novel _Pride and Prejudice_.
 
 <div style="display: flex; justify-content: center;">
