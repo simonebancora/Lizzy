@@ -91,7 +91,7 @@ writer.save_results(solution, "Radial")
 Load up the file `Radial_RES.xdmf` into Paraview to visualise the results:
 
 <div style="display: flex; justify-content: center;">
-<img src="./images/Radial_fill.png" alt="Radial fill solution" width="720">
+<img src="../images/Radial_fill.png" alt="Radial fill solution" width="720">
 </div>
 
 We can see the typical elliptical flow front pattern that arises from the classical radial infusions.

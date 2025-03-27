@@ -56,11 +56,11 @@ writer.save_results(solution, "Triforce_R1")
 We load the file `results/Triforce_R1_RES.xdmf` into Paraview to visualise the results:
 
 <div style="display: flex; justify-content: center;">
-<img src="./images/trifoce_fill.png" alt="Alt text" width="720">
+<img src="../images/trifoce_fill.png" alt="Alt text" width="720">
 </div>
 
 <div style="display: flex; justify-content: center;">
-<img src="./images/triforce_pressure.png" alt="Alt text" width="720">
+<img src="../images/triforce_pressure.png" alt="Alt text" width="720">
 </div>
 
 We can see the strong jump in the pressure field between the background and the low-permeability region, which doesn't get filled until the end of the infusion.
