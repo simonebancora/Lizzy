@@ -7,9 +7,9 @@ mesh_reader = liz.Reader("../meshes/Radial.msh")
 liz.ProcessParameters.assign(mu=0.1, wo_delta_time=500)
 
 # add a material to each material tag present in the mesh
-rosette_1 = liz.Rosette((1,0,0))
-material_1 = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
-liz.MaterialManager.add_material('domain', material_1, rosette_1)
+rosette = liz.Rosette((1,1,0))
+material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)
+liz.MaterialManager.add_material('domain', material, rosette)
 
 # Create a lizzy mesh object
 mesh = liz.Mesh(mesh_reader)

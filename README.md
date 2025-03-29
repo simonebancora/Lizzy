@@ -13,7 +13,7 @@ The name "Lizzy" was inspired by the character of Elizabeth Bennet, companion of
 ### Development stage and Issues
 This project is still in early development stage and has **not reached a release version** yet.
 While the solver results are generally correct, there may still be cases where it fails.
-It is recommended to wait for a first release before using Lizzy for your research. On the other hand, use of Lizzy for testing is welcome. If you do use Lizzy and encounter some issue, you can help improve the software faster by reporting what you encountered in the Issues section.
+If you do use Lizzy and encounter some issue, you can help improve the software faster by reporting what you encountered in the [Issues](https://github.com/simonebancora/Lizzy/issues) section.
 
 ## Installation
 Lizzy is provided as a package.

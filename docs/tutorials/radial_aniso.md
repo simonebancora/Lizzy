@@ -20,9 +20,13 @@ As usual, we must assign some process parameters to the `ProcessParameters`:
 ```
 liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
 ```
-Next, we will define the properties of the material. Only one material domains is present in the mesh (_domain_), however we want to create an anisotropic material. We will assign different principal permeabiliy values:
+Next, we will define the properties of the material. Only one material domains is present in the mesh (_domain_), however we want to create an anisotropic material. We also want the material principal directions to be aligned with some arbitrary global direction. To do so, we will create a `Rosette` object:
 ```
-rosette = liz.Rosette((1,0,0))
+rosette = liz.Rosette((1,1,0))
+```
+To instantiate a rosette, we pass the first principal direction of the material as a vector in global x,y,z coordinates. In this case, the vector `(1,1,0)` is oriented at 45$^\circ$ from the global x-axis. The rosette is always projected onto all the elements of the material it is assigned to, along each element normal direction.
+Now we can create an anisotropic material by specifying its principal permeability values ($k_1,k_2,k_3$), and assign it to the domain tag along with the rosette:
+```
 material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)
 liz.MaterialManager.add_material('domain', material, rosette)
 ```
@@ -66,9 +70,9 @@ mesh_reader = liz.Reader("../meshes/Radial.msh")
 liz.ProcessParameters.assign(mu=0.1, wo_delta_time=500)
 
 # add a material to each material tag present in the mesh
-rosette_1 = liz.Rosette((1,0,0))
-material_1 = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
-liz.MaterialManager.add_material('domain', material_1, rosette_1)
+rosette = liz.Rosette((1,1,0))
+material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)
+liz.MaterialManager.add_material('domain', material, rosette)
 
 # Create a lizzy mesh object
 mesh = liz.Mesh(mesh_reader)
@@ -94,4 +98,4 @@ Load up the file `Radial_RES.xdmf` into Paraview to visualise the results:
 <img src="../images/Radial_fill.png" alt="Radial fill solution" width="720">
 </div>
 
-We can see the typical elliptical flow front pattern that arises from the classical radial infusions.
+We can see the typical elliptical flow front pattern that arises from the classical radial infusions. The ellipse is rotated according to the assigned rosette.
