@@ -45,8 +45,7 @@ coverage.xml
 .pytest_cache/
 cover/
 
-# Sphinx documentation
-docs/_build/
+
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -85,3 +84,6 @@ _private/
 *.xdmf
 *.vtk
 # examples/
+
+# sphinx
+/docs/sphinx/
