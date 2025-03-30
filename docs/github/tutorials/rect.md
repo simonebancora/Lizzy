@@ -102,7 +102,7 @@ mesh = liz.Mesh(mesh_reader)
 bc_manager = liz.BCManager()
 
 # Create an Inlet (or more) and add it to the inlets group
-inlet_1 = liz.Inlet('left_edge', 1E+04)
+inlet_1 = liz.Inlet('left_edge', 1E+05)
 bc_manager.add_inlet(inlet_1)
 
 # Instantiate a solver and solve
