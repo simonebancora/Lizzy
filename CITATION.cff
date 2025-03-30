@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Bancora"
+  given-names: "Simone"
+  orcid: "https://orcid.org/0000-0001-5216-7409"
+- family-names: "Mulye"
+  given-names: "Paris"
+  orcid: ""
+title: "Lizzy: an open-source Python package for Liquid Composite Molding simulation"
+version: 0.1.0
+doi: 10.5281/zenodo.15110050
+date-released: 2025-03-30
+url: "https://github.com/simonebancora/Lizzy"
