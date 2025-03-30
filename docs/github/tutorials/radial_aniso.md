@@ -1,8 +1,8 @@
 # Radial flow experiment
-In this example we simulate the radial infusion of an anisotropic material. The mesh file used in this example is [`Radial.msh`](../../examples/meshes/Radial.msh).
+In this example we simulate the radial infusion of an anisotropic material. The mesh file used in this example is [`Radial.msh`](../../../examples/meshes/Radial.msh).
 
 ## Copy the mesh file
-Create a folder in a preferred location and copy the mesh file [`Radial.msh`](../../examples/meshes/Radial.msh) in the new directory.
+Create a folder in a preferred location and copy the mesh file [`Radial.msh`](../../../examples/meshes/Radial.msh) in the new directory.
 The mesh contains 3 domain tags ("physical groups" in msh format): _inner_rim_, _outer_rim_, _domain_.
 
 ## Create the script file
@@ -95,7 +95,7 @@ writer.save_results(solution, "Radial")
 Load up the file `Radial_RES.xdmf` into Paraview to visualise the results:
 
 <div style="display: flex; justify-content: center;">
-<img src="../images/Radial_fill.png" alt="Radial fill solution" width="720">
+<img src="../../images/Radial_fill.png" alt="Radial fill solution" width="720">
 </div>
 
 We can see the typical elliptical flow front pattern that arises from the classical radial infusions. The ellipse is rotated according to the assigned rosette.

@@ -22,26 +22,35 @@ class Format(Enum):
 class Reader:
     """
     Handles reading and parsing mesh files, converting input mesh formats into the format used by Lizzy.
+
+    Attributes
+    ----------
+    mesh_data : dict
+        A dict containing all the info from the mesh file, converted into a Lizzy-readable format.
+    mesh_path : Path
+        The path to the mesh file.
+    case_name : str
+        The name of the case we are simulating.
+
     """
     def __init__(self, mesh_path:str):
         self.mesh_data:dict = {} # A dict containing all the mesh info from the gmsh file
         self.mesh_path = Path(mesh_path)
-        self.case_name = self.read_case_name()
-        self.read_mesh_file()
+        self.case_name = self.__read_case_name()
+        self.__read_mesh_file()
     
-    def read_mesh_file(self):
+    def __read_mesh_file(self):
         print(f"Reading mesh file: {self.mesh_path}")
         _format = self.detect_format()
         match _format:
             case Format.MSH:
                 self.mesh_data = self.read_gmsh_file()
 
-    def read_case_name(self):
+    def __read_case_name(self):
         case_name = self.mesh_path.stem
         return case_name
 
-    @staticmethod
-    def detect_format():
+    def detect_format(self):
         """Read the ending of the mesh file path and detect the correct format. 
         NOT IMPLEMENTED"""
         return Format.MSH
@@ -85,7 +94,22 @@ class Reader:
 
 
 class Writer:
+    """
+    Handles writing results to output files.
+
+    Attributes
+    ----------
+    mesh : lizzy.Mesh
+        The Mesh object used in the simulation.
+    """
     def __init__(self, mesh):
+        """Class constructor
+
+        Parameters
+        ----------
+        mesh : lizzy.Mesh
+            The Mesh object of the simulation
+        """
         self.mesh = mesh
 
     def save_results(self, solution, result_name:str, **kwargs):

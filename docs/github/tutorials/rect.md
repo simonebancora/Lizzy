@@ -1,12 +1,12 @@
 # Channel flow experiment
-In this basic example we will simulate the filling of a rectangular panel. The mesh file used in this example is [`Rect1M_R1.msh`](../../examples/meshes/Rect1M_R1.msh).
+In this basic example we will simulate the filling of a rectangular panel. The mesh file used in this example is [`Rect1M_R1.msh`](../../../examples/meshes/Rect1M_R1.msh).
 
 ## Copy the mesh file
 Create a folder in a preferred location. In this example, we will create a folder named "_channel_flow_" for reference, but pick any name. We will refer to this folder as the "working folder".
-Copy the file [`Rect1M_R1.msh`](../../examples/meshes/Rect1M_R1.msh) in the new directory "_channel_flow_".
+Copy the file [`Rect1M_R1.msh`](../../../examples/meshes/Rect1M_R1.msh) in the new directory "_channel_flow_".
 
 <div style="display: flex; justify-content: center;">
-<img src="../images/Rect1M_R1_mesh.jpg" alt="Alt text" width="720">
+<img src="../../images/Rect1M_R1_mesh.jpg" alt="Alt text" width="720">
 </div>
 
 The mesh contains 3 domain tags ("physical groups" in msh format):
@@ -119,13 +119,13 @@ The results are saved in a folder `results` which is created in the current work
 Lizzy will save the following fields: "FillFactor", "FreeSurface", "Pressure", "Velocity". In the picture, an example of fill factor at t=300s.
 
 <div style="display: flex; justify-content: center;">
-<img src="../images/Rect1M_R1_fill.png" alt="Alt text" width="720">
+<img src="../../images/Rect1M_R1_fill.png" alt="Alt text" width="720">
 </div>
 
 ### Pro tip:
 The mesh of control volumes can be saved by adding the optional argument `writer.save_results(solution, "Rect1M_R1", save_cv_mesh=True)` in the `Writer.save_results()` method. Doing so will also export a file `Rect1M_R1_CV.vtk` that can be loaded in Paraview as a superimposed mesh:
 
 <div style="display: flex; justify-content: center;">
-<img src="../images/Rect1M_R1_CV.png" alt="Alt text" width="720">
+<img src="../../images/Rect1M_R1_CV.png" alt="Alt text" width="720">
 </div>
 
