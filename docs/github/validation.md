@@ -19,8 +19,8 @@ By plugging the values in Eq. (XXXX), and considering a distance L = 1m, we obta
 The simulated scenario is the same as seen in [Channel flow experiment](./tutorials/rect.md) tutorial, with dimensions L = 1 m, W = 0.5 m
 
 <p align="center">
-  <img src="./images/validation_rect_mesh.png" alt="Alt text" height=300 />
-  <img src="./images/validation_rect_fill.png" alt="Alt text" height=300 />
+  <img src="./../images/validation_rect_mesh.png" alt="Alt text" height=300 />
+  <img src="./../images/validation_rect_fill.png" alt="Alt text" height=300 />
 </p>
 
 Running the simulation with increasing number of elements we obtain the following results:
@@ -35,7 +35,7 @@ Running the simulation with increasing number of elements we obtain the followin
 
 
 <div style="display: flex; justify-content: center;">
-<img src="./images/validation_rect_err.png" alt="Alt text" width="450">
+<img src="./../images/validation_rect_err.png" alt="Alt text" width="450">
 </div>
 
 As the number of elements increases, the fill time of the part approaches the theoretical solution and the error decreases.

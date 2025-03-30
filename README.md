@@ -1,7 +1,7 @@
 [![Tests](https://github.com/simonebancora/Lizzy/actions/workflows/tests.yaml/badge.svg)](https://github.com/simonebancora/Lizzy/actions/workflows/tests.yaml)
 
 # Lizzy
-Welcome to Lizzy, a Liquid Composite Molding (LCM) simulation package written in Python.
+Introducing Lizzy, a Liquid Composite Molding (LCM) simulation package written in Python.
 
 <div style="display: flex; justify-content: left;">
 <img src="docs/images/lizzy_logo_alpha_80.gif" alt="Lizzy logo" width="400">
@@ -29,12 +29,12 @@ https://www.paraview.org
 ## Tutorials:
 Some tutorial cases are provided below. The mesh files used in these examples are provided inside the folder [`/examples/meshes`](./examples/meshes). 
 
-- [Channel flow experiment](docs/tutorials/rect.md)
-- [Radial flow experiment](docs/tutorials/radial_aniso.md)
-- [Material zones assignment](docs/tutorials/triforce.md)
-- [Multi-inlet example](docs/tutorials/multi_inlet.md)
+- [Channel flow experiment](docs/github/tutorials/rect.md)
+- [Radial flow experiment](docs/github/tutorials/radial_aniso.md)
+- [Material zones assignment](docs/github/tutorials/triforce.md)
+- [Multi-inlet example](docs/github/tutorials/multi_inlet.md)
 
 ## Validation
-Validation of the solver can be found [here](docs/validation.md). This section will expand as more features are added.
+Validation of the solver can be found [here](docs/github/validation.md). This section will expand as more features are added.
 
 # DOCUMENTATION UNDER CONSTRUCTION
