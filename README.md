@@ -26,25 +26,16 @@ This project is still in early development stage and has **not reached a release
 While the solver results are generally correct, there may still be cases where it fails.
 If you use Lizzy and encounter some issue, you can help improve the software faster by reporting what you encountered in the [Issues](https://github.com/simonebancora/Lizzy/issues) section.
 
-## Installation
-Lizzy is provided as a package.
-It is advised to create a dedicated Python environment and use the `pip` package manager to install Lizzy in it.
-Since Lizzy is still in early development and receives frequent updates, package versioning **is not adopted yet**.
-Therefore, it is recommended to install the package in [editable mode](https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#working-in-development-mode).
+### Documentation
 
-## Visualisation
+Partial documentation (under construction):
+https://lizzy.readthedocs.io/en/latest/index.html
+
+### Visualisation
 The recommended software to visualise results from Lizzy is Paraview:
 https://www.paraview.org
 
-## Tutorials:
-Some tutorial cases are provided below. The mesh files used in these examples are provided inside the folder [`/examples/meshes`](./examples/meshes). 
-
-- [Channel flow experiment](docs/github/tutorials/rect.md)
-- [Radial flow experiment](docs/github/tutorials/radial_aniso.md)
-- [Material zones assignment](docs/github/tutorials/triforce.md)
-
-
-## Validation
+### Validation
 Validation of the solver can be found [here](docs/github/validation.md). This section will expand as more features are added.
 
-# DOCUMENTATION UNDER CONSTRUCTION
+
