@@ -22,9 +22,11 @@ class ProcessParameters:
     mu: float = 0.1
     wo_delta_time: float = -1
     fill_tolerance: float = 0.00
+    has_been_assigned = False
 
     @classmethod
     def assign(cls, **kwargs):
+        cls.has_been_assigned = True
         for key, value in kwargs.items():
             if hasattr(cls, key):
                 setattr(cls, key, value)

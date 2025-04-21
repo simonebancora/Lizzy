@@ -7,6 +7,7 @@
 import numpy as np
 from lizzy.cvmesh.constr import CreateNodes, CreateLines, CreateTriangles, CreateControlVolumes
 from lizzy.cvmesh.collections import nodes, lines, elements
+from lizzy.materials import MaterialManager
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -39,13 +40,13 @@ class Mesh:
         self.nodes = nodes([])
         self.triangles = elements([])
         self.lines = lines([])
+        self.CVs = []
         self.boundaries = mesh_reader.mesh_data['physical_nodes']
+        self.preprocessed = False
 
         # Init methods:
         self.PopulateFromMeshData(self.mesh_data)
         self.CrossReferenceEntities()
-        self.CVs = CreateControlVolumes(self.nodes)
-        print("Mesh pre-processing completed\n")
 
         ################## ALL THIS BLOCK TO BE REMOVED
         # create mesh of CVs for visualisation only
@@ -83,6 +84,25 @@ class Mesh:
         self.nodes = CreateNodes(mesh_data)
         self.triangles = CreateTriangles(mesh_data, self.nodes)
         self.lines = CreateLines(mesh_data, self.triangles)
+
+    def preprocess(self):
+        # assign permeability to elements
+        materials = MaterialManager.materials
+        rosettes = MaterialManager.rosettes
+        for tri in self.triangles:
+            try:
+                material = materials[tri.material_tag]
+                rosette = rosettes[tri.material_tag]
+                u, v, w = rosette.project_along_normal(tri.n)
+                R = np.array([u, v, w]).T
+                tri.k = R @ material.k_diag @ R.T
+                tri.porosity = materials[tri.material_tag].porosity
+                tri.h = materials[tri.material_tag].thickness
+            except KeyError:
+                exit(f"Mesh contains unassigned material tag: {tri.material_tag}")
+        self.CVs = CreateControlVolumes(self.nodes)
+        print("Mesh pre-processing completed\n")
+        self.preprocessed = True
 
     def CrossReferenceEntities(self):
         """

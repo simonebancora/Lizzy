@@ -7,7 +7,7 @@
 import numpy as np
 from .collections import nodes, lines, elements
 from . import entities as ent
-from lizzy.materials import MaterialManager
+
 
 def CreateNodes(mesh_data):
     """
@@ -93,21 +93,6 @@ def CreateTriangles(mesh_data, nodes):
     for key in mesh_data['physical_domains']:
         for i in mesh_data['physical_domains'][key]:
             all_triangles[i].material_tag = key
-
-    # assign permeability to elements
-    materials = MaterialManager.materials
-    rosettes = MaterialManager.rosettes
-    for tri in all_triangles:
-        try:
-            material = materials[tri.material_tag]
-            rosette = rosettes[tri.material_tag]
-            u, v, w = rosette.project_along_normal(tri.n)
-            R = np.array([u, v, w]).T
-            tri.k = R @ material.k_diag @ R.T
-            tri.porosity = materials[tri.material_tag].porosity
-            tri.h = materials[tri.material_tag].thickness
-        except KeyError:
-            exit(f"Mesh contains unassigned material tag: {tri.material_tag}")
 
     all_triangles.nodes_conn_table = mesh_data['nodes_conn'] # needed?
     all_triangles.N = len(all_triangles)

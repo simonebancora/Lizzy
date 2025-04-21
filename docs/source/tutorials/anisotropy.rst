@@ -14,7 +14,7 @@ The mesh contains 3 domain tags ("physical groups" in msh format): *inner_rim*, 
 Import and parameters
 ---------------------
 
-Let's import Lizzy, read the mesh file and assign some process parameters. This header is lifted from the :ref:`channel_flow` example.
+Let's import Lizzy, read the mesh file, create a ``Mesh`` and assign some process parameters. This header is lifted from the :ref:`channel_flow` example.
 
 .. code-block::
 
@@ -22,6 +22,8 @@ Let's import Lizzy, read the mesh file and assign some process parameters. This 
 
     # read mesh
     mesh_reader = liz.Reader("Radial.msh")
+    # instantiate Mesh
+    mesh = liz.Mesh(mesh_reader)
 
     # assign viscosity
     liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
@@ -63,12 +65,9 @@ Once the element projected rosette is calculated, the local transformation :math
 Completing the script
 ---------------------
 
-We can now conclude the script by instantiating the ``Mesh``, the ``BCManager`` assigning boundary conditions to the *inner_rim* and solving. These steps have been explained in the :ref:`channel_flow` example and won't be repeated:
+We can now conclude the script by instantiating the ``BCManager``, assigning boundary conditions to the *inner_rim* and solving. These steps have been explained in the :ref:`channel_flow` example and won't be repeated:
 
 .. code-block::
-
-    # instantiate Mesh
-    mesh = liz.Mesh(mesh_reader)
 
     # instantiate BCManager
     bc_manager = liz.BCManager()
@@ -93,6 +92,7 @@ The full script
     import lizzy as liz
 
     mesh_reader = liz.Reader("../meshes/Radial.msh")
+    mesh = liz.Mesh(mesh_reader)
 
     liz.ProcessParameters.assign(mu=0.1, wo_delta_time=500)
 
@@ -100,9 +100,7 @@ The full script
     material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)
     liz.MaterialManager.add_material('domain', material, rosette)
 
-    mesh = liz.Mesh(mesh_reader)
     bc_manager = liz.BCManager()
-
     inlet_1 = liz.Inlet('inner_rim', 1E+05)
     bc_manager.add_inlet(inlet_1)
 
@@ -146,6 +144,7 @@ The rest of the script remains unchanged. The full modified script becomes:
     import lizzy as liz
 
     mesh_reader = liz.Reader("../meshes/Radial.msh")
+    mesh = liz.Mesh(mesh_reader)
 
     liz.ProcessParameters.assign(mu=0.1, wo_delta_time=500)
 
@@ -153,7 +152,6 @@ The rest of the script remains unchanged. The full modified script becomes:
     material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)
     liz.MaterialManager.add_material('domain', material, rosette_45)
 
-    mesh = liz.Mesh(mesh_reader)
     bc_manager = liz.BCManager()
 
     inlet_1 = liz.Inlet('inner_rim', 1E+05)

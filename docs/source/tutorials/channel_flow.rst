@@ -5,7 +5,6 @@ Channel Flow
 
 This case demonstrates a minimal implementation of the solver. We will use Lizzy to simulate the filling of an isotropic rectangular panel, prescribing a one-dimensional flow. This classical infusion scenario is known as the Channel Flow experiment :cite:`weitzenbock1999`.
 
-
 Copy the mesh file
 ------------------
 
@@ -35,8 +34,8 @@ In the first line of the script, let's import Lizzy by:
 
     import lizzy as liz
 
-Import the mesh file
---------------------
+Creating the mesh
+-----------------
 
 Let's read the mesh file that we have copied by creating a ``Reader`` object:
 
@@ -47,6 +46,12 @@ Let's read the mesh file that we have copied by creating a ``Reader`` object:
 Make sure that the path given points to the mesh file that we have copied in the folder.
 In this example, both the script and the mesh are in the working folder. If your folder structure is different, adjust the mesh path accordingly.
 
+Now that the mesh is read, we must instantiate a ``Mesh`` object. We pass the ``Reader`` we just created to its constructor:
+
+.. code-block:: python
+
+    mesh = liz.Mesh(mesh_reader)
+
 Defining material properties
 ----------------------------
 
@@ -55,6 +60,12 @@ Next, we need to define a few material and process properties. To do so, we use 
 .. code-block:: python
 
     liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
+
+``mu`` is the resin viscosity, ``wo_delta_time`` controls the interval of time at which the simulation result is saved in the results file. Omitting or assigning a negative value to ``wo_delta_time`` will save every single time step in the result file (usually undesired).
+
+.. note::
+
+    There is no particular order in the script as where the ``ProcessParameters`` should be assigned, as long as it is done *before* the ``Solver`` is instantiated (further on). Failure to do so, or omitting the ``ProcessParameters`` entirely, will result in running the simulation with default values. The solver will warn us with a message: ``>>> Warning: Process parameters were not assigned. Running with default values: mu= 0.1, wo_delta_time= -1``
 
 Next, we can define the properties of the materials in the mesh. At the moment, material definition is handled in the script (in the future this will change). We can do so by creating a ``PorousMaterial`` and then using the ``add_material`` method of the ``MaterialManager`` singleton for each material that we want to add:
 
@@ -77,24 +88,8 @@ Note that no material orientation was defined. This is ok because the material d
 
     Each material tag present in the mesh must be assigned a material, otherwise we will get an error: ``>>> Mesh contains unassigned material tag: domain``
 
-Creating the simulation
------------------------
-
-Mesh
-^^^^
-
-Now that the mesh is read and properties are defined, we can instantiate a ``Mesh`` object and pass it our ``Reader``:
-
-.. code-block:: python
-
-    mesh = liz.Mesh(mesh_reader)
-
-.. important::
-
-    The mesh must be created **after** assigning materials and process conditions, otherwise these won't be applied and the simulation will run with default values or crash.
-
 Boundary conditions
-^^^^^^^^^^^^^^^^^^^
+-------------------
 
 Next, we will create some boundary conditions. To do so, first we must instantiate a Boundary Conditions Manager (``BCManager``) object:
 
@@ -141,15 +136,14 @@ The full script
     import lizzy as liz
 
     mesh_reader = liz.Reader("../meshes/Rect1M_R1.msh")
+    mesh = liz.Mesh(mesh_reader)
 
     liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
 
     material = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
     liz.MaterialManager.add_material('domain', material)
 
-    mesh = liz.Mesh(mesh_reader)
     bc_manager = liz.BCManager()
-
     inlet_1 = liz.Inlet('left_edge', 1E+05)
     bc_manager.add_inlet(inlet_1)
 

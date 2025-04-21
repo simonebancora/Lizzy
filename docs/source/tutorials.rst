@@ -8,3 +8,4 @@ We provide here a few tutorials to learn the basics of Lizzy. It is recommended 
 
     tutorials/channel_flow
     tutorials/anisotropy
+    tutorials/complex

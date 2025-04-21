@@ -40,6 +40,12 @@ class Solver:
         self.initialise_new_solution()
 
     def perform_fe_precalcs(self):
+        # preprocess mesh
+        if not self.mesh.preprocessed:
+            self.mesh.preprocess()
+        # warn if no process parameters were assigned:
+        if not ProcessParameters.has_been_assigned:
+            print(f"Warning: Process parameters were not assigned. Running with default values: mu={ProcessParameters.mu}, wo_delta_time={ProcessParameters.wo_delta_time}")
         # assemble FE global matrix (singular)
         self.K_sing, self.f_orig = fe.Assembly(self.mesh, ProcessParameters.mu)
         # precalculate vectorised stuff for velocity
