@@ -4,15 +4,3 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from lizzy.IO.IO import *
-from lizzy.cvmesh.cvmesh import *
-from lizzy.solver.solver import *
-from lizzy.solver.psolvers import SolverType
-from lizzy.bcond import *
-from lizzy.materials import *
-from lizzy.simparams import *
-from lizzy.splash_logo import *
-from lizzy.sensors.sensmanager import *
-
-
-
