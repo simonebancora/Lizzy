@@ -53,12 +53,13 @@ class SensorManager:
     
     @classmethod
     def probe_current_solution(cls, p_array, v_array, f_array, current_time):
-        for sensor in cls.sensors:
-            sensor.tvals.append(current_time)
-            sensor.pvals.append(p_array[sensor.child_node.id])
-            sensor.fvals.append(f_array[sensor.child_node.id])
-            sensor.vvals.append(v_array[sensor.child_node.id])
-    
+        if len(cls.sensors) > 0:
+            for sensor in cls.sensors:
+                sensor.tvals.append(current_time)
+                sensor.pvals.append(p_array[sensor.child_node.id])
+                sensor.fvals.append(f_array[sensor.child_node.id])
+                sensor.vvals.append(v_array[sensor.child_node.id])
+        
     @classmethod
     def reset_sensors(cls):
         if len(cls.sensors) > 0:
