@@ -108,6 +108,8 @@ class Solver:
         TimeStepManager.reset()
         TimeStepManager.save_initial_timestep(self.mesh, self.bcs)
         SensorManager.reset_sensors()
+        # TODO: this first probe is temporary and should be cleaner
+        SensorManager.probe_current_solution(TimeStepManager.time_steps[0].P, TimeStepManager.time_steps[0].V_nodal, TimeStepManager.time_steps[0].fill_factor, 0.0)
 
     def solve(self, log="on"):
         solve_time_start = time.time()
@@ -137,10 +139,11 @@ class Solver:
             FillSolver.fill_current_time_step(active_cvs, dt)
             # Update the filling time
             self.current_time += dt
-            
-
             # save time step results
-            TimeStepManager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, [cv.fill for cv in self.mesh.CVs], [cv.free_surface for cv in self.mesh.CVs], write_out)
+            fill_factor = [cv.fill for cv in self.mesh.CVs]
+            TimeStepManager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, fill_factor, [cv.free_surface for cv in self.mesh.CVs], write_out)
+            if write_out:
+                SensorManager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
             # update the empty nodes for next step
             self.update_empty_nodes_idx()
             # Print number of empty cvs
