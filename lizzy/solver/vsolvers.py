@@ -25,3 +25,21 @@ class VelocitySolver:
         p_vector = p[cls.nodes_conn]
         v_array = -(1/mu) * np.einsum('ijk,ik->ij', cls.B, p_vector) # not pretty
         return v_array
+    
+    @classmethod
+    def calculate_nodal_velocities(cls, nodes, v_array):
+        v_nodal_array = []
+        for node in nodes:
+            supporting_triangle_velocities = v_array[node.triangle_ids]
+
+            # Keep only rows where at least one velcity component is not 0
+            mask = np.any(np.abs(supporting_triangle_velocities) != 0, axis=1)
+            filtered_supporting_triangle_velocities = supporting_triangle_velocities[mask]
+
+            if filtered_supporting_triangle_velocities.size > 0:
+                avg_velocity = np.mean(filtered_supporting_triangle_velocities, 0)
+            else:
+                avg_velocity = np.zeros((3,))  # all empty elements
+
+            v_nodal_array.append(avg_velocity.tolist())
+        return v_nodal_array

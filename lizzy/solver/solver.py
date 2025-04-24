@@ -9,6 +9,7 @@ import time
 from lizzy.solver import *
 from lizzy.bcond import SolverBCs
 from lizzy.simparams import ProcessParameters
+from lizzy.sensors.sensmanager import SensorManager
 
 class Solver:
     def __init__(self, mesh, bc_manager, solver_type=SolverType.DIRECT_SPARSE):
@@ -50,6 +51,8 @@ class Solver:
         self.K_sing, self.f_orig = fe.Assembly(self.mesh, ProcessParameters.mu)
         # precalculate vectorised stuff for velocity
         VelocitySolver.precalculate_B(self.mesh.triangles)
+        # assign sensors
+        SensorManager.initialise(self.mesh)
 
     def update_dirichlet_bcs(self):
         """
@@ -104,6 +107,7 @@ class Solver:
         self.update_n_empty_cvs()
         TimeStepManager.reset()
         TimeStepManager.save_initial_timestep(self.mesh, self.bcs)
+        SensorManager.reset_sensors()
 
     def solve(self, log="on"):
         solve_time_start = time.time()
@@ -115,6 +119,8 @@ class Solver:
             p = PressureSolver.solve(k, f, self.solver_type)
             # calculate velocity field
             v_array = VelocitySolver.calculate_elem_velocities(p, ProcessParameters.mu)
+            # calculate nodal velocities as average of supporting elements (not weighted by volume)
+            v_nodal_array = VelocitySolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
             # Find active cvs on the free surface
             active_cvs = FillSolver.find_free_surface_cvs(self.mesh.CVs)
             # Calculate current time step for filling active cvs
@@ -131,8 +137,10 @@ class Solver:
             FillSolver.fill_current_time_step(active_cvs, dt)
             # Update the filling time
             self.current_time += dt
+            
+
             # save time step results
-            TimeStepManager.save_timestep(self.current_time, dt, p, v_array, [cv.fill for cv in self.mesh.CVs], [cv.free_surface for cv in self.mesh.CVs], write_out)
+            TimeStepManager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, [cv.fill for cv in self.mesh.CVs], [cv.free_surface for cv in self.mesh.CVs], write_out)
             # update the empty nodes for next step
             self.update_empty_nodes_idx()
             # Print number of empty cvs

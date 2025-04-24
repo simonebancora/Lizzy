@@ -133,6 +133,7 @@ class Writer:
                 "Pressure": solution["p"][i],  # Point data
                 "Time" : solution["time"],
                 "FreeSurface" : solution["free_surface"][i],
+                "Velocity" : solution["v_nodal"][i],
             }
             cell_data = {
                 "Velocity": [solution["v"][i]],  # Cell data for velocity
@@ -162,7 +163,8 @@ class Writer:
                     time = solution["time"][j]
                     point_data = {  "Pressure" : np.array(solution["p"][j]),
                                     "FillFactor" : np.array(solution["fill_factor"][j]),
-                                    "FreeSurface" : np.array(solution["free_surface"][j])
+                                    "FreeSurface" : np.array(solution["free_surface"][j]),
+                                    "Velocity" : np.array(solution["v_nodal"][j])
                                  }
                     cell_data = { "Velocity" : np.array(solution["v"][j]) }
                     writer.write_data(time, point_data=point_data, cell_data=cell_data)
