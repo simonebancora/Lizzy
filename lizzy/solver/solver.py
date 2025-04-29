@@ -111,50 +111,73 @@ class Solver:
         # TODO: this first probe is temporary and should be cleaner
         SensorManager.probe_current_solution(TimeStepManager.time_steps[0].P, TimeStepManager.time_steps[0].V_nodal, TimeStepManager.time_steps[0].fill_factor, 0.0)
 
+
+
+    def solve_time_step(self):
+        write_out = False
+        # Solve pressure field
+        k, f = PressureSolver.apply_bcs(self.K_sing, self.f_orig, self.bcs)
+        p = PressureSolver.solve(k, f, self.solver_type)
+        # calculate velocity field
+        v_array = VelocitySolver.calculate_elem_velocities(p, ProcessParameters.mu)
+        # calculate nodal velocities as average of supporting elements (not weighted by volume)
+        v_nodal_array = VelocitySolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
+        # Find active cvs on the free surface
+        active_cvs = FillSolver.find_free_surface_cvs(self.mesh.CVs)
+        # Calculate current time step for filling active cvs
+        dt = FillSolver.calculate_time_step(active_cvs, v_array)
+        # if dt passes a scheduled write-out time, force dt to match the write-out time and flag the step for write-out
+        if ProcessParameters.wo_delta_time > 0.0:
+            if self.current_time + dt > self.next_wo_time:
+                dt = self.next_wo_time - self.current_time
+                self.next_wo_time += ProcessParameters.wo_delta_time
+                write_out = True
+        else:
+            write_out = True
+        # Fill active cvs
+        FillSolver.fill_current_time_step(active_cvs, dt)
+        # Update the filling time
+        self.current_time += dt
+        # save time step results
+        fill_factor = [cv.fill for cv in self.mesh.CVs]
+        TimeStepManager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, fill_factor,
+                                      [cv.free_surface for cv in self.mesh.CVs], write_out)
+        if write_out:
+            SensorManager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
+        # update the empty nodes for next step
+        self.update_empty_nodes_idx()
+        # Print number of empty cvs
+        self.update_n_empty_cvs()
+
+
+
     def solve(self, log="on"):
         solve_time_start = time.time()
         print("SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
         while self.n_empty_cvs > 0:
-            write_out = False
-            # Solve pressure field
-            k, f = PressureSolver.apply_bcs(self.K_sing, self.f_orig, self.bcs)
-            p = PressureSolver.solve(k, f, self.solver_type)
-            # calculate velocity field
-            v_array = VelocitySolver.calculate_elem_velocities(p, ProcessParameters.mu)
-            # calculate nodal velocities as average of supporting elements (not weighted by volume)
-            v_nodal_array = VelocitySolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
-            # Find active cvs on the free surface
-            active_cvs = FillSolver.find_free_surface_cvs(self.mesh.CVs)
-            # Calculate current time step for filling active cvs
-            dt = FillSolver.calculate_time_step(active_cvs, v_array)
-            # if dt passes a scheduled write-out time, force dt to match the write-out time and flag the step for write-out
-            if ProcessParameters.wo_delta_time > 0.0:
-                if self.current_time + dt > self.next_wo_time:
-                    dt = self.next_wo_time - self.current_time
-                    self.next_wo_time += ProcessParameters.wo_delta_time
-                    write_out = True
-            else:
-                write_out = True
-            # Fill active cvs
-            FillSolver.fill_current_time_step(active_cvs, dt)
-            # Update the filling time
-            self.current_time += dt
-            # save time step results
-            fill_factor = [cv.fill for cv in self.mesh.CVs]
-            TimeStepManager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, fill_factor, [cv.free_surface for cv in self.mesh.CVs], write_out)
-            if write_out:
-                SensorManager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
-            # update the empty nodes for next step
-            self.update_empty_nodes_idx()
-            # Print number of empty cvs
-            self.update_n_empty_cvs()
+            self.solve_time_step()
             if log == "on":
                 print("\rFill time: {:.5f}".format(self.current_time) + ", Empty CVs: {:4}".format(self.n_empty_cvs), end='')
-
         solution = TimeStepManager.pack_solution()
         # good night and good luck
         solve_time_end = time.time()
         total_solve_time = solve_time_end - solve_time_start
         print("\nSOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
+        return solution
+
+    def solve_step(self, step_period, log="on"):
+        step_end_time = self.current_time + step_period
+        solve_time_start = time.time()
+        print("STEP SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
+        while self.current_time <= step_end_time and self.n_empty_cvs > 0:
+            self.solve_time_step()
+            if log == "on":
+                print("\rFill time: {:.5f}".format(self.current_time) + ", Empty CVs: {:4}".format(self.n_empty_cvs),
+                      end='')
+        solution = TimeStepManager.pack_solution()
+        # good night and good luck
+        solve_time_end = time.time()
+        total_solve_time = solve_time_end - solve_time_start
+        print("\nSTEP SOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
         return solution
     
