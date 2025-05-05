@@ -26,7 +26,7 @@ Let's import Lizzy, read the mesh file, create a ``Mesh`` and assign some proces
     mesh = liz.Mesh(mesh_reader)
 
     # assign viscosity
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
+    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
 
 Creating an oriented anisotropic material
 -----------------------------------------
@@ -94,7 +94,7 @@ The full script
     mesh_reader = liz.Reader("../meshes/Radial.msh")
     mesh = liz.Mesh(mesh_reader)
 
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=500)
+    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=500)
 
     rosette = liz.Rosette((1,0,0))
     material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)
@@ -146,7 +146,7 @@ The rest of the script remains unchanged. The full modified script becomes:
     mesh_reader = liz.Reader("../meshes/Radial.msh")
     mesh = liz.Mesh(mesh_reader)
 
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=500)
+    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=500)
 
     rosette_45 = liz.Rosette((1,1,0))
     material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)

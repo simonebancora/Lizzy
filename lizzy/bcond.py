@@ -14,7 +14,11 @@ class Boundary:
 class Inlet(Boundary):
     def __init__(self, physical_tag:str, p_value:float):
         super().__init__(physical_tag)
+        self.p0 = p_value
         self.p_value = p_value
+
+    def reset(self):
+        self.p_value = self.p0
 
 class BCManager:
     def __init__(self):
