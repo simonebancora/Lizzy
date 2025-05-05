@@ -8,7 +8,7 @@ import numpy as np
 import time
 from lizzy.solver import *
 from lizzy.bcond import SolverBCs
-from lizzy.simparams import ProcessParameters
+from lizzy.simparams import SimulationParameters
 from lizzy.sensors.sensmanager import SensorManager
 
 class Solver:
@@ -34,7 +34,7 @@ class Solver:
         self.f_orig = None
         self.current_time = 0
         self.n_empty_cvs = np.inf
-        self.next_wo_time = ProcessParameters.wo_delta_time
+        self.next_wo_time = SimulationParameters.wo_delta_time
         # assembly is calculated at instantiation of the solver
         self.perform_fe_precalcs()
         # when a solver is instantiated, all simulation variables are initialised
@@ -45,10 +45,10 @@ class Solver:
         if not self.mesh.preprocessed:
             self.mesh.preprocess()
         # warn if no process parameters were assigned:
-        if not ProcessParameters.has_been_assigned:
-            print(f"Warning: Process parameters were not assigned. Running with default values: mu={ProcessParameters.mu}, wo_delta_time={ProcessParameters.wo_delta_time}")
+        if not SimulationParameters.has_been_assigned:
+            print(f"Warning: Simulation parameters were not assigned. Running with default values: mu={SimulationParameters.mu}, wo_delta_time={SimulationParameters.wo_delta_time}")
         # assemble FE global matrix (singular)
-        self.K_sing, self.f_orig = fe.Assembly(self.mesh, ProcessParameters.mu)
+        self.K_sing, self.f_orig = fe.Assembly(self.mesh, SimulationParameters.mu)
         # precalculate vectorised stuff for velocity
         VelocitySolver.precalculate_B(self.mesh.triangles)
         # assign sensors
@@ -98,7 +98,7 @@ class Solver:
         Initialises a new solution, resetting all simulation variables. It is sufficient to call this method to reset the simulation and run again.
         """
         self.current_time = 0
-        self.next_wo_time = ProcessParameters.wo_delta_time
+        self.next_wo_time = SimulationParameters.wo_delta_time
         self.bcs = SolverBCs()
         self.mesh.EmptyCVs()
         self.update_dirichlet_bcs()
@@ -111,6 +111,16 @@ class Solver:
         # TODO: this first probe is temporary and should be cleaner
         SensorManager.probe_current_solution(TimeStepManager.time_steps[0].P, TimeStepManager.time_steps[0].V_nodal, TimeStepManager.time_steps[0].fill_factor, 0.0)
 
+    def handle_wo_criterion(self, dt) -> (float, bool):
+        write_out = False
+        if SimulationParameters.wo_delta_time > 0.0:
+            if self.current_time + dt > self.next_wo_time:
+                dt = self.next_wo_time - self.current_time
+                self.next_wo_time += SimulationParameters.wo_delta_time
+                write_out = True
+        else:
+            write_out = True
+        return dt, write_out
 
 
     def solve_time_step(self):
@@ -119,7 +129,7 @@ class Solver:
         k, f = PressureSolver.apply_bcs(self.K_sing, self.f_orig, self.bcs)
         p = PressureSolver.solve(k, f, self.solver_type)
         # calculate velocity field
-        v_array = VelocitySolver.calculate_elem_velocities(p, ProcessParameters.mu)
+        v_array = VelocitySolver.calculate_elem_velocities(p, SimulationParameters.mu)
         # calculate nodal velocities as average of supporting elements (not weighted by volume)
         v_nodal_array = VelocitySolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
         # Find active cvs on the free surface
@@ -127,13 +137,7 @@ class Solver:
         # Calculate current time step for filling active cvs
         dt = FillSolver.calculate_time_step(active_cvs, v_array)
         # if dt passes a scheduled write-out time, force dt to match the write-out time and flag the step for write-out
-        if ProcessParameters.wo_delta_time > 0.0:
-            if self.current_time + dt > self.next_wo_time:
-                dt = self.next_wo_time - self.current_time
-                self.next_wo_time += ProcessParameters.wo_delta_time
-                write_out = True
-        else:
-            write_out = True
+        dt, write_out = self.handle_wo_criterion(dt)
         # Fill active cvs
         FillSolver.fill_current_time_step(active_cvs, dt)
         # Update the filling time
@@ -168,8 +172,9 @@ class Solver:
     def solve_step(self, step_period, log="on"):
         step_end_time = self.current_time + step_period
         solve_time_start = time.time()
-        print("STEP SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
+        # print("STEP SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
         while self.current_time <= step_end_time and self.n_empty_cvs > 0:
+            self.update_dirichlet_bcs()
             self.solve_time_step()
             if log == "on":
                 print("\rFill time: {:.5f}".format(self.current_time) + ", Empty CVs: {:4}".format(self.n_empty_cvs),
@@ -178,6 +183,6 @@ class Solver:
         # good night and good luck
         solve_time_end = time.time()
         total_solve_time = solve_time_end - solve_time_start
-        print("\nSTEP SOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
+        # print("\nSTEP SOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
         return solution
     

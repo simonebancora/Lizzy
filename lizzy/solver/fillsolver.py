@@ -46,5 +46,5 @@ class FillSolver:
         for i, cv in enumerate(active_cvs):
             cv.fill = min(cv.fill + cls.all_fluxes_per_second[i]*dt / cv.vol, 1)
         for cv in active_cvs:
-            if cv.fill >= (1-lizzy.ProcessParameters.fill_tolerance):
+            if cv.fill >= (1-lizzy.SimulationParameters.fill_tolerance):
                 cv.fill = 1

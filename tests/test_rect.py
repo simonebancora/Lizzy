@@ -19,7 +19,7 @@ tol_err = 0.001
 @pytest.fixture()
 def mesh():
     mesh_reader = liz.Reader("tests/test_meshes/Rect_1M_R1.msh")
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
+    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
     material_1 = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
     liz.MaterialManager.add_material('domain', material_1)
     mesh = liz.Mesh(mesh_reader)

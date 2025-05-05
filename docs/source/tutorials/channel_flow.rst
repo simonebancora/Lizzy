@@ -55,17 +55,17 @@ Now that the mesh is read, we must instantiate a ``Mesh`` object. We pass the ``
 Defining material properties
 ----------------------------
 
-Next, we need to define a few material and process properties. To do so, we use the ``ProcessParameters`` singleton:
+Next, we need to define a few material and process properties. To do so, we use the ``SimulationParameters`` singleton:
 
 .. code-block:: python
 
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
+    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
 
 ``mu`` is the resin viscosity, ``wo_delta_time`` controls the interval of time at which the simulation result is saved in the results file. Omitting or assigning a negative value to ``wo_delta_time`` will save every single time step in the result file (usually undesired).
 
 .. note::
 
-    There is no particular order in the script as where the ``ProcessParameters`` should be assigned, as long as it is done *before* the ``Solver`` is instantiated (further on). Failure to do so, or omitting the ``ProcessParameters`` entirely, will result in running the simulation with default values. The solver will warn us with a message: ``>>> Warning: Process parameters were not assigned. Running with default values: mu= 0.1, wo_delta_time= -1``
+    There is no particular order in the script as where the ``SimulationParameters`` should be assigned, as long as it is done *before* the ``Solver`` is instantiated (further on). Failure to do so, or omitting the ``SimulationParameters`` entirely, will result in running the simulation with default values. The solver will warn us with a message: ``>>> Warning: Process parameters were not assigned. Running with default values: mu= 0.1, wo_delta_time= -1``
 
 Next, we can define the properties of the materials in the mesh. At the moment, material definition is handled in the script (in the future this will change). We can do so by creating a ``PorousMaterial`` and then using the ``add_material`` method of the ``MaterialManager`` singleton for each material that we want to add:
 
@@ -138,7 +138,7 @@ The full script
     mesh_reader = liz.Reader("../meshes/Rect1M_R1.msh")
     mesh = liz.Mesh(mesh_reader)
 
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
+    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
 
     material = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
     liz.MaterialManager.add_material('domain', material)
