@@ -35,6 +35,8 @@ class Solver:
         self.current_time = 0
         self.n_empty_cvs = np.inf
         self.next_wo_time = SimulationParameters.wo_delta_time
+        self.step_end_time = np.inf
+        self.step_completed = False
         # assembly is calculated at instantiation of the solver
         self.perform_fe_precalcs()
         # when a solver is instantiated, all simulation variables are initialised
@@ -111,10 +113,16 @@ class Solver:
         # TODO: this first probe is temporary and should be cleaner
         SensorManager.probe_current_solution(TimeStepManager.time_steps[0].P, TimeStepManager.time_steps[0].V_nodal, TimeStepManager.time_steps[0].fill_factor, 0.0)
 
-    def handle_wo_criterion(self, dt) -> (float, bool):
+    def handle_wo_criterion(self, dt):
         write_out = False
+        next_time = self.current_time + dt
+        if next_time > self.step_end_time:
+            dt = self.step_end_time - self.current_time
+            write_out = True
+            self.step_completed = True
+            return dt, write_out
         if SimulationParameters.wo_delta_time > 0.0:
-            if self.current_time + dt > self.next_wo_time:
+            if next_time > self.next_wo_time:
                 dt = self.next_wo_time - self.current_time
                 self.next_wo_time += SimulationParameters.wo_delta_time
                 write_out = True
@@ -170,10 +178,11 @@ class Solver:
         return solution
 
     def solve_step(self, step_period, log="on"):
-        step_end_time = self.current_time + step_period
+        self.step_completed = False
+        self.step_end_time = self.current_time + step_period
         solve_time_start = time.time()
         # print("STEP SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
-        while self.current_time <= step_end_time and self.n_empty_cvs > 0:
+        while self.step_completed == False and self.n_empty_cvs > 0:
             self.update_dirichlet_bcs()
             self.solve_time_step()
             if log == "on":

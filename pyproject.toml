@@ -15,10 +15,11 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["lizzy", "lizzy.IO", "lizzy.cvmesh", "lizzy.solver", "lizzy.controls", "lizzy.solver.builtin", "lizzy.solver.external"]
+packages = ["lizzy", "lizzy.IO", "lizzy.cvmesh", "lizzy.solver", "lizzy.sensors", "lizzy.gymenv", "lizzy.controls", "lizzy.solver.builtin", "lizzy.solver.external"]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = ["pytest", "matplotlib"]
+drl = ["gymnasium", "matplotlib", "stable-baselines3"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
