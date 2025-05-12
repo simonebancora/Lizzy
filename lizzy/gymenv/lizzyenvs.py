@@ -57,16 +57,6 @@ class LizzyEnv(gym.Env):
     def solve_until_filled(self):
         solution = self.solver.solve(log="on")
         return solution
-    
-    
-
-
-
-
-
-
-
-
 
 class LizzyVelocityEnv(LizzyEnv):
     def __init__(self, action_space_type="discrete"):
@@ -75,18 +65,21 @@ class LizzyVelocityEnv(LizzyEnv):
         self.target_tolerance = 0.1
         self.p0 = 0
         self.discrete_delta_p = 1000
-        self.current_v = 0
+        self.current_normalised_v = 0
         self.current_p = 0
+        self.previous_normalised_v = 0
         self.action_space_type = action_space_type
         self.observations = None
         self.velocity_err_weight = 10
         self.max_penalty = -100
         self.target_velocity_range = (0, 0)
+        self.current_velocity_error = 0
+        self.previous_velocity_error = 0
 
         self.observation_space = gym.spaces.Dict(
             {
-                "velocity": gym.spaces.Box(0, np.inf, shape=(1,), dtype=float),
-                "target_velocity": gym.spaces.Box(0, np.inf, shape=(1,), dtype=float),
+                "current_velocity_error": gym.spaces.Box(0, np.inf, shape=(1,), dtype=float),
+                "previous_velocity_error": gym.spaces.Box(0, np.inf, shape=(1,), dtype=float),
                 "current_inlet_p" : gym.spaces.Box(0, np.inf, shape=(1,), dtype=float),
                 "current_fill_percent" : gym.spaces.Box(0, 1, shape=(1,), dtype=float),
             }
@@ -103,7 +96,6 @@ class LizzyVelocityEnv(LizzyEnv):
             case _:
                 pass
 
-
     def set_target_velocity_range(self, min_val, max_val, tol):
         self.target_velocity_range = (min_val, max_val)
         self.target_tolerance = tol
@@ -118,10 +110,13 @@ class LizzyVelocityEnv(LizzyEnv):
         self.discrete_delta_p = value
 
     def get_obs(self):
-        self.current_v = self.sensors[0].vvals[-1][0]
+        self.previous_normalised_v = self.current_normalised_v
+        self.current_normalised_v = self.sensors[0].vvals[-1][0]/self.target_velocity
+        self.current_velocity_error = np.abs(self.current_normalised_v - 1.0)
+        self.previous_velocity_error = np.abs(self.previous_normalised_v - 1.0)
         self.current_p = self.sensors[0].pvals[-1]
         fill_percent = 1.0 - self.solver.n_empty_cvs/self.solver.N_nodes
-        self.observations = {"velocity": self.current_v/self.target_velocity, "target_velocity": 1.0, "current_inlet_p": self.current_p, "current_fill_percent" : fill_percent}
+        self.observations = {"current_velocity_error": self.current_velocity_error, "previous_velocity_error": self.previous_velocity_error, "current_inlet_p": self.current_p, "current_fill_percent" : fill_percent}
         return self.observations
     
     def step(self, action):
@@ -156,7 +151,8 @@ class LizzyVelocityEnv(LizzyEnv):
         self.target_velocity = np.random.uniform(self.target_velocity_range[0], self.target_velocity_range[1])
         self.sensors[0].reset()
         self.solver.initialise_new_solution()
-        self.current_v = 1.0
+        self.current_normalised_v = 1.0
+        self.previous_normalised_v = 1.0
         if self.prefill > 0:
             self.solver.solve_step(self.prefill)
         self.observations = self.get_obs()
@@ -164,13 +160,10 @@ class LizzyVelocityEnv(LizzyEnv):
         return self.observations, info
     
     def calculate_reward(self, observations):
-        v_current_normalised = observations["velocity"]
-        v_target_normalised = observations["target_velocity"]
-        err_within_velocity_range = np.abs(v_current_normalised - v_target_normalised)
-        if err_within_velocity_range <= self.target_tolerance:
+        if self.current_velocity_error <= self.target_tolerance:
             reward = 100
         else:
-            reward = - self.velocity_err_weight * err_within_velocity_range
+            reward = 10*(self.previous_velocity_error - self.current_velocity_error)
         reward = np.maximum(reward, self.max_penalty)
         return reward
     
