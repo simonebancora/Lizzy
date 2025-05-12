@@ -60,7 +60,7 @@ class Triangle(Element2D):
         # compute triangle normal, used for rosette projection
         u = x[0,:] - x[1,:]
         v = x[0,:] - x[2,:]
-        n = np.cross(u, v)
+        n = np.linalg.cross(u, v)
         self.n = n / np.linalg.norm(n)
         self.nodes = (node_1, node_2, node_3)
         self.grad_N = (Triangle.dNdxi @ dxidX).T
