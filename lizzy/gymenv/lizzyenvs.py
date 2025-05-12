@@ -71,10 +71,17 @@ class LizzyEnv(gym.Env):
 class LizzyVelocityEnv(LizzyEnv):
     def __init__(self, action_space_type="discrete"):
         super().__init__()
-        self.target_velocity = 0
+        self.target_velocity = 0.0
+        self.target_tolerance = 0.1
         self.p0 = 0
         self.discrete_delta_p = 1000
+        self.current_v = 0
+        self.current_p = 0
         self.action_space_type = action_space_type
+        self.observations = None
+        self.velocity_err_weight = 10
+        self.max_penalty = -100
+        self.target_velocity_range = (0, 0)
 
         self.observation_space = gym.spaces.Dict(
             {
@@ -85,7 +92,7 @@ class LizzyVelocityEnv(LizzyEnv):
             }
         )
 
-        match action_space_type:
+        match self.action_space_type:
             case "discrete":
                 self.action_space = gym.spaces.Discrete(3)
                 self.actions_map = {0 : -1,
@@ -97,9 +104,10 @@ class LizzyVelocityEnv(LizzyEnv):
                 pass
 
 
-    def set_target_velocity(self, value):
-        self.target_velocity = value
-    
+    def set_target_velocity_range(self, min_val, max_val, tol):
+        self.target_velocity_range = (min_val, max_val)
+        self.target_tolerance = tol
+
     def set_initial_pressure(self, value):
         self.p0 = value
     
@@ -109,14 +117,12 @@ class LizzyVelocityEnv(LizzyEnv):
     def set_discrete_delta_p(self, value):
         self.discrete_delta_p = value
 
-
     def get_obs(self):
-
-        v = self.sensors[0].vvals[-1][0]
-        p = self.sensors[0].pvals[-1]
+        self.current_v = self.sensors[0].vvals[-1][0]
+        self.current_p = self.sensors[0].pvals[-1]
         fill_percent = 1.0 - self.solver.n_empty_cvs/self.solver.N_nodes
-
-        return {"velocity": v, "target_velocity": self.target_velocity, "current_inlet_p": p, "current_fill_percent" : fill_percent}
+        self.observations = {"velocity": self.current_v/self.target_velocity, "target_velocity": 1.0, "current_inlet_p": self.current_p, "current_fill_percent" : fill_percent}
+        return self.observations
     
     def step(self, action):
         truncated = False
@@ -129,47 +135,56 @@ class LizzyVelocityEnv(LizzyEnv):
             case _:
                 NameError
         self.inlets[0].p_value += new_p_increment
-        if self.inlets[0].p_value <= 0:
+        if self.inlets[0].p_value <= 1000:
             truncated = True
         if not truncated or terminated:
             self.solution = self.solver.solve_step(self.step_duration, log="off")
-            print("solving one step")
         if self.solver.n_empty_cvs <= 0:
             terminated = True
-        observations = self.get_obs()
-        reward = self.calculate_reward(observations)
+        self.observations = self.get_obs()
+        reward = self.calculate_reward(self.observations)
+        if truncated:
+            reward = self.max_penalty
         info = {}
-        return observations, reward, terminated, truncated, info
+        return self.observations, reward, terminated, truncated, info
     
     def reset(self, seed=None, options=None):
         if self.interactive:
             self.plot_episode(self.interactive_hold_time)
         self.inlets[0].p_value = self.p0
+        self.current_p = self.p0
+        self.target_velocity = np.random.uniform(self.target_velocity_range[0], self.target_velocity_range[1])
         self.sensors[0].reset()
         self.solver.initialise_new_solution()
+        self.current_v = 1.0
         if self.prefill > 0:
             self.solver.solve_step(self.prefill)
-            
-        observations = self.get_obs()
+        self.observations = self.get_obs()
         info = {}
-        return observations, info
+        return self.observations, info
     
     def calculate_reward(self, observations):
-        v_current = observations["velocity"]
-        v_target = self.target_velocity
-        err = np.abs(v_current - v_target)/v_target
-        return 1 - 10*err
+        v_current_normalised = observations["velocity"]
+        v_target_normalised = observations["target_velocity"]
+        err_within_velocity_range = np.abs(v_current_normalised - v_target_normalised)
+        if err_within_velocity_range <= self.target_tolerance:
+            reward = 100
+        else:
+            reward = - self.velocity_err_weight * err_within_velocity_range
+        reward = np.maximum(reward, self.max_penalty)
+        return reward
     
-    def plot_episode(self, hold=5):
+    def plot_episode(self, hold:float=5):
         v = self.sensors[0].vvals
         fig, (ax1, ax2) = plt.subplots(1, 2)
-        ax1.set_title("Pressure")
-        ax2.set_title("Velocity")
-        # plt.tight_layout()
-        ax1.plot(self.sensors[0].tvals, self.sensors[0].pvals)
-        ax2.plot(self.sensors[0].tvals, [val[0] for val in v])
-        ax2.plot(self.sensors[0].tvals, [self.target_velocity]*len(self.sensors[0].tvals))
-        plt.show(block=True)
+        ax2.set_title("Pressure")
+        ax1.set_title("Velocity")
+        ax1.set_ylim([0, self.target_velocity*4/3])
+        plt.tight_layout()
+        ax2.plot(self.sensors[0].tvals[1:], self.sensors[0].pvals[1:])
+        ax1.plot(self.sensors[0].tvals[1:], [val[0] for val in v][1:])
+        ax1.plot(self.sensors[0].tvals[1:], [self.target_velocity]*(len(self.sensors[0].tvals)-1))
+        plt.show(block=False)
         if hold > 0:
             plt.pause(hold)
             plt.close()
