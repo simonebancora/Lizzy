@@ -18,7 +18,7 @@ class Rosette:
         u_normal = np.dot(self.u, normal) * normal
         u_project = self.u - u_normal
         u_project = u_project / np.linalg.norm(u_project)
-        v_project = np.cross(u_project, normal)
+        v_project = np.linalg.cross(u_project, normal)
         v_project = v_project / np.linalg.norm(v_project)
         return u_project, v_project, normal
 

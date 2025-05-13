@@ -75,6 +75,7 @@ class LizzyVelocityEnv(LizzyEnv):
         self.target_velocity_range = (0, 0)
         self.current_velocity_error = 0
         self.previous_velocity_error = 0
+        self.test_step_rewards = []
 
         self.observation_space = gym.spaces.Dict(
             {
@@ -137,7 +138,7 @@ class LizzyVelocityEnv(LizzyEnv):
         if self.solver.n_empty_cvs <= 0:
             terminated = True
         self.observations = self.get_obs()
-        reward = self.calculate_reward(self.observations)
+        reward = self.calculate_reward()
         if truncated:
             reward = self.max_penalty
         info = {}
@@ -159,21 +160,27 @@ class LizzyVelocityEnv(LizzyEnv):
         info = {}
         return self.observations, info
     
-    def calculate_reward(self, observations):
-        if self.current_velocity_error <= self.target_tolerance:
-            reward = 100
-        else:
-            reward = 10*(self.previous_velocity_error - self.current_velocity_error)
-        reward = np.maximum(reward, self.max_penalty)
+    def calculate_reward(self):
+        # if self.current_velocity_error <= self.target_tolerance:
+        #     reward = 100
+        # else:
+        #     reward = 10*(self.previous_velocity_error - self.current_velocity_error)
+        # reward = np.maximum(reward, self.max_penalty)
+        reward = 100000
         return reward
     
-    def plot_episode(self, hold:float=5):
+    def plot_episode(self, hold:float=5, reward=False):
         v = self.sensors[0].vvals
-        fig, (ax1, ax2) = plt.subplots(1, 2)
+        if reward:
+            fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+            ax3.set_title("Step reward")
+            ax3.plot(self.sensors[0].tvals[1:], self.test_step_rewards)
+        else:
+            fig, (ax1, ax2) = plt.subplots(1, 2)
         ax2.set_title("Pressure")
         ax1.set_title("Velocity")
         ax1.set_ylim([0, self.target_velocity*4/3])
-        plt.tight_layout()
+        # plt.tight_layout()
         ax2.plot(self.sensors[0].tvals[1:], self.sensors[0].pvals[1:])
         ax1.plot(self.sensors[0].tvals[1:], [val[0] for val in v][1:])
         ax1.plot(self.sensors[0].tvals[1:], [self.target_velocity]*(len(self.sensors[0].tvals)-1))
@@ -181,3 +188,16 @@ class LizzyVelocityEnv(LizzyEnv):
         if hold > 0:
             plt.pause(hold)
             plt.close()
+
+    def test_model(self, env, model, hold_time):
+        obs, info = env.reset()
+        terminated = False
+        truncated = False
+        self.test_step_rewards = []
+        self.test_step_rewards.append(0)
+        while not terminated or truncated:
+            action, _ = model.predict(obs)
+            obs, reward, terminated, truncated, info = env.step(action)
+            self.test_step_rewards.append(reward)
+            env.env.plot_episode(hold_time, True)
+
