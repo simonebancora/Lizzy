@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "lizzy"
 version = "0.0.1"
 authors = [{ name = "Simone Bancora", email = "simone.bancora@gmail.com" }]
-requires-python = ">=3.10,<3.12"
+requires-python = ">=3.10"
 dependencies = [
     "meshio==5.3.5",
     "numpy",
