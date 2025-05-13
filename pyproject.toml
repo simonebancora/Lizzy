@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "lizzy"
 version = "0.0.1"
 authors = [{ name = "Simone Bancora", email = "simone.bancora@gmail.com" }]
-requires-python = ">=3.11,<3.13"
+requires-python = ">=3.11,<3.12"
 dependencies = [
     "meshio==5.3.5",
     "numpy",
@@ -19,7 +19,7 @@ packages = ["lizzy", "lizzy.IO", "lizzy.cvmesh", "lizzy.solver", "lizzy.sensors"
 
 [project.optional-dependencies]
 dev = ["pytest", "matplotlib"]
-drl = ["gymnasium", "matplotlib", "stable-baselines3"]
+drl = ["gymnasium", "matplotlib", "stable-baselines3", "tensorboard"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
