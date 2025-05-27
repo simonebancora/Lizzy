@@ -35,6 +35,7 @@ class Solver:
         self.current_time = 0
         self.n_empty_cvs = np.inf
         self.next_wo_time = SimulationParameters.wo_delta_time
+        self.wo_by_sensor_triggered = False
         self.step_end_time = np.inf
         self.step_completed = False
         # assembly is calculated at instantiation of the solver
@@ -115,7 +116,7 @@ class Solver:
 
     def handle_wo_criterion(self, dt):
         write_out = False
-        next_time = self.current_time + dt
+        next_time = self.current_time + dt            
         if next_time > self.step_end_time:
             dt = self.step_end_time - self.current_time
             write_out = True
@@ -129,6 +130,16 @@ class Solver:
         else:
             write_out = True
         return dt, write_out
+    
+    def handle_wo_by_sensor_triggered(self, current_write_out, fill_factor_array):
+        write_out = current_write_out
+        triggered = SensorManager.check_for_new_sensor_triggered(fill_factor_array)
+        if triggered:
+            write_out = True
+            self.step_completed = True
+            print("\nSensor triggered")
+        return write_out
+
 
 
     def solve_time_step(self):
@@ -152,6 +163,8 @@ class Solver:
         self.current_time += dt
         # save time step results
         fill_factor = [cv.fill for cv in self.mesh.CVs]
+        if self.wo_by_sensor_triggered:
+            write_out = self.handle_wo_by_sensor_triggered(write_out, fill_factor)
         TimeStepManager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, fill_factor,
                                       [cv.free_surface for cv in self.mesh.CVs], write_out)
         if write_out:
