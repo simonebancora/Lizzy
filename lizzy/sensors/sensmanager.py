@@ -14,6 +14,7 @@ class Sensor:
         self.vvals = None   # velocity
         self.fvals = None   # fill factor
         self.tvals = None   # time
+        self.resin_arrived = False
 
         # temporary quick implementation node-based
         self.child_node = None
@@ -23,6 +24,7 @@ class Sensor:
         self.vvals = []
         self.fvals = []
         self.tvals = []
+        self.resin_arrived = False
     
 
     def info(self) -> str:
@@ -33,12 +35,14 @@ class SensorManager:
     def __new__(cls, *args, **kwargs):
         raise TypeError(f"{cls.__name__} is a singleton and must not be instantiated.")
     sensors = []
+    sensor_trigger_states = []
 
     @classmethod
     def add_sensor(cls, x, y, z):
         new_sensor = Sensor(x, y, z)
         new_sensor.id = len(cls.sensors)
         cls.sensors.append(new_sensor)
+        
     
     @classmethod
     def initialise(cls, mesh):
@@ -50,6 +54,7 @@ class SensorManager:
                     distances.append(np.linalg.norm(sensor.coords - node_coords))
                 id_closest_node = np.argmin(np.array(distances))
                 sensor.child_node = mesh.nodes[id_closest_node]
+            cls.sensor_trigger_states = np.array([False for s in cls.sensors])
     
     @classmethod
     def probe_current_solution(cls, p_array, v_array, f_array, current_time):
@@ -59,11 +64,22 @@ class SensorManager:
                 sensor.pvals.append(p_array[sensor.child_node.id])
                 sensor.fvals.append(f_array[sensor.child_node.id])
                 sensor.vvals.append(v_array[sensor.child_node.id])
-        
+
     @classmethod
     def reset_sensors(cls):
         if len(cls.sensors) > 0:
             for sensor in cls.sensors:
                 sensor.reset()
 
-
+    @classmethod
+    def check_for_new_sensor_triggered(cls, fill_factor_array):
+        triggered = False
+        for sensor in cls.sensors:
+            if fill_factor_array[sensor.child_node.id] >= 0.5:
+                sensor.resin_arrived = True
+        current_trigger_states = np.array([sensor.resin_arrived for sensor in cls.sensors])
+        diff = current_trigger_states != cls.sensor_trigger_states
+        if np.any(diff):
+            cls.sensor_trigger_states = current_trigger_states
+            triggered = True
+        return triggered
