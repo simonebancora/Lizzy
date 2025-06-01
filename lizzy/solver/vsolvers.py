@@ -10,21 +10,21 @@ import numpy as np
 
 class VelocitySolver:
     def __init__(self, triangles):
-        self.B = any
+        self.darcy_operator = any
         self.nodes_conn = any
-        self.precalculate_B(triangles)
+        self.precalculate_darcy_operator(triangles)
 
-    def precalculate_B(self, triangles):
-        """precalculate vectorised coefficient B of shape function gradients for velocity: v = B * p"""
+    def precalculate_darcy_operator(self, triangles):
+        """precalculate vectorised coefficient darcy_operator of shape function gradients for velocity: v = darcy_operator * p"""
         b_ncol = triangles[0].grad_N.shape[1]
-        self.B = np.empty((len(triangles), 3, b_ncol), dtype=object)
+        self.darcy_operator = np.empty((len(triangles), 3, b_ncol), dtype=object)
         for i in range(len(triangles)):
-            self.B[i] =  triangles[i].k.T @ triangles[i].grad_N
+            self.darcy_operator[i] = triangles[i].k.T @ triangles[i].grad_N
         self.nodes_conn = triangles.nodes_conn_table
 
     def calculate_elem_velocities(self, p, mu):
         p_vector = p[self.nodes_conn]
-        v_array = -(1/mu) * np.einsum('ijk,ik->ij', self.B, p_vector) # not pretty
+        v_array = -(1/mu) * np.einsum('ijk,ik->ij', self.darcy_operator, p_vector) # not pretty
         return v_array
     
     def calculate_nodal_velocities(cls, nodes, v_array):
