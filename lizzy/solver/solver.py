@@ -39,6 +39,7 @@ class Solver:
         self.current_time = 0
         self.n_empty_cvs = np.inf
         self.next_wo_time = SimulationParameters.wo_delta_time
+        self.wo_by_sensor_triggered = False
         self.step_end_time = np.inf
         self.step_completed = False
         self.solver_vars = {"fill_factor_array" : [],
@@ -151,6 +152,16 @@ class Solver:
             write_out = True
         return dt, write_out
 
+    def handle_wo_by_sensor_triggered(self, current_write_out, fill_factor_array):
+        write_out = current_write_out
+        triggered = SensorManager.check_for_new_sensor_triggered(fill_factor_array)
+        if triggered:
+            write_out = True
+            self.step_completed = True
+            print("\nSensor triggered")
+        return write_out
+
+
 
     def solve_time_step(self):
         # Solve pressure field
@@ -186,6 +197,9 @@ class Solver:
         # Update the filling time
         self.current_time += dt
         # save time step results
+        fill_factor = [cv.fill for cv in self.mesh.CVs]
+        if self.wo_by_sensor_triggered:
+            write_out = self.handle_wo_by_sensor_triggered(write_out, fill_factor)
         TimeStepManager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, self.solver_vars["fill_factor_array"],
                                       self.solver_vars["free_surface_array"], write_out)
         if write_out:
@@ -194,7 +208,7 @@ class Solver:
         self.update_empty_nodes_idx()
         # Print number of empty cvs
         self.update_n_empty_cvs()
-        a = 5
+
 
 
     def solve(self, log="on"):
