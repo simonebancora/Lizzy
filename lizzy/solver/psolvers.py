@@ -75,19 +75,24 @@ class PressureSolver:
         f_modified = f.copy()
 
 
+
+        #
         # # apply bcs
-        # for i, node_id in enumerate(dirichlet_idx_full):
-        #     k_modified[node_id, :] = 0
-        #     k_modified[node_id, node_id] = 1
-        #     f_modified[node_id] = dirichlet_vals_full[i]
+        # k_modified[dirichlet_idx_full, :] = 0
+        # k_modified[dirichlet_idx_full, dirichlet_idx_full] = 1
+        # f_modified[dirichlet_idx_full] = dirichlet_vals_full
+        #
+        # # at this point, this is a diagonal identity matrix
+        #
         # return k_modified, f_modified
 
-        # apply bcs
-        k_modified[dirichlet_idx_full, :] = 0
-        k_modified[dirichlet_idx_full, dirichlet_idx_full] = 1
-        f_modified[dirichlet_idx_full] = dirichlet_vals_full
 
-        # at this point, this is a diagonal identity matrix
+        for idx, val in zip(dirichlet_idx_full, dirichlet_vals_full):
+            f_modified -= k_modified[:, idx] * val
+            k_modified[:, idx] = 0
+            k_modified[idx, :] = 0
+            k_modified[idx, idx] = 1
+            f_modified[idx] = val
 
         return k_modified, f_modified
 
@@ -95,6 +100,7 @@ class PressureSolver:
     def free_dofs(k_sol, f_sol, k_sing, f_orig, new_dofs):
         for dof in new_dofs:
             k_sol[dof, :] = k_sing[dof, :]
+            k_sol[:, dof] = k_sing[:, dof]
             f_sol[dof] = f_orig[dof]
         plt.spy(k_sol, markersize=1)
         plt.show()

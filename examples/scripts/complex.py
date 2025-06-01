@@ -5,7 +5,7 @@ mesh_reader = liz.Reader("../meshes/Complex_rotated.msh")
 mesh = liz.Mesh(mesh_reader)
 
 # assign some process parameters
-liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
+liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
 
 # add a material to each material tag present in the mesh
 material_iso = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)

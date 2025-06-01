@@ -42,18 +42,19 @@ class Solver:
         self.wo_by_sensor_triggered = False
         self.step_end_time = np.inf
         self.step_completed = False
-        self.solver_vars = {"fill_factor_array" : [],
+        self.k_local_all = np.empty((self.mesh.triangles.N, 6))
+        self.f_local_all = np.zeros((self.mesh.triangles.N, 3))
+        self.solver_vars = {"fill_factor_array" : np.empty(self.N_nodes),
                             "filled_node_ids" : [],
-                            "free_surface_array" : [],
-                            "cv_volumes_array" : [],}
+                            "free_surface_array" : np.empty(self.N_nodes),
+                            "cv_volumes_array" : np.empty(self.N_nodes),}
         self.cv_support_cvs_array = {}
-        # assembly is calculated at instantiation of the solver
         self.perform_fe_precalcs()
+        self.compute_k_local()
         # when a solver is instantiated, all simulation variables are initialised
         self.initialise_new_solution()
 
     def perform_fe_precalcs(self):
-        # preprocess mesh
         if not self.mesh.preprocessed:
             self.mesh.preprocess()
         # warn if no process parameters were assigned:
@@ -61,15 +62,19 @@ class Solver:
             print(f"Warning: Simulation parameters were not assigned. Running with default values: mu={SimulationParameters.mu}, wo_delta_time={SimulationParameters.wo_delta_time}")
         # assemble FE global matrix (singular)
         self.K_sing, self.f_orig = fe.Assembly(self.mesh, SimulationParameters.mu)
-        # instantialte a velocity solver and initialise
+        # TODO: reorder nodes here to reduce bandwidth - then reorder the whole mesh and objects
+
+        # instantiate a velocity solver and initialise
         self.vsolver = VelocitySolver(self.mesh.triangles)
         # precalculate vectorised version of all variables
+        fill_factor_list = []
+        cv_volumes_list = []
         for cv in self.mesh.CVs:
-            self.solver_vars["fill_factor_array"].append(cv.fill)
-            self.solver_vars["cv_volumes_array"].append(cv.vol)
+            fill_factor_list.append(cv.fill)
+            cv_volumes_list.append(cv.vol)
             self.cv_support_cvs_array[cv.id] = np.array([support_cv.id for support_cv in cv.support_CVs])
-        self.solver_vars["fill_factor_array"] = np.array(self.solver_vars["fill_factor_array"], dtype=float)
-        self.solver_vars["cv_volumes_array"] = np.array(self.solver_vars["cv_volumes_array"], dtype=float)
+        self.solver_vars["fill_factor_array"] = np.array(fill_factor_list, dtype=float)
+        self.solver_vars["cv_volumes_array"] = np.array(cv_volumes_list, dtype=float)
         # assign sensors
         SensorManager.initialise(self.mesh)
 
@@ -129,6 +134,8 @@ class Solver:
         self.K_sol, self.f_sol = PressureSolver.apply_starting_bcs(self.K_sing, self.f_orig, self.bcs)
         self.new_step_dofs = []
         self.solver_vars["filled_node_ids"] = np.where(self.solver_vars["fill_factor_array"] >= 1)[0]
+        active_cvs_ids, self.solver_vars["free_surface_array"] = FillSolver.find_free_surface_cvs(
+            self.solver_vars["fill_factor_array"], self.cv_support_cvs_array)
         TimeStepManager.reset()
         TimeStepManager.save_initial_timestep(self.mesh, self.bcs)
         SensorManager.reset_sensors()
@@ -161,32 +168,51 @@ class Solver:
             print("\nSensor triggered")
         return write_out
 
+    def compute_k_local(self):
+        for i, tri in enumerate(self.mesh.triangles):
+            mu = SimulationParameters.mu
+            k_el = tri.grad_N.T @ tri.k @ tri.grad_N * tri.A * tri.h / mu
+            self.k_local_all[i, 0] = k_el[0,0]
+            self.k_local_all[i, 1] = k_el[1,1]
+            self.k_local_all[i, 2] = k_el[2,2]
+            self.k_local_all[i, 3] = k_el[0,1]
+            self.k_local_all[i, 4] = k_el[0,2]
+            self.k_local_all[i, 5] = k_el[1,2]
+
+    def update_and_collect_solver_input(self):
+        dirichlet_idx_full = np.concatenate((self.bcs.dirichlet_idx, self.bcs.p0_idx), axis=None)
+        dirichlet_vals_full = np.concatenate((self.bcs.dirichlet_vals, np.zeros((1, len(self.bcs.p0_idx)))), axis=None)
+
+        mask_nodes = self.solver_vars["free_surface_array"].copy()
+        mask_nodes[self.solver_vars["filled_node_ids"]] = 1
+
+        elem_connectivity = self.mesh.mesh_data["nodes_conn"] # reference - ok
+
+        mask_elements = np.zeros(self.mesh.triangles.N)
+        for i, node_ids in enumerate(elem_connectivity):
+            for node_id in node_ids:
+                if node_id in self.solver_vars["filled_node_ids"]:
+                    mask_elements[i] = 1
+                    break
+
+
+
+        return self.k_local_all, self.f_local_all, dirichlet_idx_full, dirichlet_vals_full, mask_nodes, mask_elements, self.new_step_dofs, elem_connectivity
 
 
     def solve_time_step(self):
-        # Solve pressure field
+        k_local_all, f_local_all, dirichlet_idx_full, dirichlet_vals_full, mask_nodes, mask_elements, new_dofs_added, elem_connectivity = self.update_and_collect_solver_input()
         k, f = PressureSolver.apply_bcs(self.K_sing, self.f_orig, self.bcs)
         # self.K_sol, self.f_sol = PressureSolver.free_dofs(self.K_sol, self.f_sol, self.K_sing, self.f_orig, self.new_step_dofs)
         p = PressureSolver.solve(k, f, self.solver_type)
-        # p = PressureSolver.NEW_solve(self.K_sing, self.f_orig, self.bcs)
 
-        # calculate velocity field
         v_array = self.vsolver.calculate_elem_velocities(p, SimulationParameters.mu)
-        # calculate nodal velocities as average of supporting elements (not weighted by volume)
         v_nodal_array = self.vsolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
 
-        # TODO: numba jit compiled version of the method, currently unreliable and unused
-        # v_array = np.asarray(v_array, dtype=np.float64)  # Ensure dtype compatibility
-        # v_nodal_array = VelocitySolver._calculate_nodal_velocities_numba(self.mesh.triangle_id_lists, v_array)
-
-        # Find active cvs on the free surface
         active_cvs_ids, self.solver_vars["free_surface_array"] = FillSolver.find_free_surface_cvs(self.solver_vars["fill_factor_array"], self.cv_support_cvs_array)
-        # Calculate current time step for filling active cvs
         dt = FillSolver.calculate_time_step(active_cvs_ids, self.solver_vars["fill_factor_array"], self.solver_vars["cv_volumes_array"], v_array)
-        # if dt passes a scheduled write-out time, force dt to match the write-out time and flag the step for write-out
         dt, write_out = self.handle_wo_criterion(dt)
-        # Fill active cvs
-        # FillSolver.fill_current_time_step(active_cvs, dt)
+
         self.solver_vars["fill_factor_array"] = FillSolver.fill_current_time_step(active_cvs_ids, self.solver_vars["fill_factor_array"], self.solver_vars["cv_volumes_array"], dt)
 
         # find the newly filled cv ids as difference from the previous step
@@ -200,8 +226,7 @@ class Solver:
         fill_factor = [cv.fill for cv in self.mesh.CVs]
         if self.wo_by_sensor_triggered:
             write_out = self.handle_wo_by_sensor_triggered(write_out, fill_factor)
-        TimeStepManager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, self.solver_vars["fill_factor_array"],
-                                      self.solver_vars["free_surface_array"], write_out)
+        TimeStepManager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, self.solver_vars["fill_factor_array"], self.solver_vars["free_surface_array"], write_out)
         if write_out:
             SensorManager.probe_current_solution(p, v_nodal_array, self.solver_vars["fill_factor_array"], self.current_time)
         # update the empty nodes for next step
