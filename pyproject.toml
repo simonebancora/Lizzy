@@ -11,7 +11,8 @@ dependencies = [
     "meshio==5.3.5",
     "numpy",
     "scipy",
-    "h5py"
+    "h5py",
+    "matplotlib"
 ]
 
 [tool.setuptools]
