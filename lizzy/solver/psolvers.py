@@ -9,8 +9,6 @@ from enum import Enum, auto
 from lizzy.solver.builtin.direct_solvers import *
 from lizzy.solver.builtin.iter_solvers import *
 from scipy.sparse import csr_matrix
-import matplotlib.pyplot as plt
-
 
 class SolverType(Enum):
     DIRECT_DENSE = auto()
@@ -102,8 +100,6 @@ class PressureSolver:
             k_sol[dof, :] = k_sing[dof, :]
             k_sol[:, dof] = k_sing[:, dof]
             f_sol[dof] = f_orig[dof]
-        plt.spy(k_sol, markersize=1)
-        plt.show()
         return k_sol, f_sol
 
     # @staticmethod
