@@ -7,6 +7,10 @@
 import numpy as np
 from enum import Enum, auto
 from lizzy.solver.builtin.direct_solvers import *
+from lizzy.solver.builtin.iter_solvers import *
+from scipy.sparse import csr_matrix
+import matplotlib.pyplot as plt
+
 
 class SolverType(Enum):
     DIRECT_DENSE = auto()
@@ -44,12 +48,83 @@ class PressureSolver:
         k_modified = k.copy()
         f_modified = f.copy()
 
-        # apply bcs
-        for i, node_id in enumerate(dirichlet_idx_full):
-            k_modified[node_id, :] = 0
-            k_modified[node_id, node_id] = 1
-            f_modified[node_id] = dirichlet_vals_full[i]
+        # # apply bcs
+        # k_modified[dirichlet_idx_full, :] = 0
+        # k_modified[dirichlet_idx_full, dirichlet_idx_full] = 1
+        # f_modified[dirichlet_idx_full] = dirichlet_vals_full
+
+        # return k_modified, f_modified
+
+        # Eliminate Dirichlet DOFs symmetrically
+        for idx, val in zip(dirichlet_idx_full, dirichlet_vals_full):
+            f_modified -= k_modified[:, idx] * val
+            k_modified[:, idx] = 0
+            k_modified[idx, :] = 0
+            k_modified[idx, idx] = 1
+            f_modified[idx] = val
+
         return k_modified, f_modified
+
+
+    @staticmethod
+    def apply_starting_bcs(k, f, bcs):
+        dirichlet_idx_full = np.concatenate((bcs.dirichlet_idx, bcs.p0_idx), axis=None)
+        dirichlet_vals_full = np.concatenate((bcs.dirichlet_vals, np.zeros((1, len(bcs.p0_idx)))), axis=None)
+
+        k_modified = k.copy()
+        f_modified = f.copy()
+
+
+        # # apply bcs
+        # for i, node_id in enumerate(dirichlet_idx_full):
+        #     k_modified[node_id, :] = 0
+        #     k_modified[node_id, node_id] = 1
+        #     f_modified[node_id] = dirichlet_vals_full[i]
+        # return k_modified, f_modified
+
+        # apply bcs
+        k_modified[dirichlet_idx_full, :] = 0
+        k_modified[dirichlet_idx_full, dirichlet_idx_full] = 1
+        f_modified[dirichlet_idx_full] = dirichlet_vals_full
+
+        # at this point, this is a diagonal identity matrix
+
+        return k_modified, f_modified
+
+    @staticmethod
+    def free_dofs(k_sol, f_sol, k_sing, f_orig, new_dofs):
+        for dof in new_dofs:
+            k_sol[dof, :] = k_sing[dof, :]
+            f_sol[dof] = f_orig[dof]
+        plt.spy(k_sol, markersize=1)
+        plt.show()
+        return k_sol, f_sol
+
+    # @staticmethod
+    # def NEW_solve(k, f, bcs):
+    #     dirichlet_idx_full = np.concatenate((bcs.dirichlet_idx, bcs.p0_idx), axis=None)
+    #     dirichlet_vals_full = np.concatenate((bcs.dirichlet_vals, np.zeros((1, len(bcs.p0_idx)))), axis=None)
+    #
+    #     all_idx = np.arange(k.shape[0])
+    #     free_idx = np.setdiff1d(all_idx, dirichlet_idx_full)
+    #
+    #     # Adjust right-hand side for known Dirichlet values
+    #     f_mod = f[free_idx] - k[np.ix_(free_idx, dirichlet_idx_full)] @ dirichlet_vals_full
+    #
+    #     # Remove rows and columns from stiffness matrix
+    #     k_mod = k[np.ix_(free_idx, free_idx)]
+    #
+    #     # p_reduced = np.linalg.solve(k_mod, f_mod)
+    #
+    #     p_reduced, info = cg(k_mod, f_mod)
+    #
+    #
+    #     p_full = np.zeros_like(f)
+    #     p_full[free_idx] = p_reduced
+    #     p_full[dirichlet_idx_full] = dirichlet_vals_full
+    #
+    #     return p_full
+
 
 
 

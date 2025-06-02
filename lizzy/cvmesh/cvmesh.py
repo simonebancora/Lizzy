@@ -101,7 +101,17 @@ class Mesh:
             except KeyError:
                 exit(f"Mesh contains unassigned material tag: {tri.material_tag}")
         self.CVs = CreateControlVolumes(self.nodes)
+        # create a hashmap for CV id: [ids of supporting elements]
         print("Mesh pre-processing completed\n")
+
+
+
+        #TODO: for numba:
+        self.triangle_id_lists = [np.array(n.triangle_ids, dtype=np.int32) for n in self.nodes]
+
+
+
+
         self.preprocessed = True
 
     def CrossReferenceEntities(self):
