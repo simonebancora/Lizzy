@@ -85,10 +85,10 @@ class Mesh:
         self.triangles = CreateTriangles(mesh_data, self.nodes)
         self.lines = CreateLines(mesh_data, self.triangles)
 
-    def preprocess(self):
+    def preprocess(self, material_manager: MaterialManager):
         # assign permeability to elements
-        materials = MaterialManager.materials
-        rosettes = MaterialManager.rosettes
+        materials = material_manager.assigned_materials
+        rosettes = material_manager.assigned_rosettes
         for tri in self.triangles:
             try:
                 material = materials[tri.material_tag]
