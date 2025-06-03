@@ -110,13 +110,15 @@ class Solver:
         """
         self.current_time = 0
         self.next_wo_time = self.simulation_parameters.wo_delta_time
+        self.solver_vars["fill_factor_array"] = np.zeros(self.N_nodes)
         self.bcs = SolverBCs()
         self.mesh.EmptyCVs()
+        self.bc_manager.reset_inlets()
         self.update_dirichlet_bcs()
         self.fill_initial_cvs()
         self.update_empty_nodes_idx()
         self.update_n_empty_cvs()
-        self.K_sol, self.f_sol = PressureSolver.apply_starting_bcs(self.K_sing, self.f_orig, self.bcs)
+        # self.K_sol, self.f_sol = PressureSolver.apply_starting_bcs(self.K_sing, self.f_orig, self.bcs)
         self.new_step_dofs = []
         self.solver_vars["filled_node_ids"] = np.where(self.solver_vars["fill_factor_array"] >= 1)[0]
         active_cvs_ids, self.solver_vars["free_surface_array"] = FillSolver.find_free_surface_cvs(
