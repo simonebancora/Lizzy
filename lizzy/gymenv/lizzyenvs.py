@@ -15,6 +15,18 @@ class LizzyEnv(gym.Env):
             self.lizzy_model = lizzy_model
         else:
             self.lizzy_model = LizzyModel()
+        self.step_duration:float = 1
+        self.prefill = -1
+        self.current_solution = None
 
     def __getattr__(self, name):
         return getattr(self.lizzy_model, name)
+    
+    def get_obs(self):
+        raise NotImplementedError
+    
+    def step(self):
+        raise NotImplementedError
+    
+    def reset(self):
+        raise NotImplementedError
