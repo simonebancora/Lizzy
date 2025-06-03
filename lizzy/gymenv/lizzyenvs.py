@@ -4,9 +4,8 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import lizzy as liz
 import gymnasium as gym
-from lizzy.lizmodel import LizzyModel
+from lizzy.lizmodel.lizmodel import LizzyModel
 
 class LizzyEnv(gym.Env):
     def __init__(self, lizzy_model:LizzyModel = None):
@@ -25,8 +24,8 @@ class LizzyEnv(gym.Env):
     def get_obs(self):
         raise NotImplementedError
     
-    def step(self):
+    def step(self, action):
         raise NotImplementedError
     
-    def reset(self):
+    def reset(self, *args):
         raise NotImplementedError

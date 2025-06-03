@@ -42,10 +42,9 @@ class PorousMaterial:
         self.porosity = porosity
         self.thickness = thickness
         self.name = name
+        self._assigned = False
 
-
-@staticmethod
-def create_porous_material(k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str = "unnamed_material"):
+def create_material(k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str = "unnamed_material"):
     # TODO: handle arguments bad input
     return PorousMaterial(k1, k2, k3, porosity, thickness, name)
 
@@ -55,16 +54,17 @@ class MaterialManager:
         self.assigned_rosettes : dict = {}
         self.existing_materials : dict = {}
 
-    def create_porous_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name: str = None):
+    def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name: str = None):
         if name is None:
             material_count = len(self.existing_materials)
             name = f"Material_{material_count}"
-        new_material = create_porous_material(k1, k2, k3, porosity, thickness, name)
+        new_material = create_material(k1, k2, k3, porosity, thickness, name)
         self.existing_materials[name] = new_material
         return new_material
 
-    def assign_material(self, material_tag:str, material:PorousMaterial, rosette:Rosette = None):
+    def assign_material(self, mesh_tag:str, material:PorousMaterial, rosette:Rosette = None):
         if rosette is None:
             rosette = Rosette((1, 0, 0))
-        self.assigned_materials[material_tag] = material
-        self.assigned_rosettes[material_tag] = rosette
+        material._assigned = True
+        self.assigned_materials[mesh_tag] = material
+        self.assigned_rosettes[mesh_tag] = rosette

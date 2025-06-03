@@ -4,9 +4,9 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from lizzy.lizmodel import LizzyModel
+from lizzy.lizmodel.lizmodel import LizzyModel
 from lizzy.solver.psolvers import SolverType
-from lizzy.materials import create_porous_material, Rosette
+from lizzy.materials import create_material, Rosette
 from lizzy.bcond.bcond import create_inlet
 from lizzy.gymenv.lizzyenvs import LizzyEnv
 

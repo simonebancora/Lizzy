@@ -5,6 +5,7 @@
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
+from functools import singledispatchmethod
 import numpy as np
 
 class Boundary:
@@ -17,14 +18,13 @@ class Inlet(Boundary):
         self.p0 = p_value
         self.p_value = p_value
         self.name = name
+        self.assigned = False
 
     def reset(self):
         self.p_value = self.p0
 
-@staticmethod
 def create_inlet(initial_pressure_value:float, name:str = "unnamed_inlet"):
     # TODO: handle arguments bad input
-
     # TODO: not clear how names are used. Set a system to select inlets both by name and by tag
     return Inlet(initial_pressure_value, name)
 
@@ -41,13 +41,28 @@ class BCManager:
         self.existing_inlets[name] = new_inlet
         return new_inlet
 
-    def assign_inlet(self, inlet:Inlet, boundary_tag:str):
-        if inlet not in self.assigned_inlets.values():
-            self.assigned_inlets[boundary_tag] = inlet
+    @singledispatchmethod
+    def fetch_inlet(self, inlet_selector:Inlet):
+        return inlet_selector
+
+    @fetch_inlet.register
+    def _(self, inlet_selector:str):
+        try:
+            selected_inlet = self.existing_inlets[inlet_selector]
+        except KeyError:
+            raise KeyError(f"Inlet '{inlet_selector}' is not found in existing inlets. Check the name, or create the inlet first using `LizzyModel.create_inlet`.")
+        return selected_inlet
+
+    def assign_inlet(self, inlet_selector, boundary_tag:str):
+        selected_inlet = self.fetch_inlet(inlet_selector)
+        if selected_inlet not in self.assigned_inlets.values():
+            self.assigned_inlets[boundary_tag] = selected_inlet
+            selected_inlet.assigned = True
+
     
     # TODO: functionality will be added to change the pressure over time, along different time interpolation options
-    def change_inlet_pressure(self, boundary_tag_name:str, pressure_value:float, mode:str = "set"):
-        selected_inlet = self.assigned_inlets[boundary_tag_name]
+    def change_inlet_pressure(self, inlet_selector, pressure_value:float, mode:str = "set"):
+        selected_inlet = self.fetch_inlet(inlet_selector)
         match mode:
             case "set":
                 selected_inlet.p_value = pressure_value

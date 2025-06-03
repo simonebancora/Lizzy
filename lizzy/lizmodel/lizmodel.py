@@ -4,6 +4,7 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Dict
 from lizzy.IO.IO import Reader, Writer
 from lizzy.cvmesh.cvmesh import Mesh
 from lizzy.materials import MaterialManager, PorousMaterial, Rosette
@@ -23,6 +24,14 @@ class LizzyModel:
         self._bc_manager = BCManager()
         self._sensor_manager = SensorManager()
 
+    @property
+    def assigned_materials(self) -> Dict[str, PorousMaterial]:
+        return self._material_manager.assigned_materials
+
+    @property
+    def existing_materials(self) -> Dict[str, PorousMaterial]:
+        return self._material_manager.existing_materials
+
     def assign_simulation_parameters(self, **kwargs):
         self._simulation_parameters.assign(**kwargs)
 
@@ -31,8 +40,8 @@ class LizzyModel:
         self._mesh = Mesh(self._reader)
         self._writer = Writer(self._mesh)
 
-    def create_porous_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str= None):
-        new_material = self._material_manager.create_porous_material(k1, k2, k3, porosity, thickness, name)
+    def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str= None):
+        new_material = self._material_manager.create_material(k1, k2, k3, porosity, thickness, name)
         return new_material
 
     def assign_material(self, porous_material:PorousMaterial, material_tag:str, rosette:Rosette = None):
@@ -45,8 +54,8 @@ class LizzyModel:
     def assign_inlet(self, inlet:Inlet, boundary_tag:str):
         self._bc_manager.assign_inlet(inlet, boundary_tag)
     
-    def change_inlet_pressure(self, inlet_name:str, pressure_value:float, mode:str = "set"):
-        self._bc_manager.change_inlet_pressure(inlet_name, pressure_value, mode)
+    def change_inlet_pressure(self, inlet_selector, pressure_value:float, mode:str = "set"):
+        self._bc_manager.change_inlet_pressure(inlet_selector, pressure_value, mode)
 
     def create_sensor(self, x:float, y:float, z:float):
         self._sensor_manager.add_sensor(x, y, z)
