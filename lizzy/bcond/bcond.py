@@ -24,6 +24,8 @@ class Inlet(Boundary):
 @staticmethod
 def create_inlet(initial_pressure_value:float, name:str = "unnamed_inlet"):
     # TODO: handle arguments bad input
+
+    # TODO: not clear how names are used. Set a system to select inlets both by name and by tag
     return Inlet(initial_pressure_value, name)
 
 class BCManager:
@@ -42,7 +44,23 @@ class BCManager:
     def assign_inlet(self, inlet:Inlet, boundary_tag:str):
         if inlet not in self.assigned_inlets.values():
             self.assigned_inlets[boundary_tag] = inlet
+    
+    # TODO: functionality will be added to change the pressure over time, along different time interpolation options
+    def change_inlet_pressure(self, boundary_tag_name:str, pressure_value:float, mode:str = "set"):
+        selected_inlet = self.assigned_inlets[boundary_tag_name]
+        match mode:
+            case "set":
+                selected_inlet.p_value = pressure_value
+            case "delta":
+                selected_inlet.p_value += pressure_value
+            case _:
+                raise KeyError
+    
+    def reset_inlets(self):
+        for tag, inlet in self.assigned_inlets.items():
+            inlet.reset()
 
+ 
     # def remove_inlet(self, *inlets: Inlet):
     #     for inlet in inlets:
     #         try:

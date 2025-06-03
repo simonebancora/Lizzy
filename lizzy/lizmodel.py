@@ -44,6 +44,9 @@ class LizzyModel:
 
     def assign_inlet(self, inlet:Inlet, boundary_tag:str):
         self._bc_manager.assign_inlet(inlet, boundary_tag)
+    
+    def change_inlet_pressure(self, inlet_name:str, pressure_value:float, mode:str = "set"):
+        self._bc_manager.change_inlet_pressure(inlet_name, pressure_value, mode)
 
     def create_sensor(self, x:float, y:float, z:float):
         self._sensor_manager.add_sensor(x, y, z)
@@ -61,6 +64,9 @@ class LizzyModel:
     def solve_step(self, step_period:float):
         solution = self._solver.solve_step(step_period)
         return solution
+    
+    def initialise_new_solution(self):
+        self._solver.initialise_new_solution()
 
 
 
