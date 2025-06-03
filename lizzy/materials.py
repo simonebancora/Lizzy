@@ -25,7 +25,7 @@ class Rosette:
 
 
 class PorousMaterial:
-    def __init__(self, k1:float, k2:float, k3:float,  porosity:float, thickness:float):
+    def __init__(self, k1:float, k2:float, k3:float,  porosity:float, thickness:float, name:str = "unnamed_material"):
         """
         Permeability tensor defined as principal permeability values k1, k2, k3 and by porosity and thickness.
 
@@ -41,15 +41,30 @@ class PorousMaterial:
         self.k_diag = np.array([[k1, 0, 0],[0, k2, 0],[0, 0, k3]])
         self.porosity = porosity
         self.thickness = thickness
+        self.name = name
 
-# temporary solution to store materials
+
+@staticmethod
+def create_porous_material(k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str = "unnamed_material"):
+    # TODO: handle arguments bad input
+    return PorousMaterial(k1, k2, k3, porosity, thickness, name)
+
 class MaterialManager:
-    def __new__(cls, *args, **kwargs):
-        raise TypeError(f"{cls.__name__} must not be instantiated.")
-    materials = {}
-    rosettes = {}
+    def __init__(self):
+        self.assigned_materials : dict = {}
+        self.assigned_rosettes : dict = {}
+        self.existing_materials : dict = {}
 
-    @classmethod
-    def add_material(cls, material_tag:str, material:PorousMaterial, rosette:Rosette = Rosette((1,0,0))):
-        cls.materials[material_tag] = material
-        cls.rosettes[material_tag] = rosette
+    def create_porous_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name: str = None):
+        if name is None:
+            material_count = len(self.existing_materials)
+            name = f"Material_{material_count}"
+        new_material = create_porous_material(k1, k2, k3, porosity, thickness, name)
+        self.existing_materials[name] = new_material
+        return new_material
+
+    def assign_material(self, material_tag:str, material:PorousMaterial, rosette:Rosette = None):
+        if rosette is None:
+            rosette = Rosette((1, 0, 0))
+        self.assigned_materials[material_tag] = material
+        self.assigned_rosettes[material_tag] = rosette

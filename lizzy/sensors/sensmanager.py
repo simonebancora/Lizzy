@@ -32,54 +32,54 @@ class Sensor:
 
 
 class SensorManager:
-    def __new__(cls, *args, **kwargs):
-        raise TypeError(f"{cls.__name__} is a singleton and must not be instantiated.")
-    sensors = []
-    sensor_trigger_states = []
+    def __init__(self):
+        self.sensors = []
+        self.sensor_trigger_states = []
 
-    @classmethod
-    def add_sensor(cls, x, y, z):
+    def add_sensor(self, x, y, z):
         new_sensor = Sensor(x, y, z)
-        new_sensor.id = len(cls.sensors)
-        cls.sensors.append(new_sensor)
+        new_sensor.id = len(self.sensors)
+        self.sensors.append(new_sensor)
         
     
-    @classmethod
-    def initialise(cls, mesh):
-        if len(cls.sensors) > 0:
+    def initialise(self, mesh):
+        if len(self.sensors) > 0:
             all_node_coords = mesh.nodes.XYZ
-            for sensor in cls.sensors:
+            for sensor in self.sensors:
                 distances = []
                 for node_coords in all_node_coords:
                     distances.append(np.linalg.norm(sensor.coords - node_coords))
                 id_closest_node = np.argmin(np.array(distances))
                 sensor.child_node = mesh.nodes[id_closest_node]
-            cls.sensor_trigger_states = np.array([False for s in cls.sensors])
+            self.sensor_trigger_states = np.array([False for s in self.sensors])
     
-    @classmethod
-    def probe_current_solution(cls, p_array, v_array, f_array, current_time):
-        if len(cls.sensors) > 0:
-            for sensor in cls.sensors:
+    def probe_current_solution(self, p_array, v_array, f_array, current_time):
+        if len(self.sensors) > 0:
+            for sensor in self.sensors:
                 sensor.tvals.append(current_time)
                 sensor.pvals.append(p_array[sensor.child_node.id])
                 sensor.fvals.append(f_array[sensor.child_node.id])
                 sensor.vvals.append(v_array[sensor.child_node.id])
 
-    @classmethod
-    def reset_sensors(cls):
-        if len(cls.sensors) > 0:
-            for sensor in cls.sensors:
+    def reset_sensors(self):
+        if len(self.sensors) > 0:
+            for sensor in self.sensors:
                 sensor.reset()
 
-    @classmethod
-    def check_for_new_sensor_triggered(cls, fill_factor_array):
+    def check_for_new_sensor_triggered(self, fill_factor_array):
         triggered = False
-        for sensor in cls.sensors:
+        for sensor in self.sensors:
             if fill_factor_array[sensor.child_node.id] >= 0.5:
                 sensor.resin_arrived = True
-        current_trigger_states = np.array([sensor.resin_arrived for sensor in cls.sensors])
-        diff = current_trigger_states != cls.sensor_trigger_states
+        current_trigger_states = np.array([sensor.resin_arrived for sensor in self.sensors])
+        diff = current_trigger_states != self.sensor_trigger_states
         if np.any(diff):
-            cls.sensor_trigger_states = current_trigger_states
+            self.sensor_trigger_states = current_trigger_states
             triggered = True
         return triggered
+
+    def get_sensor_readings(self):
+        sensor_readings = {}
+        for sensor in self.sensors:
+            sensor_readings[sensor.id] = f"time: {sensor.tvals[-1]} p: {sensor.pvals[-1]}, f: {sensor.fvals[-1]}, v: {sensor.vvals[-1]}"
+        print(sensor_readings)

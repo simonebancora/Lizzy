@@ -20,13 +20,11 @@ class TimeStep:
         write_out : bool
 
 class TimeStepManager:
-    time_steps = []
-    time_step_count = 0
+    def __init__(self):
+        self.time_steps = []
+        self.time_step_count = 0
 
-    @classmethod
-    def save_timestep(cls, time, dt, P, v_array, v_nodal_array, fill_factor, flow_front, write_out):
-
-        
+    def save_timestep(self, time, dt, P, v_array, v_nodal_array, fill_factor, flow_front, write_out):
         if(v_array.shape[1]==3):
             v_full = v_array
             v_nodal_full = v_nodal_array
@@ -35,16 +33,14 @@ class TimeStepManager:
             v3_nodal_nul = np.zeros((np.size(v_nodal_array,0), 1))
             v_full = np.hstack((v_array, v3_nul))
             v_nodal_full = np.hstack((v_nodal_array, v3_nodal_nul))
-        timestep = TimeStep(cls.time_step_count, time, dt, P, v_full, v_nodal_full, np.clip(fill_factor, 0, 1), flow_front, write_out)
-        cls.time_steps.append(timestep)
-        cls.time_step_count += 1
+        timestep = TimeStep(self.time_step_count, time, dt, P, v_full, v_nodal_full, np.clip(fill_factor, 0, 1), flow_front, write_out)
+        self.time_steps.append(timestep)
+        self.time_step_count += 1
 
-    @classmethod
-    def get_write_out_steps(cls):
-        return [step for step in cls.time_steps if step.write_out == True]
+    def get_write_out_steps(self):
+        return [step for step in self.time_steps if step.write_out == True]
 
-    @classmethod
-    def save_initial_timestep(cls, mesh, bcs):
+    def save_initial_timestep(self, mesh, bcs):
         time_0 = 0
         p_0 = [0] * mesh.nodes.N
         fill_factor_0 = [0] * mesh.nodes.N
@@ -55,14 +51,13 @@ class TimeStepManager:
             flow_front_0[val] = 1
         v_0 = np.zeros((mesh.triangles.N, 2))
         v_nodal_0 = np.zeros((mesh.nodes.N, 2))
-        cls.save_timestep(time_0, 0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0, True)
+        self.save_timestep(time_0, 0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0, True)
 
-    @classmethod
-    def pack_solution(cls):
+    def pack_solution(self):
         # flag the last time step as write-out:
-        cls.time_steps[-1].write_out = True
+        self.time_steps[-1].write_out = True
         # populate solution with write-out time steps:
-        wo_time_steps = cls.get_write_out_steps()
+        wo_time_steps = self.get_write_out_steps()
         solution = {"time_steps" : len(wo_time_steps),
                     "p" : [step.P for step in wo_time_steps],
                     "v" : [step.V.tolist() for step in wo_time_steps],
@@ -74,6 +69,6 @@ class TimeStepManager:
         return solution
 
     @classmethod
-    def reset(cls):
-        cls.time_steps = []
-        cls.time_step_count = 0
+    def reset(self):
+        self.time_steps = []
+        self.time_step_count = 0

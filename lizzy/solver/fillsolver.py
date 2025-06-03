@@ -45,11 +45,11 @@ class FillSolver:
         return dt
 
     @classmethod
-    def fill_current_time_step(cls, active_cv_ids, fill_factor_array, cv_volumes_array, dt):
+    def fill_current_time_step(cls, active_cv_ids, fill_factor_array, cv_volumes_array, dt, fill_tolerance):
         for i, id in enumerate(active_cv_ids):
             fill_factor_array[id] = min(fill_factor_array[id] + cls.all_fluxes_per_second[i] * dt / cv_volumes_array[id], 1)
         for i in range(len(fill_factor_array)):
-            if fill_factor_array[i] >= (1 - lizzy.SimulationParameters.fill_tolerance):
+            if fill_factor_array[i] >= (1 - fill_tolerance):
                 fill_factor_array[i] = 1
         return fill_factor_array
 
