@@ -236,7 +236,7 @@ class Solver:
         print("\nSOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
         return solution
 
-    def solve_step(self, step_period, log="on"):
+    def solve_step(self, step_period, log="off", lightweight=False):
         self.step_completed = False
         self.step_end_time = self.current_time + step_period
         solve_time_start = time.time()
@@ -247,7 +247,10 @@ class Solver:
             if log == "on":
                 print("\rFill time: {:.5f}".format(self.current_time) + ", Empty CVs: {:4}".format(self.n_empty_cvs),
                       end='')
-        solution = self.time_step_manager.pack_solution()
+        if lightweight:
+            solution = "Lightweight mode: no solution is saved"
+        else:
+            solution = self.time_step_manager.pack_solution()
         # good night and good luck
         solve_time_end = time.time()
         total_solve_time = solve_time_end - solve_time_start

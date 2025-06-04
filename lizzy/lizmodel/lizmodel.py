@@ -23,6 +23,15 @@ class LizzyModel:
         self._material_manager = MaterialManager()
         self._bc_manager = BCManager()
         self._sensor_manager = SensorManager()
+        self._lightweight = False
+
+    @property
+    def lightweight(self):
+        return self._lightweight
+
+    @lightweight.setter
+    def lightweight(self, value):
+        self._lightweight = value
 
     @property
     def assigned_materials(self) -> Dict[str, PorousMaterial]:
@@ -31,6 +40,10 @@ class LizzyModel:
     @property
     def existing_materials(self) -> Dict[str, PorousMaterial]:
         return self._material_manager.existing_materials
+
+    @property
+    def n_empty_cvs(self) -> int:
+        return self._solver.n_empty_cvs
 
     def assign_simulation_parameters(self, **kwargs):
         self._simulation_parameters.assign(**kwargs)
@@ -71,7 +84,7 @@ class LizzyModel:
         return solution
 
     def solve_step(self, step_period:float):
-        solution = self._solver.solve_step(step_period)
+        solution = self._solver.solve_step(step_period, log="off", lightweight=self._lightweight)
         return solution
     
     def initialise_new_solution(self):
