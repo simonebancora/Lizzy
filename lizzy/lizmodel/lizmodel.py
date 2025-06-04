@@ -10,7 +10,7 @@ from lizzy.cvmesh.cvmesh import Mesh
 from lizzy.materials import MaterialManager, PorousMaterial, Rosette
 from lizzy.sensors.sensmanager import SensorManager
 from lizzy.simparams import SimulationParameters
-from lizzy.bcond.bcond import BCManager, Inlet
+from lizzy.bcond.bcond import BCManager
 from lizzy.solver.solver import Solver, SolverType
 
 class LizzyModel:
