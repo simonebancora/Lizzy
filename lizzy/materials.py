@@ -5,6 +5,7 @@
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
+from functools import singledispatchmethod
 
 class Rosette:
     """Rosette object to define the orientation of the material in the mesh elements. The rosette is always projected on each element along the element normal direction. Can be initialised by passing one vector, or 2 points.
@@ -53,6 +54,19 @@ class MaterialManager:
         self.assigned_materials : dict = {}
         self.assigned_rosettes : dict = {}
         self.existing_materials : dict = {}
+    
+    @singledispatchmethod
+    def fetch_material(self, material_selector):
+        return material_selector
+    
+    @fetch_material.register
+    def _(self, material_selector:str):
+        try:
+            selected_material = self.existing_materials[material_selector]
+        except KeyError:
+            raise KeyError(f"Inlet '{material_selector}' is not found in existing inlets. Check the name, or create the inlet first using `LizzyModel.create_inlet`.")
+        return selected_material
+
 
     def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name: str = None):
         if name is None:
@@ -62,9 +76,10 @@ class MaterialManager:
         self.existing_materials[name] = new_material
         return new_material
 
-    def assign_material(self, mesh_tag:str, material:PorousMaterial, rosette:Rosette = None):
+    def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
+        selected_material = self.fetch_material(material_selector)
         if rosette is None:
             rosette = Rosette((1, 0, 0))
-        material._assigned = True
-        self.assigned_materials[mesh_tag] = material
+        selected_material._assigned = True
+        self.assigned_materials[mesh_tag] = selected_material
         self.assigned_rosettes[mesh_tag] = rosette

@@ -44,15 +44,15 @@ class LizzyModel:
         new_material = self._material_manager.create_material(k1, k2, k3, porosity, thickness, name)
         return new_material
 
-    def assign_material(self, porous_material:PorousMaterial, material_tag:str, rosette:Rosette = None):
-        self._material_manager.assign_material(material_tag, porous_material, rosette)
+    def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
+        self._material_manager.assign_material(material_selector, mesh_tag, rosette)
 
     def create_inlet(self, initial_pressure_value:float, name:str = None):
         new_inlet = self._bc_manager.create_inlet(initial_pressure_value, name)
         return new_inlet
 
-    def assign_inlet(self, inlet:Inlet, boundary_tag:str):
-        self._bc_manager.assign_inlet(inlet, boundary_tag)
+    def assign_inlet(self, inlet_selector, boundary_tag:str):
+        self._bc_manager.assign_inlet(inlet_selector, boundary_tag)
     
     def change_inlet_pressure(self, inlet_selector, pressure_value:float, mode:str = "set"):
         self._bc_manager.change_inlet_pressure(inlet_selector, pressure_value, mode)
@@ -60,8 +60,8 @@ class LizzyModel:
     def create_sensor(self, x:float, y:float, z:float):
         self._sensor_manager.add_sensor(x, y, z)
 
-    def get_sensor_readings(self):
-        self._sensor_manager.get_sensor_readings()
+    def print_sensor_readings(self):
+        self._sensor_manager.print_sensor_readings()
 
     def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_DENSE):
         self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, self._material_manager, self._sensor_manager, solver_type)

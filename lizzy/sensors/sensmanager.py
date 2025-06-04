@@ -78,8 +78,11 @@ class SensorManager:
             triggered = True
         return triggered
 
-    def get_sensor_readings(self):
+    def print_sensor_readings(self):
+        if len(self.sensors) == 0:
+            print("Cannot read sensors: no sensors have been created.")
+            return
         sensor_readings = {}
         for sensor in self.sensors:
-            sensor_readings[sensor.id] = f"time: {sensor.tvals[-1]} p: {sensor.pvals[-1]}, f: {sensor.fvals[-1]}, v: {sensor.vvals[-1]}"
+            sensor_readings[sensor.id] = f"time: {sensor.tvals[-1]} s; resin pressure: {sensor.pvals[-1]} Pa; fill factor: {sensor.fvals[-1]}, resin velocity: {sensor.vvals[-1]} m/s"
         print(sensor_readings)
