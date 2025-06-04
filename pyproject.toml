@@ -16,7 +16,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-packages = ["lizzy", "lizzy.gymenv", "lizzy.controls", ]
+packages = ["lizzy", "lizzy.gymenv", "lizzy.controls", "lizzy.bcond" ]
 
 [project.optional-dependencies]
 dev = ["pytest", "matplotlib"]

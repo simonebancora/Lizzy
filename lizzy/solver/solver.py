@@ -8,7 +8,6 @@ import numpy as np
 import time
 from lizzy.solver import *
 from lizzy.bcond.bcond import SolverBCs
-from lizzy.sensors.sensmanager import SensorManager
 
 class Solver:
     def __init__(self, mesh, bc_manager, simulation_parameters, material_manager, sensor_manager, solver_type=SolverType.DIRECT_SPARSE):
