@@ -111,7 +111,9 @@ class CV:
     support_lines:list = field(default_factory=list)
     support_nodes:list = field(default_factory=list)
     support_triangles : list = field(default_factory=list)
+    support_triangle_ids = None
     edges:list = field(default_factory=list)
+    flux_terms:list = field(default_factory=list)
     A:float = 0
     vol = 0
 
@@ -137,23 +139,18 @@ class CV:
             centroid = tri.centroid
             cv_lines_tri = [CVLine(x1, centroid), CVLine(centroid, x2)]
             self.cv_lines.append(cv_lines_tri)
-    
-    def CalculateVolFluxes(self, v_array):
-        cv_fluxe_per_s = 0
-        for i, tri in enumerate(self.support_triangles):
-            idx = tri.id
-            v = v_array[idx]
 
-            line1 = self.cv_lines[i][0]   # PSEUDO CODE ALL TO CHECK AND RE-WRITE
+    def precompute_flux_terms(self):
+        for i, tri in enumerate(self.support_triangles):
+            line1 = self.cv_lines[i][0]  # PSEUDO CODE ALL TO CHECK AND RE-WRITE
             line2 = self.cv_lines[i][1]
-            
             n1 = line1.n
             n2 = line2.n
+            flux_term = (-n1 * line1.l + -n2 * line2.l) * tri.h
+            self.flux_terms.append(flux_term)
+        self.flux_terms = np.array(self.flux_terms)
 
-            flux = np.dot(v.T, (-n1*line1.l + -n2*line2.l))*tri.h
-            cv_fluxe_per_s += flux
 
-        return cv_fluxe_per_s
 
     @staticmethod
     def polygon_area(points):

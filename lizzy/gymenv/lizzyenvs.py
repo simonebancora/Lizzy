@@ -24,6 +24,11 @@ class LizzyEnv(gym.Env):
         mesh_reader = liz.Reader(path)
         self.mesh = liz.Mesh(mesh_reader)
     
+    def save_episode_result(self):
+        # Create a write-out object and save results
+        writer = liz.Writer(self.mesh)
+        writer.save_results(self.solution, "episode_result")
+    
     def add_sensor(self , position:tuple):
         liz.SensorManager.add_sensor(position[0], position[1], position[2])
         self.sensors.append(liz.SensorManager.sensors[-1])

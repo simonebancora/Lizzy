@@ -5,28 +5,28 @@
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
+# from numba import njit
+
 
 class VelocitySolver:
-    B = any
-    nodes_conn = any
+    def __init__(self, triangles):
+        self.B = any
+        self.nodes_conn = any
+        self.precalculate_B(triangles)
 
-    @classmethod
-    def precalculate_B(cls, triangles):
-
+    def precalculate_B(self, triangles):
+        """precalculate vectorised coefficient B of shape function gradients for velocity: v = B * p"""
         b_ncol = triangles[0].grad_N.shape[1]
-        cls.B = np.empty((len(triangles), 3, b_ncol), dtype=object)
-
+        self.B = np.empty((len(triangles), 3, b_ncol), dtype=object)
         for i in range(len(triangles)):
-            cls.B[i] =  triangles[i].k.T @ triangles[i].grad_N
-        cls.nodes_conn = triangles.nodes_conn_table
+            self.B[i] =  triangles[i].k.T @ triangles[i].grad_N
+        self.nodes_conn = triangles.nodes_conn_table
 
-    @classmethod
-    def calculate_elem_velocities(cls, p, mu):
-        p_vector = p[cls.nodes_conn]
-        v_array = -(1/mu) * np.einsum('ijk,ik->ij', cls.B, p_vector) # not pretty
+    def calculate_elem_velocities(self, p, mu):
+        p_vector = p[self.nodes_conn]
+        v_array = -(1/mu) * np.einsum('ijk,ik->ij', self.B, p_vector) # not pretty
         return v_array
     
-    @classmethod
     def calculate_nodal_velocities(cls, nodes, v_array):
         v_nodal_array = []
         for node in nodes:
@@ -43,3 +43,25 @@ class VelocitySolver:
 
             v_nodal_array.append(avg_velocity.tolist())
         return v_nodal_array
+
+    # TODO: numba jit compiled method version, currently unused
+    # @njit
+    # def _calculate_nodal_velocities_numba(triangle_id_lists, v_array):
+    #     n_nodes = len(triangle_id_lists)
+    #     v_nodal_array = np.zeros((n_nodes, 3))
+    #
+    #     for i in range(n_nodes):
+    #         ids = triangle_id_lists[i]
+    #         count = 0
+    #         total = np.zeros(3)
+    #
+    #         for j in range(len(ids)):
+    #             vel = v_array[ids[j]]
+    #             if vel[0] != 0 or vel[1] != 0 or vel[2] != 0:
+    #                 total += vel
+    #                 count += 1
+    #
+    #         if count > 0:
+    #             v_nodal_array[i] = total / count
+    #         # else: remain as zeros
+    #     return v_nodal_array
