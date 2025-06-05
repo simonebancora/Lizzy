@@ -10,6 +10,8 @@ from lizzy.cvmesh.collections import nodes, lines, elements
 from lizzy.materials import MaterialManager
 from typing import TYPE_CHECKING
 
+from lizzy.solver import FillSolver
+
 if TYPE_CHECKING:
     from lizzy.IO import IO
 
@@ -85,7 +87,7 @@ class Mesh:
         self.triangles = CreateTriangles(mesh_data, self.nodes)
         self.lines = CreateLines(mesh_data, self.triangles)
 
-    def preprocess(self, material_manager: MaterialManager):
+    def preprocess(self, material_manager: MaterialManager, fill_solver: FillSolver):
         # assign permeability to elements
         materials = material_manager.assigned_materials
         rosettes = material_manager.assigned_rosettes
@@ -100,7 +102,7 @@ class Mesh:
                 tri.h = materials[tri.material_tag].thickness
             except KeyError:
                 exit(f"Mesh contains unassigned material tag: {tri.material_tag}")
-        self.CVs = CreateControlVolumes(self.nodes)
+        self.CVs = CreateControlVolumes(self.nodes, fill_solver)
         # create a hashmap for CV id: [ids of supporting elements]
         print("Mesh pre-processing completed\n")
 
