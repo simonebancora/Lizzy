@@ -10,7 +10,7 @@ from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
 
 def solve_pressure_direct_dense(k, f):
-    p = solve(k, f)
+    p = solve(k, f, assume_a="positive definite")
     return p.flatten()
 
 def solve_pressure_direct_sparse(k:np.ndarray, f:np.ndarray):
