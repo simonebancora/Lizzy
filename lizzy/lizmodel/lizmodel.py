@@ -70,11 +70,14 @@ class LizzyModel:
     def change_inlet_pressure(self, inlet_selector, pressure_value:float, mode:str = "set"):
         self._bc_manager.change_inlet_pressure(inlet_selector, pressure_value, mode)
 
-    def create_sensor(self, x:float, y:float, z:float):
-        self._sensor_manager.add_sensor(x, y, z)
+    def create_sensor(self, x:float, y:float, z:float, idx=None):
+        self._sensor_manager.add_sensor(x, y, z, idx)
 
     def print_sensor_readings(self):
         self._sensor_manager.print_sensor_readings()
+    
+    def get_sensor_by_id(self, idx:int):
+        return self._sensor_manager.get_sensor_by_id(idx)
 
     def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_DENSE):
         self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, self._material_manager, self._sensor_manager, solver_type)

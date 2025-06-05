@@ -26,6 +26,34 @@ class Sensor:
         self.tvals = []
         self.resin_arrived = False
     
+    @property
+    def pressure(self) -> float:
+        return self.pvals[-1]
+
+    @property
+    def velocity(self) -> np.ndarray:
+        return self.vvals[-1]
+    
+    @property
+    def fill_factor(self) -> float:
+        return self.fvals[-1]
+    
+    @property
+    def time(self) -> float:
+        return self.tvals[-1]
+    
+    def get_latest(self, key:str):
+        match key:
+            case "pressure":
+                return self.pressure
+            case "velocity":
+                return self.velocity
+            case "fill_factor":
+                return self.fill_factor
+            case "time":
+                return self.time
+            case _:
+                raise KeyError(f"Unrecognised sensor reading request: {key}")
 
     def info(self) -> str:
         return f"Sensor ID: {self.id}; position: ({self.coords[0]}, {self.coords[1]}, {self.coords[2]}; child node ID: {self.child_node.id})"
@@ -34,13 +62,16 @@ class Sensor:
 class SensorManager:
     def __init__(self):
         self.sensors = []
+        self.sensors_dict = {}
         self.sensor_trigger_states = []
 
-    def add_sensor(self, x, y, z):
+    def add_sensor(self, x, y, z, idx=None):
         new_sensor = Sensor(x, y, z)
-        new_sensor.id = len(self.sensors)
+        if idx == None:
+            idx = len(self.sensors)
+        new_sensor.id = idx
         self.sensors.append(new_sensor)
-        
+        self.sensors_dict[idx] = new_sensor
     
     def initialise(self, mesh):
         if len(self.sensors) > 0:
@@ -86,3 +117,11 @@ class SensorManager:
         for sensor in self.sensors:
             sensor_readings[sensor.id] = f"time: {sensor.tvals[-1]} s; resin pressure: {sensor.pvals[-1]} Pa; fill factor: {sensor.fvals[-1]}, resin velocity: {sensor.vvals[-1]} m/s"
         print(sensor_readings)
+    
+    def get_sensor_by_id(self, idx):
+        try:
+            sensor = self.sensors_dict[idx]
+        except:
+            raise KeyError(f"Could not find sensor with id: {idx}")
+        # TODO: not nice handling here
+        return sensor
