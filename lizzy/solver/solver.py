@@ -19,6 +19,7 @@ class Solver:
         self._sensor_manager = sensor_manager
         self.bcs = SolverBCs()
         self.vsolver = None
+        self.fill_solver = None
         self.solver_type = solver_type
         self.N_nodes = mesh.nodes.N
         self.K_sing = None
@@ -46,7 +47,8 @@ class Solver:
 
     def perform_fe_precalcs(self):
         if not self.mesh.preprocessed:
-            self.mesh.preprocess(self.material_manager)
+            self.fill_solver = FillSolver()
+            self.mesh.preprocess(self.material_manager, self.fill_solver)
         if not self.simulation_parameters.has_been_assigned:
             print(f"Warning: Simulation parameters were not assigned. Running with default values: mu={self.simulation_parameters.mu}, wo_delta_time={self.simulation_parameters.wo_delta_time}")
         # assemble FE global matrix (singular)
@@ -120,7 +122,7 @@ class Solver:
         # self.K_sol, self.f_sol = PressureSolver.apply_starting_bcs(self.K_sing, self.f_orig, self.bcs)
         self.new_step_dofs = []
         self.solver_vars["filled_node_ids"] = np.where(self.solver_vars["fill_factor_array"] >= 1)[0]
-        active_cvs_ids, self.solver_vars["free_surface_array"] = FillSolver.find_free_surface_cvs(
+        active_cvs_ids, self.solver_vars["free_surface_array"] = self.fill_solver.find_free_surface_cvs(
             self.solver_vars["fill_factor_array"], self.cv_support_cvs_array)
         self.time_step_manager.reset()
         self.time_step_manager.save_initial_timestep(self.mesh, self.bcs)
@@ -195,11 +197,11 @@ class Solver:
         v_array = self.vsolver.calculate_elem_velocities(p, self.simulation_parameters.mu)
         v_nodal_array = self.vsolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
 
-        active_cvs_ids, self.solver_vars["free_surface_array"] = FillSolver.find_free_surface_cvs(self.solver_vars["fill_factor_array"], self.cv_support_cvs_array)
-        dt = FillSolver.calculate_time_step(active_cvs_ids, self.solver_vars["fill_factor_array"], self.solver_vars["cv_volumes_array"], v_array)
+        active_cvs_ids, self.solver_vars["free_surface_array"] = self.fill_solver.find_free_surface_cvs(self.solver_vars["fill_factor_array"], self.cv_support_cvs_array)
+        dt = self.fill_solver.calculate_time_step(active_cvs_ids, self.solver_vars["fill_factor_array"], self.solver_vars["cv_volumes_array"], v_array)
         dt, write_out = self.handle_wo_criterion(dt)
 
-        self.solver_vars["fill_factor_array"] = FillSolver.fill_current_time_step(active_cvs_ids, self.solver_vars["fill_factor_array"], self.solver_vars["cv_volumes_array"], dt, self.simulation_parameters.fill_tolerance)
+        self.solver_vars["fill_factor_array"] = self.fill_solver.fill_current_time_step(active_cvs_ids, self.solver_vars["fill_factor_array"], self.solver_vars["cv_volumes_array"], dt, self.simulation_parameters.fill_tolerance)
 
         # find the newly filled cv ids as difference from the previous step
         current_filled_node_ids = np.where(self.solver_vars["fill_factor_array"] >= 1)[0]
