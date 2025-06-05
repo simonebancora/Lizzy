@@ -18,8 +18,8 @@ class LizzyEnv(gym.Env):
         self.prefill = -1
         self.current_solution = None
 
-    def __getattr__(self, name):
-        return getattr(self.lizzy_model, name)
+    # def __getattr__(self, name):
+    #     return getattr(self.lizzy_model, name)
     
     def get_obs(self):
         raise NotImplementedError
@@ -27,5 +27,5 @@ class LizzyEnv(gym.Env):
     def step(self, action):
         raise NotImplementedError
     
-    def reset(self, *args):
-        raise NotImplementedError
+    def reset(self,seed=None, options=None):
+        super().reset(seed=seed)
