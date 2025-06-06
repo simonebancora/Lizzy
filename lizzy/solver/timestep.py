@@ -9,15 +9,15 @@ import numpy as np
 
 @dataclass()
 class TimeStep:
-        index : int
-        time : float
-        dt : float
-        P : any
-        V : any
-        V_nodal : any
-        fill_factor : any
-        flow_front : any
-        write_out : bool
+    index : int
+    time : float
+    dt : float
+    P : any
+    V : any
+    V_nodal : any
+    fill_factor : any
+    flow_front : any
+    write_out : bool
 
 class TimeStepManager:
     def __init__(self):
@@ -68,7 +68,6 @@ class TimeStepManager:
                     }
         return solution
 
-    @classmethod
     def reset(self):
         self.time_steps = []
         self.time_step_count = 0
