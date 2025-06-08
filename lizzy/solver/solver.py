@@ -8,6 +8,8 @@ import numpy as np
 import time
 from lizzy.solver import *
 from lizzy.bcond.bcond import SolverBCs
+# from scipy.sparse import lil_matrix
+# import matplotlib.pyplot as plt
 
 class Solver:
     def __init__(self, mesh, bc_manager, simulation_parameters, material_manager, sensor_manager, solver_type=SolverType.DIRECT_SPARSE):
@@ -39,6 +41,7 @@ class Solver:
                             "filled_node_ids" : [],
                             "free_surface_array" : np.empty(self.N_nodes),
                             "cv_volumes_array" : np.empty(self.N_nodes),}
+        # self.cv_adj_matrix = lil_matrix((self.N_nodes, self.N_nodes), dtype=int)
         self.cv_support_cvs_array = {}
         self.perform_fe_precalcs()
         self.compute_k_local()
@@ -63,6 +66,11 @@ class Solver:
             fill_factor_list.append(cv.fill)
             cv_volumes_list.append(cv.vol)
             self.cv_support_cvs_array[cv.id] = np.array([support_cv.id for support_cv in cv.support_CVs])
+
+        # # construct a cv adjacency matrix
+        # for key, item in self.cv_support_cvs_array.items():
+        #     self.cv_adj_matrix[key, item] = 1
+        # self.cv_adj_matrix = self.cv_adj_matrix.tocsr()
         self.solver_vars["fill_factor_array"] = np.array(fill_factor_list, dtype=float)
         self.solver_vars["cv_volumes_array"] = np.array(cv_volumes_list, dtype=float)
         # assign sensors
@@ -174,17 +182,14 @@ class Solver:
         mask_nodes = self.solver_vars["free_surface_array"].copy()
         mask_nodes[self.solver_vars["filled_node_ids"]] = 1
 
-        elem_connectivity = self.mesh.mesh_data["nodes_conn"] # reference - ok
+        elem_connectivity = self.mesh.mesh_data["nodes_conn"]
+        filled_node_ids = self.solver_vars["filled_node_ids"]
 
-        mask_elements = np.zeros(self.mesh.triangles.N)
-        for i, node_ids in enumerate(elem_connectivity):
-            for node_id in node_ids:
-                if node_id in self.solver_vars["filled_node_ids"]:
-                    mask_elements[i] = 1
-                    break
+        node_is_filled = np.zeros(self.mesh.nodes.N, dtype=bool)
+        node_is_filled[filled_node_ids] = True
 
-
-
+        elem_filled_status = node_is_filled[elem_connectivity] # shape (T, 3)
+        mask_elements = np.any(elem_filled_status, axis=1).astype(int)
         return self.k_local_all, self.f_local_all, dirichlet_idx_full, dirichlet_vals_full, mask_nodes, mask_elements, self.new_step_dofs, elem_connectivity
 
 
