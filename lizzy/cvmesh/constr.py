@@ -116,7 +116,7 @@ def CreateControlVolumes(nodes, fill_solver : FillSolver):
         cv.support_CVs = CVs[connected_nodes]
         cv.GetCVLines()
         cv.CheckFluxNormalOrientations()
-        cv.precompute_flux_terms()
+        cv.precompute_flux_terms()    # this assignes cv.flux_terms, which is an array of variable size (len = n support triangles)
         cv.support_triangle_ids = np.array([tri.id for tri in cv.support_triangles]) #not needed anymore
         fill_solver.map_cv_id_to_support_triangle_ids[cv.id] = np.array([tri.id for tri in cv.support_triangles])
         fill_solver.map_cv_id_to_flux_terms[cv.id] = cv.flux_terms
