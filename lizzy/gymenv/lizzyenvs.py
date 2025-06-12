@@ -12,8 +12,9 @@ class LizzyEnv(LizzyModel, Env):
         LizzyModel.__init__(self)
         Env.__init__(self)
         self._step_duration:float = 1
-        self._prefill = -1
+        self._prefill:float = -1
         self._current_solution = None
+        self._verbose : bool = False
 
     @property
     def step_duration(self):
@@ -28,8 +29,11 @@ class LizzyEnv(LizzyModel, Env):
         return self._prefill
 
     @prefill.setter
-    def prefill(self, value):
+    def prefill(self, value:float):
         self._prefill = value
+    
+    def set_verbose(self, value:bool=True):
+        self._verbose = value
     
     @property
     def current_solution(self):
@@ -43,3 +47,7 @@ class LizzyEnv(LizzyModel, Env):
     
     def reset(self,seed=None, options=None):
         super().reset(seed=seed)
+    
+    def log(self, message:str):
+        if self._verbose:
+            print(message)

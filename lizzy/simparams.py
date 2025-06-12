@@ -11,6 +11,7 @@ class SimulationParameters:
     wo_delta_time: float = -1
     fill_tolerance: float = 0.01
     has_been_assigned : bool = False
+    end_step_when_sensor_triggered : bool = False
 
     def assign(self, **kwargs):
         self.has_been_assigned = True

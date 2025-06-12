@@ -32,7 +32,6 @@ class Solver:
         self.current_time = 0
         self.n_empty_cvs = np.inf
         self.next_wo_time = self.simulation_parameters.wo_delta_time
-        self.wo_by_sensor_triggered = False
         self.step_end_time = np.inf
         self.step_completed = False
         self.k_local_all = np.empty((self.mesh.triangles.N, 6))
@@ -141,11 +140,13 @@ class Solver:
     def handle_wo_criterion(self, dt):
         write_out = False
         next_time = self.current_time + dt
+
         if next_time > self.step_end_time:
             dt = self.step_end_time - self.current_time
             write_out = True
             self.step_completed = True
             return dt, write_out
+        
         if self.simulation_parameters.wo_delta_time > 0.0:
             if next_time > self.next_wo_time:
                 dt = self.next_wo_time - self.current_time
@@ -153,6 +154,7 @@ class Solver:
                 write_out = True
         else:
             write_out = True
+            
         return dt, write_out
 
     def handle_wo_by_sensor_triggered(self, current_write_out, fill_factor_array):
@@ -216,9 +218,8 @@ class Solver:
         # Update the filling time
         self.current_time += dt
         # save time step results
-        fill_factor = [cv.fill for cv in self.mesh.CVs]
-        if self.wo_by_sensor_triggered:
-            write_out = self.handle_wo_by_sensor_triggered(write_out, fill_factor)
+        if self.simulation_parameters.end_step_when_sensor_triggered:
+            write_out = self.handle_wo_by_sensor_triggered(write_out, self.solver_vars["fill_factor_array"])
         self.time_step_manager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, self.solver_vars["fill_factor_array"], self.solver_vars["free_surface_array"], write_out)
         if write_out:
             self._sensor_manager.probe_current_solution(p, v_nodal_array, self.solver_vars["fill_factor_array"], self.current_time)
