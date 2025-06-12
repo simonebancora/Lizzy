@@ -45,6 +45,10 @@ class LizzyModel:
     def n_empty_cvs(self) -> int:
         return self._solver.n_empty_cvs
 
+    @property
+    def current_time(self) -> float:
+        return self._solver.current_time
+
     def assign_simulation_parameters(self, **kwargs):
         self._simulation_parameters.assign(**kwargs)
 
@@ -76,7 +80,10 @@ class LizzyModel:
     def print_sensor_readings(self):
         self._sensor_manager.print_sensor_readings()
     
-    def get_sensor_by_id(self, idx:int):
+    def get_sensor_trigger_states(self):
+        return self._sensor_manager.sensor_trigger_states
+    
+    def get_sensor_by_id(self, idx):
         return self._sensor_manager.get_sensor_by_id(idx)
 
     def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_DENSE):
@@ -92,6 +99,7 @@ class LizzyModel:
     
     def initialise_new_solution(self):
         self._solver.initialise_new_solution()
+    
 
 
 

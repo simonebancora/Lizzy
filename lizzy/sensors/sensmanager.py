@@ -96,6 +96,7 @@ class SensorManager:
         if len(self.sensors) > 0:
             for sensor in self.sensors:
                 sensor.reset()
+        self.sensor_trigger_states = np.array([False for s in self.sensors])
 
     def check_for_new_sensor_triggered(self, fill_factor_array):
         triggered = False
