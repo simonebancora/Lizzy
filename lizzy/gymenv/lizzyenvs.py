@@ -4,23 +4,37 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import gymnasium as gym
+from gymnasium import Env
 from lizzy.lizmodel.lizmodel import LizzyModel
 
-class LizzyEnv(gym.Env):
-    def __init__(self, lizzy_model:LizzyModel = None):
-        super().__init__()
-        if lizzy_model is not None:
-            self.lizzy_model = lizzy_model
-        else:
-            self.lizzy_model = LizzyModel()
-        self.step_duration:float = 1
-        self.prefill = -1
-        self.current_solution = None
+class LizzyEnv(LizzyModel, Env):
+    def __init__(self):
+        LizzyModel.__init__(self)
+        Env.__init__(self)
+        self._step_duration:float = 1
+        self._prefill = -1
+        self._current_solution = None
 
-    # def __getattr__(self, name):
-    #     return getattr(self.lizzy_model, name)
+    @property
+    def step_duration(self):
+        return self._step_duration
+
+    @step_duration.setter
+    def step_duration(self, value):
+        self._step_duration = value
     
+    @property
+    def prefill(self):
+        return self._prefill
+
+    @prefill.setter
+    def prefill(self, value):
+        self._prefill = value
+    
+    @property
+    def current_solution(self):
+        return self._current_solution
+
     def get_obs(self):
         raise NotImplementedError
     
