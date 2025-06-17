@@ -163,7 +163,7 @@ class Solver:
         if triggered:
             write_out = True
             self.step_completed = True
-            print("\nSensor triggered")
+            # print("\nSensor triggered")
         return write_out
 
     def compute_k_local(self):
