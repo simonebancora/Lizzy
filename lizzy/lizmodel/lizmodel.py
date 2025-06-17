@@ -100,6 +100,9 @@ class LizzyModel:
     def initialise_new_solution(self):
         self._solver.initialise_new_solution()
     
+    def save_results(self, solution, result_name:str):
+        self._writer.save_results(solution, result_name)
+    
 
 
 
