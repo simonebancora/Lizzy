@@ -9,21 +9,22 @@ from lizzy.lizmodel.lizmodel import LizzyModel
 from abc import abstractmethod
 
 class LizzyEnv(LizzyModel, Env):
+    """Environment base class for constructing custom Gymnasium environments that include Lizzy as simulator. The class inherits from LizzyModel, so the environment can be used just like the model for defining and controlling simulations. It also adds some additional APIs specific to Reinforcement Learning workflow."""
     def __init__(self):
         LizzyModel.__init__(self)
         Env.__init__(self)
         self._step_duration:float       = 1
         self._prefill:float             = -1
-        self._latest_solution           = None
-        self._verbose : bool            = False
-        self._episode_counter : int     = 0
-        self._step_counter : int        = 0
-        self._observation_space : any   = None
-        self._action_space : any        = None
+        self._latest_solution:any       = None
+        self._verbose:bool              = False
+        self._episode_counter:int       = 0
+        self._step_counter:int          = 0
+        self._observation_space:any     = None
+        self._action_space:any          = None
 
-    # ATTRIBUTES
     @property
     def step_duration(self):
+        """The duration in seconds of a step taken by the agent. This sets how much time the simulation will advance during the step() method of the environment. It has no relation with the time step calculation of the solver (which is determined internally and plays no role in the training step duration)."""
         return self._step_duration
 
     @step_duration.setter
@@ -32,6 +33,7 @@ class LizzyEnv(LizzyModel, Env):
     
     @property
     def prefill(self):
+        """The time in seconds the model will be infused using initial conditions before the agent begins taking actions in steps. The prefill is executed at each environment reset. Setting this parameter to any value > 0 will trigger the prefill. Default value is -1 (no prefill)."""
         return self._prefill
 
     @prefill.setter
@@ -40,6 +42,7 @@ class LizzyEnv(LizzyModel, Env):
     
     @property
     def episode_counter(self):
+        """A counter for the episodes executed by the environment. This counter advances at the start of each new episode and is never reset during environment runtime"""
         return self._episode_counter
     
     @episode_counter.setter
@@ -48,6 +51,7 @@ class LizzyEnv(LizzyModel, Env):
     
     @property
     def step_counter(self):
+        """A counter for the steps taken by the agent within an episode. The prefill step does not contribute to the counter, only steps taken by the agent. This parameter is set to 0 at each reset of the environment."""
         return self._step_counter
     
     @step_counter.setter
@@ -56,17 +60,16 @@ class LizzyEnv(LizzyModel, Env):
     
     @property
     def latest_solution(self):
+        """Returns the most recent solution from the LizzyModel. Returns None is the environment is run in lightweight mode."""
         return self._latest_solution
     
     def set_verbose(self, value:bool=True):
+        """Sets the verbose flag for the LizzyEnv.log() method. If true, arguments passed to the log() method are printed to the console."""
         self._verbose = value
     
     @property
-    def current_solution(self):
-        return self._current_solution
-    
-    @property
     def observation_space(self):
+        """The observation space defined for this Gymnasium environment"""
         return self._observation_space
     
     @observation_space.setter
@@ -75,6 +78,7 @@ class LizzyEnv(LizzyModel, Env):
     
     @property
     def action_space(self):
+        """The action space defined for this Gymnasium environment"""
         return self._action_space
 
     @action_space.setter

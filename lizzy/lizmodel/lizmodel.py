@@ -87,7 +87,7 @@ class LizzyModel:
         return self._sensor_manager.get_sensor_by_id(idx)
     
     def get_current_time(self):
-        return self._solver.current_time
+        return self.current_time
 
     def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_DENSE):
         self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, self._material_manager, self._sensor_manager, solver_type)

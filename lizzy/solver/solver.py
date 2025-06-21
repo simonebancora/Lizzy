@@ -37,7 +37,7 @@ class Solver:
         self.k_local_all = np.empty((self.mesh.triangles.N, 6))
         self.f_local_all = np.zeros((self.mesh.triangles.N, 3))
         self.solver_vars = {"fill_factor_array" : np.empty(self.N_nodes),
-                            "filled_node_ids" : [],
+                            "filled_node_ids" : np.empty(self.N_nodes, dtype=int),
                             "free_surface_array" : np.empty(self.N_nodes),
                             "cv_volumes_array" : np.empty(self.N_nodes),}
         # self.cv_adj_matrix = lil_matrix((self.N_nodes, self.N_nodes), dtype=int)
