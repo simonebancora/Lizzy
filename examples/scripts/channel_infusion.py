@@ -1,27 +1,21 @@
 import lizzy as liz
 
-# read the mesh and instantiate a Mesh object
-mesh_reader = liz.Reader("../meshes/Rect_1M_16elem.msh")
-mesh = liz.Mesh(mesh_reader)
+model = liz.LizzyModel()
 
-liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100, fill_tolerance=0.01)
+model.read_mesh_file("../meshes/Rect1M_R1.msh")
 
-# add a material to each material tag present in the mesh
-material_1 = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
-liz.MaterialManager.add_material('domain', material_1)
+model.assign_simulation_parameters(mu=0.1, wo_delta_time=100, fill_tolerance=0.01)
 
-# Create a boundary conditions manager
-bc_manager = liz.BCManager()
+model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "pippo")
+model.assign_material("pippo", 'domain')
 
-# Create an Inlet (or more) and add it to the inlets group
-inlet_1 = liz.Inlet('left_edge', 1E+05)
-bc_manager.add_inlet(inlet_1)
+model.create_sensor(0.2, 0.25, 0)
 
-# Instantiate a solver and solve
-solver = liz.Solver(mesh, bc_manager, liz.SolverType.DIRECT_DENSE)
-solution = solver.solve()
+model.create_inlet(100000, "inlet_left")
+model.assign_inlet("inlet_left", "left_edge")
 
+model.initialise_solver()
 
-# Create a write-out object and save results
-writer = liz.Writer(mesh)
-writer.save_results(solution, "Rect_1M_16elem")
+solution = model.solve()
+
+model.save_results(solution, "Rect1M_R1")

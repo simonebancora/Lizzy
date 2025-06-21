@@ -5,6 +5,7 @@
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
+from functools import singledispatchmethod
 
 class Rosette:
     """Rosette object to define the orientation of the material in the mesh elements. The rosette is always projected on each element along the element normal direction. Can be initialised by passing one vector, or 2 points.
@@ -25,7 +26,7 @@ class Rosette:
 
 
 class PorousMaterial:
-    def __init__(self, k1:float, k2:float, k3:float,  porosity:float, thickness:float):
+    def __init__(self, k1:float, k2:float, k3:float,  porosity:float, thickness:float, name:str = "unnamed_material"):
         """
         Permeability tensor defined as principal permeability values k1, k2, k3 and by porosity and thickness.
 
@@ -41,15 +42,44 @@ class PorousMaterial:
         self.k_diag = np.array([[k1, 0, 0],[0, k2, 0],[0, 0, k3]])
         self.porosity = porosity
         self.thickness = thickness
+        self.name = name
+        self._assigned = False
 
-# temporary solution to store materials
+def create_material(k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str = "unnamed_material"):
+    # TODO: handle arguments bad input
+    return PorousMaterial(k1, k2, k3, porosity, thickness, name)
+
 class MaterialManager:
-    def __new__(cls, *args, **kwargs):
-        raise TypeError(f"{cls.__name__} must not be instantiated.")
-    materials = {}
-    rosettes = {}
+    def __init__(self):
+        self.assigned_materials : dict = {}
+        self.assigned_rosettes : dict = {}
+        self.existing_materials : dict = {}
+    
+    @singledispatchmethod
+    def fetch_material(self, material_selector):
+        return material_selector
+    
+    @fetch_material.register
+    def _(self, material_selector:str):
+        try:
+            selected_material = self.existing_materials[material_selector]
+        except KeyError:
+            raise KeyError(f"Inlet '{material_selector}' is not found in existing inlets. Check the name, or create the inlet first using `LizzyModel.create_inlet`.")
+        return selected_material
 
-    @classmethod
-    def add_material(cls, material_tag:str, material:PorousMaterial, rosette:Rosette = Rosette((1,0,0))):
-        cls.materials[material_tag] = material
-        cls.rosettes[material_tag] = rosette
+
+    def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name: str = None):
+        if name is None:
+            material_count = len(self.existing_materials)
+            name = f"Material_{material_count}"
+        new_material = create_material(k1, k2, k3, porosity, thickness, name)
+        self.existing_materials[name] = new_material
+        return new_material
+
+    def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
+        selected_material = self.fetch_material(material_selector)
+        if rosette is None:
+            rosette = Rosette((1, 0, 0))
+        selected_material._assigned = True
+        self.assigned_materials[mesh_tag] = selected_material
+        self.assigned_rosettes[mesh_tag] = rosette
