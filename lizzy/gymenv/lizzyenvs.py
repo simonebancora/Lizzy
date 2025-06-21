@@ -1,203 +1,104 @@
-import lizzy as liz
-import gymnasium as gym
-import numpy as np
-import matplotlib.pyplot as plt
+#  Copyright 2025-2025 Simone Bancora, Paris Mulye
+#
+#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+from gymnasium import Env
+from lizzy.lizmodel.lizmodel import LizzyModel
+from abc import abstractmethod
 
-class LizzyEnv(gym.Env):
+class LizzyEnv(LizzyModel, Env):
+    """Environment base class for constructing custom Gymnasium environments that include Lizzy as simulator. The class inherits from LizzyModel, so the environment can be used just like the model for defining and controlling simulations. It also adds some additional APIs specific to Reinforcement Learning workflow."""
     def __init__(self):
-        super().__init__()
-        self.solver = None
-        self.step_duration = 0
-        self.mesh = None
-        self.materials = []
-        self.sensors = []
-        self.inlets = []
-        self.bc_manager = liz.BCManager()
-        self.interactive = False
-        self.interactive_hold_time = 0.5
-        self.prefill = -1
-        self.solution = None
+        LizzyModel.__init__(self)
+        Env.__init__(self)
+        self._step_duration:float       = 1
+        self._prefill:float             = -1
+        self._latest_solution:any       = None
+        self._verbose:bool              = False
+        self._episode_counter:int       = 0
+        self._step_counter:int          = 0
+        self._observation_space:any     = None
+        self._action_space:any          = None
 
-    
-    def read_mesh(self, path:str):
-        mesh_reader = liz.Reader(path)
-        self.mesh = liz.Mesh(mesh_reader)
-    
-    def add_sensor(self , position:tuple):
-        liz.SensorManager.add_sensor(position[0], position[1], position[2])
-        self.sensors.append(liz.SensorManager.sensors[-1])
-    
-    def assign_simulation_parameters(self, **kwargs):
-        liz.SimulationParameters.assign(**kwargs)
-    
-    def assign_lizzy_mesh(self, mesh:liz.Mesh):
-        self.mesh = mesh
-    
-    def create_material(self, k1:float, k2:float, k3:float,  porosity:float, thickness:float):
-        new_material = liz.PorousMaterial(k1, k2, k3, porosity, thickness)
-        self.materials.append(new_material)
-        return new_material
-    
-    def assign_material(self, tag:str, material:liz.PorousMaterial):
-        liz.MaterialManager.add_material(tag, material)
-    
-    def create_inlet(self, p0:float):
-        new_inlet = liz.Inlet("none", p0)
-        self.inlets.append(new_inlet)
-        return new_inlet
-    
-    def assign_inlet(self, tag:str, inlet:liz.Inlet):
-        inlet.physical_tag = tag
-        self.bc_manager.add_inlet(inlet)
-    
-    def initialise_solver(self):
-        self.solver = liz.Solver(self.mesh, self.bc_manager, liz.SolverType.DIRECT_SPARSE)
-    
-    def solve_until_filled(self):
-        solution = self.solver.solve(log="on")
-        return solution
+    @property
+    def step_duration(self):
+        """The duration in seconds of a step taken by the agent. This sets how much time the simulation will advance during the step() method of the environment. It has no relation with the time step calculation of the solver (which is determined internally and plays no role in the training step duration)."""
+        return self._step_duration
 
-class LizzyVelocityEnv(LizzyEnv):
-    def __init__(self, action_space_type="discrete"):
-        super().__init__()
-        self.target_velocity = 0.0
-        self.target_tolerance = 0.1
-        self.p0 = 0
-        self.discrete_delta_p = 1000
-        self.current_normalised_v = 0
-        self.current_p = 0
-        self.previous_normalised_v = 0
-        self.action_space_type = action_space_type
-        self.observations = None
-        self.velocity_err_weight = 10
-        self.max_penalty = -100
-        self.target_velocity_range = (0, 0)
-        self.current_velocity_error = 0
-        self.previous_velocity_error = 0
-        self.test_step_rewards = []
-
-        self.observation_space = gym.spaces.Dict(
-            {
-                "current_velocity_error": gym.spaces.Box(0, np.inf, shape=(1,), dtype=float),
-                "previous_velocity_error": gym.spaces.Box(0, np.inf, shape=(1,), dtype=float),
-                "current_inlet_p" : gym.spaces.Box(0, np.inf, shape=(1,), dtype=float),
-                "current_fill_percent" : gym.spaces.Box(0, 1, shape=(1,), dtype=float),
-            }
-        )
-
-        match self.action_space_type:
-            case "discrete":
-                self.action_space = gym.spaces.Discrete(3)
-                self.actions_map = {0 : -1,
-                            1 : 0,
-                            2 : 1}
-            case "continuous":
-                self.action_space = gym.spaces.Box(-1, 1, shape=(1,), dtype=float)
-            case _:
-                pass
-
-    def set_target_velocity_range(self, min_val, max_val, tol):
-        self.target_velocity_range = (min_val, max_val)
-        self.target_tolerance = tol
-
-    def set_initial_pressure(self, value):
-        self.p0 = value
+    @step_duration.setter
+    def step_duration(self, value):
+        self._step_duration = value
     
-    def set_step_duration(self, value):
-        self.step_duration = value
-    
-    def set_discrete_delta_p(self, value):
-        self.discrete_delta_p = value
+    @property
+    def prefill(self):
+        """The time in seconds the model will be infused using initial conditions before the agent begins taking actions in steps. The prefill is executed at each environment reset. Setting this parameter to any value > 0 will trigger the prefill. Default value is -1 (no prefill)."""
+        return self._prefill
 
-    def get_obs(self):
-        self.previous_normalised_v = self.current_normalised_v
-        self.current_normalised_v = self.sensors[0].vvals[-1][0]/self.target_velocity
-        self.current_velocity_error = np.abs(self.current_normalised_v - 1.0)
-        self.previous_velocity_error = np.abs(self.previous_normalised_v - 1.0)
-        self.current_p = self.sensors[0].pvals[-1]
-        fill_percent = 1.0 - self.solver.n_empty_cvs/self.solver.N_nodes
-        self.observations = {"current_velocity_error": self.current_velocity_error, "previous_velocity_error": self.previous_velocity_error, "current_inlet_p": self.current_p, "current_fill_percent" : fill_percent}
-        return self.observations
+    @prefill.setter
+    def prefill(self, value:float):
+        self._prefill = value
     
+    @property
+    def episode_counter(self):
+        """A counter for the episodes executed by the environment. This counter advances at the start of each new episode and is never reset during environment runtime"""
+        return self._episode_counter
+    
+    @episode_counter.setter
+    def episode_counter(self, value):
+        self._episode_counter = value
+    
+    @property
+    def step_counter(self):
+        """A counter for the steps taken by the agent within an episode. The prefill step does not contribute to the counter, only steps taken by the agent. This parameter is set to 0 at each reset of the environment."""
+        return self._step_counter
+    
+    @step_counter.setter
+    def step_counter(self, value):
+        self._step_counter = value
+    
+    @property
+    def latest_solution(self):
+        """Returns the most recent solution from the LizzyModel. Returns None is the environment is run in lightweight mode."""
+        return self._latest_solution
+    
+    def set_verbose(self, value:bool=True):
+        """Sets the verbose flag for the LizzyEnv.log() method. If true, arguments passed to the log() method are printed to the console."""
+        self._verbose = value
+    
+    @property
+    def observation_space(self):
+        """The observation space defined for this Gymnasium environment"""
+        return self._observation_space
+    
+    @observation_space.setter
+    def observation_space(self, value):
+        self._observation_space = value
+    
+    @property
+    def action_space(self):
+        """The action space defined for this Gymnasium environment"""
+        return self._action_space
+
+    @action_space.setter
+    def action_space(self, value):
+        self._action_space = value
+    
+    
+    @abstractmethod
     def step(self, action):
-        truncated = False
-        terminated = False
-        match self.action_space_type:
-            case "discrete":
-                new_p_increment = self.actions_map[int(action)]*self.discrete_delta_p
-            case "continuous":
-                new_p_increment = action[0] * self.discrete_delta_p
-            case _:
-                NameError
-        self.inlets[0].p_value += new_p_increment
-        if self.inlets[0].p_value <= 1000:
-            truncated = True
-        if not truncated or terminated:
-            self.solution = self.solver.solve_step(self.step_duration, log="off")
-        if self.solver.n_empty_cvs <= 0:
-            terminated = True
-        self.observations = self.get_obs()
-        reward = self.calculate_reward()
-        if truncated:
-            reward = self.max_penalty
-        info = {}
-        return self.observations, reward, terminated, truncated, info
+        self.log(f"\nSTEP :\n")
+        self.log(f"action : {action}" )
+        self.step_counter += 1
     
-    def reset(self, seed=None, options=None):
-        if self.interactive:
-            self.plot_episode(self.interactive_hold_time)
-        self.inlets[0].p_value = self.p0
-        self.current_p = self.p0
-        self.target_velocity = np.random.uniform(self.target_velocity_range[0], self.target_velocity_range[1])
-        self.sensors[0].reset()
-        self.solver.initialise_new_solution()
-        self.current_normalised_v = 1.0
-        self.previous_normalised_v = 1.0
-        if self.prefill > 0:
-            self.solver.solve_step(self.prefill)
-        self.observations = self.get_obs()
-        info = {}
-        return self.observations, info
+    @abstractmethod
+    def reset(self,seed=None, options=None):
+        super().reset(seed=seed)
+        self.step_counter = 0
+        self.episode_counter += 1
+        self.log(f"\n-----------\nNEW EPISODE : {self.episode_counter}\n-----------\n")
     
-    def calculate_reward(self):
-        # if self.current_velocity_error <= self.target_tolerance:
-        #     reward = 100
-        # else:
-        #     reward = 10*(self.previous_velocity_error - self.current_velocity_error)
-        # reward = np.maximum(reward, self.max_penalty)
-        reward = 100000
-        return reward
-    
-    def plot_episode(self, hold:float=5, reward=False):
-        v = self.sensors[0].vvals
-        if reward:
-            fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
-            ax3.set_title("Step reward")
-            ax3.plot(self.sensors[0].tvals[1:], self.test_step_rewards)
-        else:
-            fig, (ax1, ax2) = plt.subplots(1, 2)
-        ax2.set_title("Pressure")
-        ax1.set_title("Velocity")
-        ax1.set_ylim([0, self.target_velocity*4/3])
-        # plt.tight_layout()
-        ax2.plot(self.sensors[0].tvals[1:], self.sensors[0].pvals[1:])
-        ax1.plot(self.sensors[0].tvals[1:], [val[0] for val in v][1:])
-        ax1.plot(self.sensors[0].tvals[1:], [self.target_velocity]*(len(self.sensors[0].tvals)-1))
-        plt.show(block=False)
-        if hold > 0:
-            plt.pause(hold)
-            plt.close()
-
-    def test_model(self, env, model, hold_time):
-        obs, info = env.reset()
-        terminated = False
-        truncated = False
-        self.test_step_rewards = []
-        self.test_step_rewards.append(0)
-        while not terminated or truncated:
-            action, _ = model.predict(obs)
-            obs, reward, terminated, truncated, info = env.step(action)
-            self.test_step_rewards.append(reward)
-            env.env.plot_episode(hold_time, True)
-
+    def log(self, message:str):
+        if self._verbose:
+            print(message)
