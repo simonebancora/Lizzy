@@ -12,6 +12,8 @@ from lizzy.sensors.sensmanager import SensorManager
 from lizzy.simparams import SimulationParameters
 from lizzy.bcond.bcond import BCManager
 from lizzy.solver.solver import Solver, SolverType
+from lizzy.render.render import display_fill
+import numpy as np
 
 class LizzyModel:
     def __init__(self):
@@ -19,6 +21,7 @@ class LizzyModel:
         self._writer = None
         self._mesh = None
         self._solver = None
+        self._latest_solution: any = None
         self._simulation_parameters = SimulationParameters()
         self._material_manager = MaterialManager()
         self._bc_manager = BCManager()
@@ -48,6 +51,11 @@ class LizzyModel:
     @property
     def current_time(self) -> float:
         return self._solver.current_time
+
+    @property
+    def latest_solution(self):
+        """Returns the most recent solution from the model. Returns None is the model is run in lightweight mode."""
+        return self._latest_solution
 
     def assign_simulation_parameters(self, **kwargs):
         self._simulation_parameters.assign(**kwargs)
@@ -93,19 +101,22 @@ class LizzyModel:
         self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, self._material_manager, self._sensor_manager, solver_type)
 
     def solve(self):
-        solution = self._solver.solve()
-        return solution
+        self._latest_solution = self._solver.solve()
+        return self._latest_solution
 
     def solve_step(self, step_period:float):
-        solution = self._solver.solve_step(step_period, log="off", lightweight=self._lightweight)
-        return solution
+        self._latest_solution = self._solver.solve_step(step_period, log="off", lightweight=self._lightweight)
+        return self._latest_solution
     
     def initialise_new_solution(self):
         self._solver.initialise_new_solution()
     
     def save_results(self, solution, result_name:str):
         self._writer.save_results(solution, result_name)
-    
 
+
+    def display_current_fill(self):
+        latest_fill_factor_array = self.latest_solution["fill_factor"][-1]
+        display_fill(self._mesh, latest_fill_factor_array, self.current_time)
 
 

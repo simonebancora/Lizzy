@@ -1,30 +1,25 @@
 import lizzy as liz
 
-# read the mesh and instantiate
-mesh_reader = liz.Reader("../meshes/Complex_rotated.msh")
-mesh = liz.Mesh(mesh_reader)
 
-# assign some process parameters
-liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
 
-# add a material to each material tag present in the mesh
-material_iso = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
-material_aniso = liz.PorousMaterial(1E-10, 1E-11, 1E-11, 0.5, 1.0)
-material_racetrack = liz.PorousMaterial(1E-7, 1E-7, 1E-7, 0.5, 0.5)
-rosette_ramp = liz.Rosette(mesh.nodes[12].coords, mesh.nodes[13].coords)
-liz.MaterialManager.add_material('Lshape', material_iso)
-liz.MaterialManager.add_material('ramp', material_aniso, rosette_ramp)
-liz.MaterialManager.add_material('racetrack', material_racetrack)
 
-# Create a BCManager and assign BCs
-bc_manager = liz.BCManager()
-inlet_1 = liz.Inlet('inlet', 1E+05)
-bc_manager.add_inlet(inlet_1)
+model = liz.LizzyModel()
+model.read_mesh_file("../meshes/Complex_rotated.msh")
+model.assign_simulation_parameters(mu=0.1, wo_delta_time=100, fill_tolerance=0.01)
+model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "material_iso")
+model.create_material(1E-10, 1E-11, 1E-11, 0.5, 1.0, "material_aniso")
+model.create_material(1E-7, 1E-7, 1E-7, 0.5, 0.5, "material_racetrack")
+rosette_ramp = liz.Rosette(model._mesh.nodes[12].coords, model._mesh.nodes[13].coords)
+model.assign_material("material_iso", 'Lshape')
+model.assign_material("material_aniso", 'ramp', rosette_ramp)
+model.assign_material("material_racetrack", 'racetrack')
 
-# Instantiate a solver and solve
-solver = liz.Solver(mesh, bc_manager, liz.SolverType.DIRECT_SPARSE)
-solution = solver.solve(log="on")
 
-# Create a write-out object and save results
-writer = liz.Writer(mesh)
-writer.save_results(solution, "Complex_rotated")
+model.create_inlet(100000, "inlet_left")
+model.assign_inlet("inlet_left", "inlet")
+
+model.initialise_solver()
+solution = model.solve()
+model.display_current_fill()
+model.save_results(solution, "Complex_rotated")
+
