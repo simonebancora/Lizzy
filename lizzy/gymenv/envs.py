@@ -58,10 +58,7 @@ class LizzyEnv(LizzyModel, Env):
     def step_counter(self, value):
         self._step_counter = value
     
-    @property
-    def latest_solution(self):
-        """Returns the most recent solution from the LizzyModel. Returns None is the environment is run in lightweight mode."""
-        return self._latest_solution
+
     
     def set_verbose(self, value:bool=True):
         """Sets the verbose flag for the LizzyEnv.log() method. If true, arguments passed to the log() method are printed to the console."""
@@ -102,3 +99,5 @@ class LizzyEnv(LizzyModel, Env):
     def log(self, message:str):
         if self._verbose:
             print(message)
+
+

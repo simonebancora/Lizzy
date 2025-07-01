@@ -196,7 +196,7 @@ class Solver:
 
 
     def solve_time_step(self):
-        k_local_all, f_local_all, dirichlet_idx_full, dirichlet_vals_full, mask_nodes, mask_elements, new_dofs_added, elem_connectivity = self.update_and_collect_solver_input()
+        # k_local_all, f_local_all, dirichlet_idx_full, dirichlet_vals_full, mask_nodes, mask_elements, new_dofs_added, elem_connectivity = self.update_and_collect_solver_input()
         k, f = PressureSolver.apply_bcs(self.K_sing, self.f_orig, self.bcs)
         # self.K_sol, self.f_sol = PressureSolver.free_dofs(self.K_sol, self.f_sol, self.K_sing, self.f_orig, self.new_step_dofs)
         p = PressureSolver.solve(k, f, self.solver_type)
