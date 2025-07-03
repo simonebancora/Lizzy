@@ -12,6 +12,8 @@ class SimulationParameters:
     fill_tolerance: float = 0.01
     has_been_assigned : bool = False
     end_step_when_sensor_triggered : bool = False
+    generate_fill_image :bool = False
+    display_fill : bool = False
 
     def assign(self, **kwargs):
         self.has_been_assigned = True

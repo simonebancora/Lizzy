@@ -12,7 +12,6 @@ from lizzy.sensors.sensmanager import SensorManager
 from lizzy.simparams import SimulationParameters
 from lizzy.bcond.bcond import BCManager
 from lizzy.solver.solver import Solver, SolverType
-from lizzy.render.render import display_fill
 import numpy as np
 
 class LizzyModel:
@@ -114,9 +113,5 @@ class LizzyModel:
     def save_results(self, solution, result_name:str):
         self._writer.save_results(solution, result_name)
 
-
-    def display_current_fill(self):
-        latest_fill_factor_array = self.latest_solution["fill_factor"][-1]
-        display_fill(self._mesh, latest_fill_factor_array, self.current_time)
 
 
