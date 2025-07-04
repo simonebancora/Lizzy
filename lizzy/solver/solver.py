@@ -21,7 +21,8 @@ class Solver:
         self.time_step_manager = TimeStepManager()
         self._sensor_manager = sensor_manager
         self.bcs = SolverBCs()
-        self.renderer = Renderer(mesh)
+        if self.simulation_parameters.generate_fill_image:
+            self.renderer = Renderer(mesh, self.simulation_parameters)
         self.vsolver = None
         self.fill_solver = None
         self.solver_type = solver_type

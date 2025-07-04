@@ -14,10 +14,10 @@ lizzy_cmap = mcolors.LinearSegmentedColormap.from_list("lizzy_colors", ["white",
 
 
 class Renderer():
-    def __init__(self, mesh):
+    def __init__(self, mesh, simulation_parameters):
         self.figure_idx = 0
         z_node_coords = mesh.nodes.XYZ[:, 2]
-        self._x_resolution = 50
+        self._x_resolution = 250
         self.x_node_coords = mesh.nodes.XYZ[:, 0]
         self.y_node_coords = mesh.nodes.XYZ[:, 1]
         self.xmin = self.x_node_coords.min()
@@ -34,9 +34,9 @@ class Renderer():
             self._can_render = False
         else:
             self._can_render = True
-        self.initialise_new_figure()
+        self.initialise_new_figure(simulation_parameters)
     
-    def initialise_new_figure(self):
+    def initialise_new_figure(self,simulation_parameters):
         self.figure = None
         self.displayed_img = None
         self.displayed_ax = None
@@ -45,7 +45,8 @@ class Renderer():
         self.current_fill_img = None
         self.current_contours = None
         self.current_contour_centroids = None
-        plt.ion()
+        if simulation_parameters.display_fill:
+            plt.ion()
         self.figure = plt.figure(self.figure_idx, clear=True)
         self.displayed_ax = self.figure.add_subplot(autoscale_on=False, xlim=(self.xmin, self.xmax), ylim=(self.ymin, self.ymax))
         self.displayed_ax.set_aspect("equal")
