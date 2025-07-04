@@ -125,6 +125,8 @@ class Solver:
         self.bcs = SolverBCs()
         self.mesh.EmptyCVs()
         self.bc_manager.reset_inlets()
+        if self.simulation_parameters.generate_fill_image:
+            self.renderer.initialise_new_figure(self.simulation_parameters)
         self.update_dirichlet_bcs()
         self.fill_initial_cvs()
         self.update_empty_nodes_idx()
