@@ -37,6 +37,7 @@ class Renderer():
         self.initialise_new_figure(simulation_parameters)
     
     def initialise_new_figure(self,simulation_parameters):
+        plt.close()
         self.figure = None
         self.displayed_img = None
         self.displayed_ax = None
@@ -47,10 +48,10 @@ class Renderer():
         self.current_contour_centroids = None
         if simulation_parameters.display_fill:
             plt.ion()
-        self.figure = plt.figure(self.figure_idx, clear=True)
+        self.figure = plt.figure(0, clear=True)
         self.displayed_ax = self.figure.add_subplot(autoscale_on=False, xlim=(self.xmin, self.xmax), ylim=(self.ymin, self.ymax))
         self.displayed_ax.set_aspect("equal")
-        self.figure_idx += 1
+        # self.figure_idx += 1
 
 
     def compute_fill_image(self, fill_factor_array):
