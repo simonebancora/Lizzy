@@ -12,10 +12,9 @@ import numpy as np
 
 lizzy_cmap = mcolors.LinearSegmentedColormap.from_list("lizzy_colors", ["white", "orange"])
 
-
 class Renderer():
     def __init__(self, mesh, simulation_parameters):
-        self.figure_idx = 0
+        self.display_fill = simulation_parameters.display_fill
         z_node_coords = mesh.nodes.XYZ[:, 2]
         self._x_resolution = 250
         self.x_node_coords = mesh.nodes.XYZ[:, 0]
@@ -34,25 +33,27 @@ class Renderer():
             self._can_render = False
         else:
             self._can_render = True
-        self.initialise_new_figure(simulation_parameters)
+        self.initialise_new_fill_image()
     
-    def initialise_new_figure(self,simulation_parameters):
+    def initialise_new_fill_image(self):
+        self.current_fill_img = None
+        self.current_contours = None
+        self.current_contour_centroids = None
+        if self.display_fill:
+            self.initialise_new_plot_figure()
+
+    def initialise_new_plot_figure(self):
         plt.close()
         self.figure = None
         self.displayed_img = None
         self.displayed_ax = None
         self.displayed_contour_lines = []
         self.displayed_contour_centroids = []
-        self.current_fill_img = None
-        self.current_contours = None
-        self.current_contour_centroids = None
-        if simulation_parameters.display_fill:
-            plt.ion()
+        plt.ion()
         self.figure = plt.figure(0, clear=True)
-        self.displayed_ax = self.figure.add_subplot(autoscale_on=False, xlim=(self.xmin, self.xmax), ylim=(self.ymin, self.ymax))
+        self.displayed_ax = self.figure.add_subplot(autoscale_on=False, xlim=(self.xmin, self.xmax),
+                                                    ylim=(self.ymin, self.ymax))
         self.displayed_ax.set_aspect("equal")
-        # self.figure_idx += 1
-
 
     def compute_fill_image(self, fill_factor_array):
         fill_img = griddata(points=(self.x_node_coords, self.y_node_coords), values=fill_factor_array, xi=(self.grid_x, self.grid_y), method='linear').T
@@ -60,7 +61,6 @@ class Renderer():
         fill_img[:, -1] = 1
         fill_img[0, :] = 1
         fill_img[-1, :] = 1
-
         fill_img = (fill_img >= 0.5).astype(float)
         return fill_img
 
@@ -76,8 +76,7 @@ class Renderer():
         return contours, centroids
 
 
-    def display_fill(self, fill_img, contours, centroids, time_stamp):
-        
+    def plot_fill_figure(self, fill_img, contours, centroids, time_stamp):
         if self.displayed_img is None:
             self.displayed_img = self.displayed_ax.imshow(fill_img, extent=(self.xmin, self.xmax, self.ymin, self.ymax), origin='lower', cmap=lizzy_cmap)
         else:
@@ -95,7 +94,7 @@ class Renderer():
             line, = self.displayed_ax.plot(contour[:, 0], contour[:, 1], 'r')
             self.displayed_contour_lines.append(line)
         
-        # Remove previous contours
+        # Remove previous centroids
         for centroid in self.displayed_contour_centroids:
             centroid.remove()
         self.displayed_contour_centroids = []
@@ -106,16 +105,14 @@ class Renderer():
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
 
-
-    
-    def generate_current_fill_image_and_contours(self, fill_factor_array, time_stamp, display_fill = False):
+    def generate_current_fill_image_and_contours(self, fill_factor_array, time_stamp):
         if self._can_render == False:
             print("Cannot generate fill image. Geometry is not flat")
             return
         fill_img = self.compute_fill_image(fill_factor_array)
         contours, centroids = self.compute_flow_front_contours(fill_img)
-        if display_fill:
-            self.display_fill(fill_img, contours, centroids, time_stamp)
+        if self.display_fill:
+            self.plot_fill_figure(fill_img, contours, centroids, time_stamp)
         self.current_fill_img = fill_img
         self.current_contours = contours
         self.current_contour_centroids = centroids

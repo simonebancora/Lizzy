@@ -11,6 +11,7 @@ from lizzy.materials import MaterialManager, PorousMaterial, Rosette
 from lizzy.sensors.sensmanager import SensorManager
 from lizzy.simparams import SimulationParameters
 from lizzy.bcond.bcond import BCManager
+from lizzy.render.render import Renderer
 from lizzy.solver.solver import Solver, SolverType
 import numpy as np
 
@@ -20,6 +21,7 @@ class LizzyModel:
         self._writer = None
         self._mesh = None
         self._solver = None
+        self._renderer = None
         self._latest_solution: any = None
         self._simulation_parameters = SimulationParameters()
         self._material_manager = MaterialManager()
@@ -98,17 +100,25 @@ class LizzyModel:
 
     def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_DENSE):
         self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, self._material_manager, self._sensor_manager, solver_type)
+        if self._simulation_parameters.generate_fill_image:
+            self._renderer = Renderer(self._mesh, self._simulation_parameters)
 
     def solve(self):
         self._latest_solution = self._solver.solve()
+        if self._simulation_parameters.generate_fill_image:
+            self._renderer.generate_current_fill_image_and_contours(self._solver.solver_vars["fill_factor_array"], self.current_time)
         return self._latest_solution
 
     def solve_step(self, step_period:float):
         self._latest_solution = self._solver.solve_step(step_period, log="off", lightweight=self._lightweight)
+        if self._simulation_parameters.generate_fill_image:
+            self._renderer.generate_current_fill_image_and_contours(self._solver.solver_vars["fill_factor_array"], self.current_time)
         return self._latest_solution
     
     def initialise_new_solution(self):
         self._solver.initialise_new_solution()
+        if self._renderer:
+            self._renderer.initialise_new_fill_image()
     
     def save_results(self, solution, result_name:str):
         self._writer.save_results(solution, result_name)
