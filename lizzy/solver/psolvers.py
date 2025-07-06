@@ -13,10 +13,16 @@ from scipy.sparse import csr_matrix
 class SolverType(Enum):
     DIRECT_DENSE = auto()
     DIRECT_SPARSE = auto()
+    ITERATIVE_CG = auto()
+    ITERATIVE_BICGSTAB = auto()
+    ITERATIVE_GMRES = auto()
+    ITERATIVE_PYAMG = auto()
+    ITERATIVE_PETSC = auto()
 
 class PressureSolver:
     @staticmethod
-    def solve(k:np.ndarray, f:np.ndarray, method:SolverType = SolverType.DIRECT_SPARSE):
+    def solve(k:np.ndarray, f:np.ndarray, method:SolverType = SolverType.DIRECT_SPARSE, 
+              tol:float = 1e-8, max_iter:int = 1000, verbose:bool = False, **solver_kwargs):
         """
         Solve the system `K p = f`.
 
@@ -27,13 +33,39 @@ class PressureSolver:
         f : np.ndarray
             Right-hand side vector. Zeros (no source yet) with ones in Dirichlet nodes. Dimension (N,1)
         method : SolverType
-            The solver type to be used. Default is SPARSE.
+            The solver type to be used. Default is DIRECT_SPARSE.
+        tol : float
+            Convergence tolerance for iterative solvers. Default is 1e-8.
+        max_iter : int
+            Maximum number of iterations for iterative solvers. Default is 1000.
+        verbose : bool
+            Whether to print convergence information for iterative solvers. Default is False.
+        **solver_kwargs
+            Additional keyword arguments passed to specific solvers.
         """
         match method:
             case SolverType.DIRECT_DENSE:
                 p = solve_pressure_direct_dense(k, f)
             case SolverType.DIRECT_SPARSE:
                 p = solve_pressure_direct_sparse(k, f)
+            case SolverType.ITERATIVE_CG:
+                p = solve_pressure_cg(k, f, tol=tol, max_iter=max_iter)
+            case SolverType.ITERATIVE_BICGSTAB:
+                p = solve_pressure_bicgstab(k, f, tol=tol, max_iter=max_iter)
+            case SolverType.ITERATIVE_GMRES:
+                p = solve_pressure_gmres(k, f, tol=tol, max_iter=max_iter)
+            case SolverType.ITERATIVE_PYAMG:
+                # Extract PyAMG specific parameters
+                accel = solver_kwargs.get('accel', 'cg')
+                cycle = solver_kwargs.get('cycle', 'V')
+                p = solve_pressure_pyamg(k, f, tol=tol, max_iter=max_iter, 
+                                       accel=accel, cycle=cycle, verbose=verbose)
+            case SolverType.ITERATIVE_PETSC:
+                # Extract PETSc specific parameters
+                ksp_type = solver_kwargs.get('ksp_type', 'cg')
+                pc_type = solver_kwargs.get('pc_type', 'gamg')
+                p = solve_pressure_petsc(k, f, tol=tol, max_iter=max_iter,
+                                       ksp_type=ksp_type, pc_type=pc_type, verbose=verbose)
             case _:
                 raise ValueError(f"Unknown solver type: {method}")
         return p

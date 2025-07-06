@@ -13,7 +13,9 @@ from lizzy.bcond.bcond import SolverBCs
 # import matplotlib.pyplot as plt
 
 class Solver:
-    def __init__(self, mesh, bc_manager, simulation_parameters, material_manager, sensor_manager, solver_type=SolverType.DIRECT_SPARSE):
+    def __init__(self, mesh, bc_manager, simulation_parameters, material_manager, sensor_manager, 
+                 solver_type=SolverType.DIRECT_SPARSE, solver_tol=1e-8, solver_max_iter=1000, 
+                 solver_verbose=False, **solver_kwargs):
         self.mesh = mesh
         self.bc_manager = bc_manager
         self.simulation_parameters = simulation_parameters
@@ -24,6 +26,10 @@ class Solver:
         self.vsolver = None
         self.fill_solver = None
         self.solver_type = solver_type
+        self.solver_tol = solver_tol
+        self.solver_max_iter = solver_max_iter
+        self.solver_verbose = solver_verbose
+        self.solver_kwargs = solver_kwargs
         self.N_nodes = mesh.nodes.N
         self.K_sing = None
         self.f_orig = None
@@ -200,7 +206,9 @@ class Solver:
         # k_local_all, f_local_all, dirichlet_idx_full, dirichlet_vals_full, mask_nodes, mask_elements, new_dofs_added, elem_connectivity = self.update_and_collect_solver_input()
         k, f = PressureSolver.apply_bcs(self.K_sing, self.f_orig, self.bcs)
         # self.K_sol, self.f_sol = PressureSolver.free_dofs(self.K_sol, self.f_sol, self.K_sing, self.f_orig, self.new_step_dofs)
-        p = PressureSolver.solve(k, f, self.solver_type)
+        p = PressureSolver.solve(k, f, self.solver_type, tol=self.solver_tol, 
+                                max_iter=self.solver_max_iter, verbose=self.solver_verbose, 
+                                **self.solver_kwargs)
 
         v_array = self.vsolver.calculate_elem_velocities(p, self.simulation_parameters.mu)
         v_nodal_array = self.vsolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
