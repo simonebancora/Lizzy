@@ -12,7 +12,8 @@ dependencies = [
     "numpy",
     "scipy",
     "h5py",
-    "matplotlib"
+    "matplotlib",
+    "scikit-image"
 ]
 
 [tool.setuptools]

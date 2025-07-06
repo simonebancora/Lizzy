@@ -8,7 +8,7 @@ import numpy as np
 import time
 from lizzy.solver import *
 from lizzy.bcond.bcond import SolverBCs
-from lizzy.render.render import Renderer
+
 # from scipy.sparse import lil_matrix
 # import matplotlib.pyplot as plt
 
@@ -21,8 +21,6 @@ class Solver:
         self.time_step_manager = TimeStepManager()
         self._sensor_manager = sensor_manager
         self.bcs = SolverBCs()
-        if self.simulation_parameters.generate_fill_image:
-            self.renderer = Renderer(mesh, self.simulation_parameters)
         self.vsolver = None
         self.fill_solver = None
         self.solver_type = solver_type
@@ -125,8 +123,6 @@ class Solver:
         self.bcs = SolverBCs()
         self.mesh.EmptyCVs()
         self.bc_manager.reset_inlets()
-        if self.simulation_parameters.generate_fill_image:
-            self.renderer.initialise_new_figure(self.simulation_parameters)
         self.update_dirichlet_bcs()
         self.fill_initial_cvs()
         self.update_empty_nodes_idx()
@@ -233,8 +229,6 @@ class Solver:
         # Print number of empty cvs
         self.update_n_empty_cvs()
 
-
-
     def solve(self, log="on"):
         solve_time_start = time.time()
         print("SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
@@ -268,7 +262,5 @@ class Solver:
         solve_time_end = time.time()
         total_solve_time = solve_time_end - solve_time_start
         # print("\nSTEP SOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
-        if self.simulation_parameters.generate_fill_image:
-            self.renderer.generate_current_fill_image_and_contours(self.solver_vars["fill_factor_array"], self.current_time, self.simulation_parameters.display_fill)
         return solution
     
