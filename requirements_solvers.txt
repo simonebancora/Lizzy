@@ -1,0 +1,4 @@
+# Optional dependencies for enhanced linear solvers in Lizzy
+pyamg>=4.0.0
+petsc>=3.18.0
+petsc4py>=3.18.0
