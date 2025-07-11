@@ -16,7 +16,7 @@ class Renderer():
     def __init__(self, mesh, simulation_parameters):
         self.display_fill = simulation_parameters.display_fill
         z_node_coords = mesh.nodes.XYZ[:, 2]
-        self._x_resolution = 250
+        self._x_resolution = simulation_parameters.fill_image_resolution
         self.x_node_coords = mesh.nodes.XYZ[:, 0]
         self.y_node_coords = mesh.nodes.XYZ[:, 1]
         self.xmin = self.x_node_coords.min()
