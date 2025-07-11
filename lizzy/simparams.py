@@ -13,6 +13,7 @@ class SimulationParameters:
     has_been_assigned : bool = False
     end_step_when_sensor_triggered : bool = False
     generate_fill_image :bool = False
+    fill_image_resolution : int = 250
     display_fill : bool = False
 
     def assign(self, **kwargs):
