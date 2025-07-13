@@ -20,8 +20,8 @@ dependencies = [
 packages = ["lizzy"]
 
 [project.optional-dependencies]
-dev = ["pytest", "matplotlib"]
-drl = ["gymnasium", "matplotlib", "stable-baselines3", "tensorboard"]
+dev = ["pytest"]
+drl = ["gymnasium", "stable-baselines3", "tensorboard"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
