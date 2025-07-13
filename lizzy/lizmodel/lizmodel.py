@@ -4,7 +4,7 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Dict
+from typing import Dict, overload
 from lizzy.IO.IO import Reader, Writer
 from lizzy.cvmesh.cvmesh import Mesh
 from lizzy.materials import MaterialManager, PorousMaterial, Rosette
@@ -13,7 +13,6 @@ from lizzy.simparams import SimulationParameters
 from lizzy.bcond.bcond import BCManager
 from lizzy.render.render import Renderer
 from lizzy.solver.solver import Solver, SolverType
-import numpy as np
 
 class LizzyModel:
     def __init__(self):
@@ -49,14 +48,37 @@ class LizzyModel:
     def n_empty_cvs(self) -> int:
         return self._solver.n_empty_cvs
 
+    def get_number_of_empty_cvs(self) -> int:
+        return self.n_empty_cvs
+
     @property
     def current_time(self) -> float:
         return self._solver.current_time
+
+    def get_current_time(self) -> float:
+        return self.current_time
 
     @property
     def latest_solution(self):
         """Returns the most recent solution from the model. Returns None is the model is run in lightweight mode."""
         return self._latest_solution
+
+    def get_latest_solution(self) -> any:
+        return self.latest_solution
+
+    @overload
+    def assign_simulation_parameters(
+            self,
+            *,
+            mu: float,
+            wo_delta_time: float,
+            fill_tolerance: float,
+            has_been_assigned: bool,
+            end_step_when_sensor_triggered: bool,
+            generate_fill_image: bool,
+            fill_image_resolution: int,
+            display_fill: bool,
+    ) -> None: ...
 
     def assign_simulation_parameters(self, **kwargs):
         self._simulation_parameters.assign(**kwargs)
@@ -94,9 +116,27 @@ class LizzyModel:
     
     def get_sensor_by_id(self, idx):
         return self._sensor_manager.get_sensor_by_id(idx)
-    
-    def get_current_time(self):
-        return self.current_time
+
+    def get_renderer(self):
+        if self._renderer is None:
+            print("No Renderer available. Use simulation parameter 'generate_fill_image = True' to instantiate a Renderer")
+            return
+        return self._renderer
+
+
+    def get_current_renderer_figure(self):
+        try:
+            return self._renderer.figure
+        except:
+            print("No current figure instance in the Renderer")
+            return None
+
+    def get_current_fill_image(self):
+        try:
+            return self._renderer.current_fill_img
+        except:
+            print("No current fill image in the Renderer")
+            return None
 
     def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_DENSE):
         self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, self._material_manager, self._sensor_manager, solver_type)
@@ -105,8 +145,6 @@ class LizzyModel:
 
     def solve(self):
         self._latest_solution = self._solver.solve()
-        if self._simulation_parameters.generate_fill_image:
-            self._renderer.generate_current_fill_image_and_contours(self._solver.solver_vars["fill_factor_array"], self.current_time)
         return self._latest_solution
 
     def solve_step(self, step_period:float):
