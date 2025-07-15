@@ -57,15 +57,20 @@ class Renderer():
 
     def compute_fill_image(self, fill_factor_array):
         fill_img = griddata(points=(self.x_node_coords, self.y_node_coords), values=fill_factor_array, xi=(self.grid_x, self.grid_y), method='linear').T
-        fill_img[:, 0] = 1
-        fill_img[:, -1] = 1
-        fill_img[0, :] = 1
-        fill_img[-1, :] = 1
+        # fill_img[:, 0] = 1
+        # fill_img[:, -1] = 1
+        # fill_img[0, :] = 1
+        # fill_img[-1, :] = 1
         fill_img = (fill_img >= 0.5).astype(float)
         return fill_img
 
     def compute_flow_front_contours(self, fill_img):
-        contours = measure.find_contours(fill_img.T)
+        fill_img_for_contours = fill_img.copy()
+        fill_img_for_contours[:, 0] = 1
+        fill_img_for_contours[:, -1] = 1
+        fill_img_for_contours[0, :] = 1
+        fill_img_for_contours[-1, :] = 1
+        contours = measure.find_contours(fill_img_for_contours.T)
         centroids = []
         for contour in contours:
             contour[:, 0] = contour[:, 0] * (self.xmax / self._x_resolution) + self.grid_elem_size[0]/2
