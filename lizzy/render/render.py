@@ -25,7 +25,7 @@ class Renderer():
         self.ymax = self.y_node_coords.max()
         xy_img_ratio = (self.xmax - self.xmin) / (self.ymax - self.ymin)
         self._y_resolution = int(self._x_resolution / xy_img_ratio)
-        self.grid_elem_size = ((self.xmax - self.xmin)/self._x_resolution, 1/(self.ymax - self.ymin)/self._y_resolution)
+        self.grid_elem_size = ((self.xmax - self.xmin)/self._x_resolution, (self.ymax - self.ymin)/self._y_resolution)
         x_lin = np.linspace(self.xmin, self.xmax, self._x_resolution)
         y_lin = np.linspace(self.ymin, self.ymax, self._y_resolution)
         self.grid_x, self.grid_y =  np.meshgrid(x_lin, y_lin, indexing='ij')
