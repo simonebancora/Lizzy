@@ -11,7 +11,6 @@ from lizzy.materials import MaterialManager, PorousMaterial, Rosette
 from lizzy.sensors.sensmanager import SensorManager
 from lizzy.simparams import SimulationParameters
 from lizzy.bcond.bcond import BCManager
-from lizzy.render.render import Renderer
 from lizzy.solver.solver import Solver, SolverType
 
 class LizzyModel:
@@ -67,10 +66,13 @@ class LizzyModel:
 
     @property
     def latest_solution(self):
-        """Returns the most recent solution from the model. Returns None is the model is run in lightweight mode."""
         return self._latest_solution
 
     def get_latest_solution(self) -> any:
+        r"""
+        Returns the most recent solution from the model. Returns None is the model is run in lightweight mode.
+        :return: The solution at the latest time step.
+        """
         return self.latest_solution
 
     @overload
@@ -82,15 +84,24 @@ class LizzyModel:
             fill_tolerance: float,
             has_been_assigned: bool,
             end_step_when_sensor_triggered: bool,
-            generate_fill_image: bool,
-            fill_image_resolution: int,
-            display_fill: bool,
-    ) -> None: ...
+    ) -> None:
+        r"""
+        Assign several parameters of the simulation.
+        ``mu``: viscosity [Pa s]
+        ``wo_delta_time``: interval of simulation time between solution write-outs [s]
+        ``fill_tolerance``: tolerance on the fill factor to consider a CV as filled. Default: 0.01
+        ``end_step_when_sensor_triggered``: if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
+        """
+        ...
 
     def assign_simulation_parameters(self, **kwargs):
         self._simulation_parameters.assign(**kwargs)
 
     def read_mesh_file(self, mesh_file_path:str):
+        r"""
+        Reads a mesh file and initialises the mesh. Currently only .MSH format is supported.
+        :param mesh_file_path: Path to the mesh file.
+        """
         self._reader = Reader(mesh_file_path)
         self._mesh = Mesh(self._reader)
         self._writer = Writer(self._mesh)
@@ -124,31 +135,8 @@ class LizzyModel:
     def get_sensor_by_id(self, idx):
         return self._sensor_manager.get_sensor_by_id(idx)
 
-    def get_renderer(self):
-        if self._renderer is None:
-            print("No Renderer available. Use simulation parameter 'generate_fill_image = True' to instantiate a Renderer")
-            return
-        return self._renderer
-
-
-    def get_current_renderer_figure(self):
-        try:
-            return self._renderer.figure
-        except:
-            print("No current figure instance in the Renderer")
-            return None
-
-    def get_current_fill_image(self):
-        try:
-            return self._renderer.current_fill_img
-        except:
-            print("No current fill image in the Renderer")
-            return None
-
     def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_DENSE):
         self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, self._material_manager, self._sensor_manager, solver_type)
-        if self._simulation_parameters.generate_fill_image:
-            self._renderer = Renderer(self._mesh, self._simulation_parameters)
 
     def solve(self):
         self._latest_solution = self._solver.solve()
@@ -156,14 +144,10 @@ class LizzyModel:
 
     def solve_step(self, step_period:float):
         self._latest_solution = self._solver.solve_step(step_period, log="off", lightweight=self._lightweight)
-        if self._simulation_parameters.generate_fill_image:
-            self._renderer.generate_current_fill_image_and_contours(self._solver.solver_vars["fill_factor_array"], self.current_time)
         return self._latest_solution
     
     def initialise_new_solution(self):
         self._solver.initialise_new_solution()
-        if self._renderer:
-            self._renderer.initialise_new_fill_image()
     
     def save_results(self, solution, result_name:str):
         self._writer.save_results(solution, result_name)
