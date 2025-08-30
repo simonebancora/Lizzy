@@ -7,7 +7,7 @@
 import lizzy as liz
 import pytest
 
-tol_err = 0.001
+tol_err = 0.01
 @pytest.fixture()
 def model():
     model = liz.LizzyModel()

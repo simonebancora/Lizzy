@@ -13,7 +13,6 @@ dependencies = [
     "scipy",
     "h5py",
     "matplotlib",
-    "scikit-image"
 ]
 
 [tool.setuptools]
@@ -21,7 +20,6 @@ packages = ["lizzy"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
-drl = ["gymnasium", "stable-baselines3", "tensorboard"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
