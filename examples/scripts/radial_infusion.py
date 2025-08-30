@@ -1,20 +1,17 @@
 import lizzy as liz
 
-mesh_reader = liz.Reader("../meshes/Radial.msh")
-mesh = liz.Mesh(mesh_reader)
+model = liz.LizzyModel()
+model.read_mesh_file("../meshes/Radial.msh")
+model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
 
-liz.ProcessParameters.assign(mu=0.1, wo_delta_time=500)
+rosette = liz.Rosette((1,1,0))
+model.create_material(1E-10, 1E-11, 1E-10, 0.5, 1.0, "aniso_material")
+model.assign_material("aniso_material", 'domain', rosette)
 
-rosette = liz.Rosette((1,0,0))
-material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)
-liz.MaterialManager.add_material('domain', material, rosette)
+model.create_inlet(1E+05, "inner_inlet")
+model.assign_inlet("inner_inlet", "inner_rim")
 
-bc_manager = liz.BCManager()
-inlet_1 = liz.Inlet('inner_rim', 1E+05)
-bc_manager.add_inlet(inlet_1)
+model.initialise_solver(solver_type=liz.SolverType.ITERATIVE_PETSC)
+solution = model.solve()
 
-solver = liz.Solver(mesh, bc_manager, liz.SolverType.DIRECT_SPARSE)
-solution = solver.solve(log="on")
-
-writer = liz.Writer(mesh)
-writer.save_results(solution, "Radial")
+model.save_results(solution, "Aniso")

@@ -15,6 +15,9 @@ from lizzy.render.render import Renderer
 from lizzy.solver.solver import Solver, SolverType
 
 class LizzyModel:
+    """
+    The fundamental class in the Lizzy solver. This class wraps all subcomponents of the solver and exposes all user-oriented scripting APIs. Provides access to methods for reading a mesh, assigning properties, configuring the solver, saving results and more. A typical script begins with the instantiation of a LizzyModel object.
+    """
     def __init__(self):
         self._reader = None
         self._writer = None
@@ -30,6 +33,10 @@ class LizzyModel:
 
     @property
     def lightweight(self):
+        r"""Set whether to run the model in lightweight mode. Default is ``False``.
+
+        When the model is run in lighweight mode, solver results are not serialised at the end of steps into solution output format. If ``lightweight=True``, :func:`~LizzyModel.save_results` cannot be called. Useful to speed up computation when saving results to an output file is not necessary
+        """
         return self._lightweight
 
     @lightweight.setter
