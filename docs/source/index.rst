@@ -15,7 +15,7 @@ Is is designed to simulate resin infusion processes that are used in the manufac
 
 .. note::
 
-   This project is still in early development.
+   This project is still in early development. Version 1.0 is scheduled for release by end of 2025. Stay tuned!
 
 User's Guide
 ------------
@@ -33,3 +33,4 @@ API Reference
 -------------
 
 Here you will find in-depth description of Lizzy's modules, classes and methods.
+`Will` as, in a near future. For now, it's under construction.

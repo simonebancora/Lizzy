@@ -11,11 +11,12 @@ dependencies = [
     "meshio==5.3.5",
     "numpy",
     "scipy",
-    "h5py"
+    "h5py",
+    "matplotlib",
 ]
 
 [tool.setuptools]
-packages = ["lizzy", "lizzy.IO", "lizzy.cvmesh", "lizzy.solver", "lizzy.controls", "lizzy.solver.builtin", "lizzy.solver.external"]
+packages = ["lizzy"]
 
 [project.optional-dependencies]
 dev = ["pytest"]

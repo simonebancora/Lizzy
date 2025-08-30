@@ -5,46 +5,93 @@
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
-import lizzy
+
 
 class FillSolver:
-    all_fluxes_per_second = None
-    @staticmethod
-    def find_free_surface_cvs(CVs):
+    def __init__(self):
+        self.all_fluxes_per_second = None
+        self.map_cv_id_to_support_triangle_ids = {}
+        self.map_cv_id_to_flux_terms = {}
+
+    def find_free_surface_cvs(self, fill_factor_array, cv_support_cvs_array):
         """
         Finds the control volumes that are on the flow front. These cvs have a fill factor < 1.
         """
-        active_cvs = []
-        for cv in CVs:
-            cv.free_surface = 0
-            if cv.fill < 1 <= np.max([c.fill for c in cv.support_CVs]):
-                cv.free_surface = 1
-                active_cvs.append(cv)
-        return active_cvs
+        candidate_mask = fill_factor_array < 1
+        candidate_indices = np.nonzero(candidate_mask)[0]
+        free_surface_array = np.zeros_like(fill_factor_array, dtype=int)
+        neighbor_filled = np.array([np.any(fill_factor_array[cv_support_cvs_array[i]] >= 1) for i in candidate_indices])
+        active_cv_ids = candidate_indices[neighbor_filled]
+        free_surface_array[active_cv_ids] = 1
+        return active_cv_ids, free_surface_array
 
-
-    @classmethod
-    def calculate_time_step(cls, active_cvs, v_array):
+    def calculate_time_step(self, active_cv_ids, fill_factor_array, cv_volumes_array, v_array):
         # calculate fluxes/s per each CV
-        cls.all_fluxes_per_second = []
-        for cv in active_cvs:
-            cv_fluxes_per_s = cv.CalculateVolFluxes(v_array)
-            cls.all_fluxes_per_second.append(cv_fluxes_per_s)
+        self.all_fluxes_per_second = [self.CalculateVolFluxes(v_array, cv_id) for cv_id in active_cv_ids]
 
         # calculate time step to fill one:
         candidate_dts = []
-        for i, cv in enumerate(active_cvs):
-            if cls.all_fluxes_per_second[i] > 0:
-                dt = ((1.00-cv.fill)*cv.vol)/cls.all_fluxes_per_second[i]
+        for i in range(len(active_cv_ids)):
+            active_cv_id = active_cv_ids[i]
+            if self.all_fluxes_per_second[i] > 0:
+                dt = ((1.00 - fill_factor_array[active_cv_id]) * cv_volumes_array[active_cv_id]) / self.all_fluxes_per_second[i]
                 candidate_dts.append(dt)
         np.array(candidate_dts)
         dt = np.min(candidate_dts)
         return dt
 
-    @classmethod
-    def fill_current_time_step(cls, active_cvs, dt):
-        for i, cv in enumerate(active_cvs):
-            cv.fill = min(cv.fill + cls.all_fluxes_per_second[i]*dt / cv.vol, 1)
-        for cv in active_cvs:
-            if cv.fill >= (1-lizzy.ProcessParameters.fill_tolerance):
-                cv.fill = 1
+    def fill_current_time_step(self, active_cv_ids, fill_factor_array, cv_volumes_array, dt, fill_tolerance):
+        for i, id in enumerate(active_cv_ids):
+            fill_factor_array[id] = min(fill_factor_array[id] + self.all_fluxes_per_second[i] * dt / cv_volumes_array[id], 1)
+        for i in range(len(fill_factor_array)):
+            if fill_factor_array[i] >= (1 - fill_tolerance):
+                fill_factor_array[i] = 1
+        return fill_factor_array
+
+    def CalculateVolFluxes(self, v_array, cv_id):
+        ids = self.map_cv_id_to_support_triangle_ids[cv_id] # retrieve from dictionary
+        flux_terms_local = self.map_cv_id_to_flux_terms[cv_id] # retrieve from dictionary
+        v_array_local = v_array[ids]
+        cv_flux_per_s = np.sum(np.einsum('ij,ij->i', v_array_local, flux_terms_local))
+        return cv_flux_per_s
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# def find_free_surface_cvs_OLD(self, fill_factor_array, cv_support_cvs_array):
+#     """
+#     Finds the control volumes that are on the flow front. These cvs have a fill factor < 1.
+#     """
+#     free_surface_array = np.zeros_like(fill_factor_array)
+#     active_cv_ids = []
+#     for i, ff in enumerate(fill_factor_array):
+#         if ff < 1:
+#             neighbor_fills = fill_factor_array[cv_support_cvs_array[i]]
+#             if np.max(neighbor_fills >= 1):
+#                 active_cv_ids.append(i)
+#                 free_surface_array[i] = 1
+#
+#     return active_cv_ids, free_surface_array
+
+
+# def find_free_surface_cvs_SLOW(self, fill_factor_array, cv_adj_matrix):
+#     """
+#     Finds the control volumes that are on the flow front. These cvs have a fill factor < 1.
+#     """
+#     # cv_adj_matrix_full = cv_adj_matrix.toarray()
+#     unfilled_cv_mask = np.diag((fill_factor_array < 1).astype(int))
+#     filled_cv_mask = (fill_factor_array >= 1).astype(int)
+#     free_surface_array = (unfilled_cv_mask @ cv_adj_matrix @ filled_cv_mask > 0).astype(int)
+#     active_cv_ids = np.where(free_surface_array == 1)[0]
+#     return active_cv_ids, free_surface_array

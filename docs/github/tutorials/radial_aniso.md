@@ -16,9 +16,9 @@ Let's initialise a `Reader` object and read the mesh:
 mesh_reader = liz.Reader("Radial.msh")
 ```
 ### Defining material properties
-As usual, we must assign some process parameters to the `ProcessParameters`:
+As usual, we must assign some process parameters to the `SimulationParameters`:
 ```
-liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
+liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
 ```
 Next, we will define the properties of the material. Only one material domains is present in the mesh (_domain_), however we want to create an anisotropic material. We also want the material principal directions to be aligned with some arbitrary global direction. To do so, we will create a `Rosette` object:
 ```
@@ -67,7 +67,7 @@ import lizzy as liz
 mesh_reader = liz.Reader("../meshes/Radial.msh")
 
 # assign some process parameters
-liz.ProcessParameters.assign(mu=0.1, wo_delta_time=500)
+liz.SimulationParameters.assign(mu=0.1, wo_delta_time=500)
 
 # add a material to each material tag present in the mesh
 rosette = liz.Rosette((1,1,0))

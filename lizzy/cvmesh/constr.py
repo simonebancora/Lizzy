@@ -7,7 +7,7 @@
 import numpy as np
 from .collections import nodes, lines, elements
 from . import entities as ent
-
+from lizzy.solver.fillsolver import FillSolver
 
 def CreateNodes(mesh_data):
     """
@@ -98,7 +98,7 @@ def CreateTriangles(mesh_data, nodes):
     all_triangles.N = len(all_triangles)
     return all_triangles
 
-def CreateControlVolumes(nodes):
+def CreateControlVolumes(nodes, fill_solver : FillSolver):
     # for every nodes:
     CVs = []
     for node in nodes:
@@ -116,4 +116,8 @@ def CreateControlVolumes(nodes):
         cv.support_CVs = CVs[connected_nodes]
         cv.GetCVLines()
         cv.CheckFluxNormalOrientations()
+        cv.precompute_flux_terms()    # this assignes cv.flux_terms, which is an array of variable size (len = n support triangles)
+        cv.support_triangle_ids = np.array([tri.id for tri in cv.support_triangles]) #not needed anymore
+        fill_solver.map_cv_id_to_support_triangle_ids[cv.id] = np.array([tri.id for tri in cv.support_triangles])
+        fill_solver.map_cv_id_to_flux_terms[cv.id] = cv.flux_terms
     return CVs

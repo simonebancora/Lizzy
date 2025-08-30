@@ -14,19 +14,15 @@ The mesh contains 3 domain tags ("physical groups" in msh format): *inner_rim*, 
 Import and parameters
 ---------------------
 
-Let's import Lizzy, read the mesh file, create a ``Mesh`` and assign some process parameters. This header is lifted from the :ref:`channel_flow` example.
+The first steps are to import Lizzy, create a LizzyModel, read the mesh file and assign some process parameters. This setup is identical to the :ref:`channel_flow` example.
 
 .. code-block::
 
     import lizzy as liz
 
-    # read mesh
-    mesh_reader = liz.Reader("Radial.msh")
-    # instantiate Mesh
-    mesh = liz.Mesh(mesh_reader)
-
-    # assign viscosity
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
+    model = liz.LizzyModel()
+    model.read_mesh_file("Radial.msh")
+    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
 
 Creating an oriented anisotropic material
 -----------------------------------------
@@ -38,11 +34,12 @@ It is possible to assign an anisotropic permeability to a ``PorousMaterial`` by 
     rosette = liz.Rosette((1,0,0))
 
 The constructor of ``Rosette`` can take different forms of arguments. The simplest way to instantiate a Rosette is by passing a 3D vector, in global :math:`x, y, z` components, that indicates the global direction of the first principal permeability :math:`k_1`.
-The next step is to create an anisotropic material:
+The next step is to create one anisotropic material and assign it to the domain:
 
 .. code-block::
 
-    material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)
+    model.create_material(1E-10, 1E-11, 1E-10, 0.5, 1.0, "aniso_material")
+    model.assign_material("aniso_material", "domain", rosette)
 
 Note the factor 10 difference between :math:`k_1` and :math:`k_2`. Lastly, we can assign the material and the rosette to a given domain patch - in this case, only the *domain* tag is present in the mesh:
 
@@ -94,7 +91,7 @@ The full script
     mesh_reader = liz.Reader("../meshes/Radial.msh")
     mesh = liz.Mesh(mesh_reader)
 
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=500)
+    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=500)
 
     rosette = liz.Rosette((1,0,0))
     material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)
@@ -146,7 +143,7 @@ The rest of the script remains unchanged. The full modified script becomes:
     mesh_reader = liz.Reader("../meshes/Radial.msh")
     mesh = liz.Mesh(mesh_reader)
 
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=500)
+    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=500)
 
     rosette_45 = liz.Rosette((1,1,0))
     material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)

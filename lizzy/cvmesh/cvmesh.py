@@ -10,11 +10,13 @@ from lizzy.cvmesh.collections import nodes, lines, elements
 from lizzy.materials import MaterialManager
 from typing import TYPE_CHECKING
 
+from lizzy.solver import FillSolver
+
 if TYPE_CHECKING:
     from lizzy.IO import IO
 
 class Mesh:
-    """
+    r"""
     A class representing a FE/CV mesh.
 
     The Mesh class provides methods for creating and manipulating a mesh. Takes a mesh_data dictionary coming from the mesh reader, and creates objects for all entities (nodes, elements, lines). Also creates the control volumes (CVs).
@@ -39,6 +41,7 @@ class Mesh:
         self.mesh_data = mesh_reader.mesh_data
         self.nodes = nodes([])
         self.triangles = elements([])
+        self.tetras = elements([])
         self.lines = lines([])
         self.CVs = []
         self.boundaries = mesh_reader.mesh_data['physical_nodes']
@@ -85,10 +88,10 @@ class Mesh:
         self.triangles = CreateTriangles(mesh_data, self.nodes)
         self.lines = CreateLines(mesh_data, self.triangles)
 
-    def preprocess(self):
+    def preprocess(self, material_manager: MaterialManager, fill_solver: FillSolver):
         # assign permeability to elements
-        materials = MaterialManager.materials
-        rosettes = MaterialManager.rosettes
+        materials = material_manager.assigned_materials
+        rosettes = material_manager.assigned_rosettes
         for tri in self.triangles:
             try:
                 material = materials[tri.material_tag]
@@ -100,8 +103,18 @@ class Mesh:
                 tri.h = materials[tri.material_tag].thickness
             except KeyError:
                 exit(f"Mesh contains unassigned material tag: {tri.material_tag}")
-        self.CVs = CreateControlVolumes(self.nodes)
+        self.CVs = CreateControlVolumes(self.nodes, fill_solver)
+        # create a hashmap for CV id: [ids of supporting elements]
         print("Mesh pre-processing completed\n")
+
+
+
+        #TODO: for numba:
+        self.triangle_id_lists = [np.array(n.triangle_ids, dtype=np.int32) for n in self.nodes]
+
+
+
+
         self.preprocessed = True
 
     def CrossReferenceEntities(self):

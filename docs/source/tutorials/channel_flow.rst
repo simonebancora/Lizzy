@@ -34,53 +34,54 @@ In the first line of the script, let's import Lizzy by:
 
     import lizzy as liz
 
-Creating the mesh
------------------
+Creating the Lizzy model
+------------------------
 
-Let's read the mesh file that we have copied by creating a ``Reader`` object:
+Every simulation model in Lizzy is created and defined using the LizzyModel class. This is the main class of the solver and provides all APIs necessary to fully define a simulation scenario.
+
+The first expression in asy Lizzy script is always to create the LizzyModel that will be used in the simulation:
 
 .. code-block::
 
-    mesh_reader = liz.Reader("Rect1M_R1.msh")
+    model = liz.LizzyModel()
+
+From now on, we will use this ``LizzyModel`` object to access all the relevant APIs.
+Let's read the mesh file that we have copied:
+
+.. code-block::
+
+    model.read_mesh_file("Rect1M_R1.msh")
 
 Make sure that the path given points to the mesh file that we have copied in the folder.
 In this example, both the script and the mesh are in the working folder. If your folder structure is different, adjust the mesh path accordingly.
 
-Now that the mesh is read, we must instantiate a ``Mesh`` object. We pass the ``Reader`` we just created to its constructor:
+Now that the mesh is read, we need to define a few material and process properties. To do so, we use the ``assign_simulation_parameters`` method:
 
 .. code-block:: python
 
-    mesh = liz.Mesh(mesh_reader)
-
-Defining material properties
-----------------------------
-
-Next, we need to define a few material and process properties. To do so, we use the ``ProcessParameters`` singleton:
-
-.. code-block:: python
-
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
+    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
 
 ``mu`` is the resin viscosity, ``wo_delta_time`` controls the interval of time at which the simulation result is saved in the results file. Omitting or assigning a negative value to ``wo_delta_time`` will save every single time step in the result file (usually undesired).
 
 .. note::
 
-    There is no particular order in the script as where the ``ProcessParameters`` should be assigned, as long as it is done *before* the ``Solver`` is instantiated (further on). Failure to do so, or omitting the ``ProcessParameters`` entirely, will result in running the simulation with default values. The solver will warn us with a message: ``>>> Warning: Process parameters were not assigned. Running with default values: mu= 0.1, wo_delta_time= -1``
+    There is no particular order in the script as where the ``assign_simulation_parameters`` method should be called, as long as it is done *before* the solver is initialised by the ``initialise_solver`` method (further on). Failure to do so, or omitting the ``assign_simulation_parameters`` call entirely, will result in running the simulation with default values. The solver will warn us with a message: ``>>> Warning: Process parameters were not assigned. Running with default values: mu= 0.1, wo_delta_time= -1``
 
-Next, we can define the properties of the materials in the mesh. At the moment, material definition is handled in the script (in the future this will change). We can do so by creating a ``PorousMaterial`` and then using the ``add_material`` method of the ``MaterialManager`` singleton for each material that we want to add:
+Next, we can define the properties of the materials in the mesh. At the moment, material definition is handled in the script (in the future this will change). We can do so by creating a material and then assigning it to a selected domain:
 
 .. code-block:: python
 
-    material = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
-    liz.MaterialManager.add_material('domain', material)
+    model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "test_material")
+    model.assign_material("test_material", 'domain')
 
-We use the class ``PorousMaterial`` to create a porous material associated to the material key. In absence of a proper documentation, the arguments of ``PorousMaterial`` are:
+The method ``create_material`` instantiates a ``PorousMaterial`` object which is stored in the model. The arguments of ``create_material`` are:
 
 * ``k1`` (float): principal permeability value in local direction :math:`\mathbf{e}_1`
 * ``k2`` (float): principal permeability value in local direction :math:`\mathbf{e}_2`
 * ``k3`` (float): principal permeability value in local direction :math:`\mathbf{e}_3`
 * ``porosity`` (float): the fraction of total material volume that is not occupied by solid material (1 - Vf)
 * ``thickness`` (float): the thickness of the material.
+* ``name`` (str): the name assigned to the material. This is used to identify the material from now on, for example when it needs to be selected for assignment by the following line: ``assign_material("material name", "mesh domain name")``
 
 Note that no material orientation was defined. This is ok because the material declared is isotropic. Behind the scenes, Lizzy assigns a global rosette aligned with the global x, y, z axes when no rosette is declared. Local material orientations and zone-specific rosettes will be detailed in more advanced examples.
 
@@ -91,40 +92,45 @@ Note that no material orientation was defined. This is ok because the material d
 Boundary conditions
 -------------------
 
-Next, we will create some boundary conditions. To do so, first we must instantiate a Boundary Conditions Manager (``BCManager``) object:
+Next, we will create some boundary conditions. In this example we will create an inlet on the left edge of the mesh.
+At the moment, only inlets with assigned pressure are supported. Inlets are created following the same pattern as for materials: the inlet is created with a name, and then assigned:
 
 .. code-block::
 
-    bc_manager = liz.BCManager()
+    model.create_inlet(1E+05, "inlet_left")
+    model.assign_inlet("inlet_left", "left_edge")
 
-At the moment, only inlets with assigned pressure are supported. Inlets are created by using the ``Inlet`` class and assigned to the ``BCManager`` using the ``add_inlet`` method:
+The ``create_inlet`` method takes two arguments: the pressure value (``1E+05``) and the name of the inlet (``"inlet_left"``).
+
+
+Initialise solver
+-----------------
+
+Once the simulation model has been completely defined, we call the ``initialise_solver`` method to finalise the model. This method should be called last, after all assignments have been made (inlets, materials, sensors, controls, etc...):
 
 .. code-block::
 
-    inlet_1 = liz.Inlet('left_edge', 1E+05)
-    bc_manager.add_inlet(inlet_1)
-
-The ``Inlet`` class takes two arguments: the name of the physical line where it is assigned (``'left_edge'``) and the pressure value (``1E+05``).
+    model.initialise_solver()
 
 Solve
 -----
 
-The next step is to create an appropriate solver and call `solve` to run the filling simulation:
+The next step is to call the `solve` method to run the filling simulation:
 
 .. code-block::
 
-    solver = liz.Solver(mesh, bc_manager)
-    solution = solver.solve(log="on")
+    solution = model.solve()
+
+The ``solve`` method returns a ``Solution`` object, which is **not** stored in the LizzyModel and therefore must be captured.
 
 Write results
 -------------
 
-The write-out of results is handled by the `Writer` object:
+The write-out of results in Paraview-compatible format is handled by the ``save_results`` method:
 
 .. code-block::
 
-    writer = liz.Writer(mesh)
-    writer.save_results(solution, "Rect1M_R1")
+    model.save_results(solution, "Rect1M_R1")
 
 The ``save_results`` method takes two arguments: the solution object returned by the solver and a string that specifies the name of the folder that will be created and where the results will be saved.
 
@@ -135,23 +141,16 @@ The full script
 
     import lizzy as liz
 
-    mesh_reader = liz.Reader("../meshes/Rect1M_R1.msh")
-    mesh = liz.Mesh(mesh_reader)
-
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
-
-    material = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
-    liz.MaterialManager.add_material('domain', material)
-
-    bc_manager = liz.BCManager()
-    inlet_1 = liz.Inlet('left_edge', 1E+05)
-    bc_manager.add_inlet(inlet_1)
-
-    solver = liz.Solver(mesh, bc_manager, liz.SolverType.DIRECT_SPARSE)
-    solution = solver.solve(log="on")
-
-    writer = liz.Writer(mesh)
-    writer.save_results(solution, "Rect1M_R1", save_cv_mesh=True)
+    model = liz.LizzyModel()
+    model.read_mesh_file("Rect1M_R1.msh")
+    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
+    model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "example_material")
+    model.assign_material("example_material", 'domain')
+    model.create_inlet(100000, "inlet_left")
+    model.assign_inlet("inlet_left", "left_edge")
+    model.initialise_solver()
+    solution = model.solve()
+    model.save_results(solution, "Rect1M_R1")
 
 Solution visualisation
 ----------------------

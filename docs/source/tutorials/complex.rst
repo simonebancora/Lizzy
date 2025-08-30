@@ -39,7 +39,7 @@ To begin with, we create a mesh and define some process parameters as usual:
     mesh = liz.Mesh(mesh_reader)
 
     # assign viscosity
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
+    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
 
 Creating materials
 ------------------
@@ -115,7 +115,7 @@ The full script
 
     import lizzy as liz
 
-    liz.ProcessParameters.assign(mu=0.1, wo_delta_time=100)
+    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
 
     mesh_reader = liz.Reader("../meshes/Complex_rotated.msh")
     mesh = liz.Mesh(mesh_reader)
