@@ -49,8 +49,8 @@ class FillSolver:
         return fill_factor_array
 
     def CalculateVolFluxes(self, v_array, cv_id):
-        ids = self.map_cv_id_to_support_triangle_ids[cv_id] # retrieve from hash map
-        flux_terms_local = self.map_cv_id_to_flux_terms[cv_id] # retrieve from hash map
+        ids = self.map_cv_id_to_support_triangle_ids[cv_id] # retrieve from dictionary
+        flux_terms_local = self.map_cv_id_to_flux_terms[cv_id] # retrieve from dictionary
         v_array_local = v_array[ids]
         cv_flux_per_s = np.sum(np.einsum('ij,ij->i', v_array_local, flux_terms_local))
         return cv_flux_per_s

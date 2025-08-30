@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from lizzy.IO import IO
 
 class Mesh:
-    """
+    r"""
     A class representing a FE/CV mesh.
 
     The Mesh class provides methods for creating and manipulating a mesh. Takes a mesh_data dictionary coming from the mesh reader, and creates objects for all entities (nodes, elements, lines). Also creates the control volumes (CVs).
@@ -41,6 +41,7 @@ class Mesh:
         self.mesh_data = mesh_reader.mesh_data
         self.nodes = nodes([])
         self.triangles = elements([])
+        self.tetras = elements([])
         self.lines = lines([])
         self.CVs = []
         self.boundaries = mesh_reader.mesh_data['physical_nodes']

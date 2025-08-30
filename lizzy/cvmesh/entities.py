@@ -37,7 +37,7 @@ class Element2D:
         self.lines = []
         self.line_ids = []
         self.centroid = np.zeros(3)
-        self.v = np.zeros((3,1))
+        self.v : np.ndarray = np.zeros((3,1))
 
 
 class Triangle(Element2D):
@@ -53,7 +53,7 @@ class Triangle(Element2D):
             [x[1,0]-x[0,0], x[2,0]-x[0,0]],
             [x[1,1]-x[0,1], x[2,1]-x[0,1]],
             [x[1,2]-x[0,2], x[2,2]-x[0,2]]
-        ])
+        ]) # shape 3,2
         detJ = np.linalg.norm(np.cross(J[:, 0], J[:, 1]))
         dxidX = np.linalg.pinv(J)
 
@@ -73,7 +73,65 @@ class Triangle(Element2D):
 class Quad(Element2D):
     pass
     
+class Element3D:
+    def __init__(self):
+        self.id : int = 0
+        self.material_tag : str = ""
+        self.volume : float = 0
+        self.k = np.empty((3,3))
+        self.grad_N = None
+        self.porosity = 0.5
+        self.nodes = ()
+        self.node_ids = []
+        self.nodes_coords : np.ndarray = None
+        self.faces = []
+        self.face_ids = []
+        self.centroid = np.zeros(3)
+        self.v : np.ndarray = np.zeros((3,1))
 
+class Tetrahedron(Element3D):
+    # Shape function derivatives wrt local coordinates (ξ, η, ζ)
+    dNdXi = np.array([
+        [-1, -1, -1],
+        [ 1,  0,  0],
+        [ 0,  1,  0],
+        [ 0,  0,  1]
+    ])
+
+    def __init__(self, node_1:Node, node_2:Node, node_3:Node, node_4:Node):
+        super().__init__()
+        x = np.array((node_1.coords, node_2.coords, node_3.coords, node_4.coords))
+        self.nodes = (node_1, node_2, node_3, node_4)
+
+        J = np.array([
+            x[1] - x[0],
+            x[2] - x[0],
+            x[3] - x[0]
+        ]).T  # shape 3,3
+
+        detJ = np.linalg.det(J)
+        if detJ <= 0:
+            raise ValueError("Tetrahedron has zero or negative volume; check node ordering.")
+        self.volume = detJ / 6.0
+
+        dxidX = np.linalg.inv(J)
+
+        # Shape function gradients in global coords
+        self.grad_N = (Tetrahedron.dNdXi @ dxidX).T
+
+        # Centroid
+        self.centroid = x.mean(axis=0)
+
+        # Faces defined by node indices
+        self.faces = [
+            (0, 1, 2),
+            (0, 1, 3),
+            (0, 2, 3),
+            (1, 2, 3)
+        ]
+
+    def __str__(self):
+        return f"Tetrahedron element ID: {self.id}"
 
 class Line:
     def __init__(self, node_1:Node, node_2:Node):
