@@ -13,6 +13,8 @@ dependencies = [
     "scipy",
     "h5py",
     "matplotlib",
+    "petsc",
+    "petsc4py"
 ]
 
 [tool.setuptools]
