@@ -14,7 +14,7 @@ model.assign_material("low_perm_material", 'triforce')
 model.create_inlet(1E+05, "inner_inlet")
 model.assign_inlet("inner_inlet", "inner_rim")
 
-model.initialise_solver(solver_type=liz.SolverType.DIRECT_DENSE)
+model.initialise_solver()
 solution = model.solve()
 
 model.save_results(solution, "Triforce")
