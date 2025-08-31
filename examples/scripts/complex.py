@@ -20,6 +20,5 @@ model.assign_inlet("inlet_left", "inlet")
 
 model.initialise_solver()
 solution = model.solve()
-model.display_current_fill()
 model.save_results(solution, "Complex_rotated")
 

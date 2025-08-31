@@ -1,31 +1,20 @@
 import lizzy as liz
 
-# read the mesh
-mesh_reader = liz.Reader("../meshes/Triforce_R1.msh")
+model = liz.LizzyModel()
+model.read_mesh_file("../meshes/Triforce_R1.msh")
+model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
 
-# Create a lizzy Mesh object
-mesh = liz.Mesh(mesh_reader)
+model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "high_perm_material")
+model.create_material(1E-13, 1E-13, 1E-13, 0.5, 1.0, "low_perm_material")
 
-# assign some process parameters
-liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
+model.assign_material("high_perm_material", 'background')
+model.assign_material("low_perm_material", 'triforce')
 
-# add a material to each material tag present in the mesh
-material_domain = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
-material_low_perm = liz.PorousMaterial(1E-13, 1E-13, 1E-13, 0.5, 1.0)
-liz.MaterialManager.add_material('background', material_domain)
-liz.MaterialManager.add_material('triforce', material_low_perm)
 
-# Create a BCManager
-bc_manager = liz.BCManager()
+model.create_inlet(1E+05, "inner_inlet")
+model.assign_inlet("inner_inlet", "inner_rim")
 
-# Create an Inlet (or more) and add it to the inlets group
-inlet_1 = liz.Inlet('inner_rim', 1E+05)
-bc_manager.add_inlet(inlet_1)
+model.initialise_solver()
+solution = model.solve()
 
-# Instantiate a solver and solve
-solver = liz.Solver(mesh, bc_manager, liz.SolverType.DIRECT_SPARSE)
-solution = solver.solve(log="on")
-
-# Create a write-out object and save results
-writer = liz.Writer(mesh)
-writer.save_results(solution, "Triforce_R1")
+model.save_results(solution, "Triforce")

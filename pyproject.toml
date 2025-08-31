@@ -12,7 +12,7 @@ dependencies = [
     "numpy",
     "scipy",
     "h5py",
-    "matplotlib",
+    "matplotlib"
 ]
 
 [tool.setuptools]
@@ -20,6 +20,7 @@ packages = ["lizzy"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
+petsc = ["petsc", "petsc4py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
