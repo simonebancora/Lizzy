@@ -19,6 +19,7 @@ class Inlet(Boundary):
         self.p_value = p_value
         self.name = name
         self.assigned = False
+        self.open = True
 
     def reset(self):
         self.p_value = self.p0
@@ -70,6 +71,14 @@ class BCManager:
                 selected_inlet.p_value += pressure_value
             case _:
                 raise KeyError
+
+    def open_inlet(self,inlet_selector):
+        selected_inlet = self.fetch_inlet(inlet_selector)
+        selected_inlet.open = True
+
+    def close_inlet(self,inlet_selector):
+        selected_inlet = self.fetch_inlet(inlet_selector)
+        selected_inlet.open = False
     
     def reset_inlets(self):
         for tag, inlet in self.assigned_inlets.items():

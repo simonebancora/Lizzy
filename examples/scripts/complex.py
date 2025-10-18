@@ -1,8 +1,5 @@
 import lizzy as liz
 
-
-
-
 model = liz.LizzyModel()
 model.read_mesh_file("../meshes/Complex_rotated.msh")
 model.assign_simulation_parameters(mu=0.1, wo_delta_time=100, fill_tolerance=0.01)

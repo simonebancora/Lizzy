@@ -90,8 +90,9 @@ class Solver:
                 inlet_idx = self.mesh.boundaries[tag]
             except KeyError:
                 raise KeyError(f"Mesh does not contain physical tag: {tag}")
-            dirichlet_idx.append(inlet_idx)
-            dirichlet_vals.append(np.ones(len(inlet_idx)) * inlet.p_value)
+            if inlet.open:
+                dirichlet_idx.append(inlet_idx)
+                dirichlet_vals.append(np.ones(len(inlet_idx)) * inlet.p_value)
         self.bcs.dirichlet_idx = np.concatenate(dirichlet_idx)
         self.bcs.dirichlet_vals = np.concatenate(dirichlet_vals)
 
@@ -266,7 +267,6 @@ class Solver:
             solution = "Lightweight mode: no solution is saved"
         else:
             solution = self.time_step_manager.pack_solution()
-        # good night and good luck
         solve_time_end = time.time()
         total_solve_time = solve_time_end - solve_time_start
         # print("\nSTEP SOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))

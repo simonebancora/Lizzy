@@ -3,7 +3,7 @@
 Anisotropy
 ==========
 
-In this tutorial wil will explorer two key concepts: material anisotropy and material orientation. To do so, we will simulate the classic *Radial Infusion* experiment, with an anisotropic twist. Much of the workflow is identical to the :ref:`channel_flow` example, so all topics already encountered won't be repeated here.
+In this tutorial we will explore two key concepts: material anisotropy and material orientation. To do so, we will simulate the classic *Radial Infusion* experiment, with an anisotropic twist. Much of the workflow is identical to the :ref:`channel_flow` example, so all topics already encountered won't be repeated here.
 
 Copy the mesh file
 ------------------
@@ -41,13 +41,8 @@ The next step is to create one anisotropic material and assign it to the domain:
     model.create_material(1E-10, 1E-11, 1E-10, 0.5, 1.0, "aniso_material")
     model.assign_material("aniso_material", "domain", rosette)
 
-Note the factor 10 difference between :math:`k_1` and :math:`k_2`. Lastly, we can assign the material and the rosette to a given domain patch - in this case, only the *domain* tag is present in the mesh:
-
-.. code-block::
-
-    liz.MaterialManager.add_material('domain', material, rosette)
-
-When this is executed, a local rosette is calculated for each element in the mesh following this procedure:
+Note the factor 10 difference between :math:`k_1` and :math:`k_2`. Lastly, we can assign the material and the rosette to a given domain patch - in this case, only the *domain* tag is present in the mesh.
+When we pass a rosette to ``assign_materials``, a local rosette is calculated for each element in the mesh following this procedure:
 
     * the rosette vector is projected onto the element along the element normal to obtain the local principal orientation :math:`\mathbf{e}^{el}_1`
     * the direction :math:`\mathbf{e}^{el}_3` is assigned as the element normal
@@ -57,29 +52,24 @@ Once the element projected rosette is calculated, the local transformation :math
 
 .. note::
 
-    When we don't create and assign a ``Rosette`` to the material manager, a default rosette aligned with global axes is used. This is fine in case of purely isotropic materials, like in the :ref:`channel_flow` tutorial.
+    When we don't create and assign a ``Rosette`` to the material manager, a default rosette aligned with global axes is used. This is usually the preferred practice in case of purely isotropic materials, like in the :ref:`channel_flow` tutorial.
 
 Completing the script
 ---------------------
 
-We can now conclude the script by instantiating the ``BCManager``, assigning boundary conditions to the *inner_rim* and solving. These steps have been explained in the :ref:`channel_flow` example and won't be repeated:
+We can now conclude the script by assigning boundary conditions to the *inner_rim* and solving. These steps are nearly identical to the :ref:`channel_flow` example:
 
 .. code-block::
 
-    # instantiate BCManager
-    bc_manager = liz.BCManager()
-
-    # assign 1 bar pressure
-    inlet_1 = liz.Inlet('inner_rim', 1E+05)
-    bc_manager.add_inlet(inlet_1)
+    model.create_inlet(1E+05, "inner_inlet")
+    model.assign_inlet("inner_inlet", "inner_rim")
 
     # solve
-    solver = liz.Solver(mesh, bc_manager)
-    solution = solver.solve(log="on")
+    model.initialise_solver()
+    solution = model.solve()
 
     # write results
-    writer = liz.Writer(mesh)
-    writer.save_results(solution, "Radial")
+    model.save_results(solution, "Radial")
 
 The full script
 ---------------
@@ -88,24 +78,21 @@ The full script
 
     import lizzy as liz
 
-    mesh_reader = liz.Reader("../meshes/Radial.msh")
-    mesh = liz.Mesh(mesh_reader)
-
-    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=500)
+    model = liz.LizzyModel()
+    model.read_mesh_file("Radial.msh")
+    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
 
     rosette = liz.Rosette((1,0,0))
-    material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)
-    liz.MaterialManager.add_material('domain', material, rosette)
+    model.create_material(1E-10, 1E-11, 1E-10, 0.5, 1.0, "aniso_material")
+    model.assign_material("aniso_material", "domain", rosette)
 
-    bc_manager = liz.BCManager()
-    inlet_1 = liz.Inlet('inner_rim', 1E+05)
-    bc_manager.add_inlet(inlet_1)
+    model.create_inlet(1E+05, "inner_inlet")
+    model.assign_inlet("inner_inlet", "inner_rim")
 
-    solver = liz.Solver(mesh, bc_manager, liz.SolverType.DIRECT_SPARSE)
-    solution = solver.solve(log="on")
+    model.initialise_solver()
+    solution = model.solve()
 
-    writer = liz.Writer(mesh)
-    writer.save_results(solution, "Radial")
+    model.save_results(solution, "Radial")
 
 Solution visualisation
 ----------------------
@@ -126,7 +113,8 @@ Suppose now that our material has a principal permeability direction oriented at
 .. code-block::
 
     rosette_45 = liz.Rosette((1,1,0))
-    liz.MaterialManager.add_material('domain', material, rosette_45)
+    ...
+    model.assign_material("aniso_material", "domain", rosette_45)
 
 The vector (1,1,0) lies on the :math:`x`-:math:`y` plane and describes an orientation at :math:`45^\circ` from :math:`x`. This will set the principal permeability value :math:`k_1` along the new orientation vector.
 
@@ -134,33 +122,7 @@ The vector (1,1,0) lies on the :math:`x`-:math:`y` plane and describes an orient
 
     The vector passed to the ``Rosette`` constructor doesn't need to be normalised. Only its direction matters.
 
-The rest of the script remains unchanged. The full modified script becomes:
-
-.. code-block::
-
-    import lizzy as liz
-
-    mesh_reader = liz.Reader("../meshes/Radial.msh")
-    mesh = liz.Mesh(mesh_reader)
-
-    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=500)
-
-    rosette_45 = liz.Rosette((1,1,0))
-    material = liz.PorousMaterial(1E-10, 1E-11, 1E-10, 0.5, 1.0)
-    liz.MaterialManager.add_material('domain', material, rosette_45)
-
-    bc_manager = liz.BCManager()
-
-    inlet_1 = liz.Inlet('inner_rim', 1E+05)
-    bc_manager.add_inlet(inlet_1)
-
-    solver = liz.Solver(mesh, bc_manager, liz.SolverType.DIRECT_SPARSE)
-    solution = solver.solve(log="on")
-
-    writer = liz.Writer(mesh)
-    writer.save_results(solution, "Radial")
-
-This time, we obtain a different result:
+The rest of the script remains unchanged. This time, we obtain a different result:
 
 .. image:: ../../images/anisotropy_fill_45deg.png
    :width: 80%

@@ -54,7 +54,7 @@ class TimeStepManager:
         self.save_timestep(time_0, 0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0, True)
 
     def pack_solution(self):
-        # flag the last time step as write-out:
+        # flag the last time step as write-out regardless of its setting:
         self.time_steps[-1].write_out = True
         # populate solution with write-out time steps:
         wo_time_steps = self.get_write_out_steps()

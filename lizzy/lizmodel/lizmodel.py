@@ -15,7 +15,7 @@ from lizzy.solver.solver import Solver, SolverType
 
 class LizzyModel:
     """
-    The fundamental class in the Lizzy solver. This class wraps all subcomponents of the solver and exposes all user-oriented scripting APIs. Provides access to methods for reading a mesh, assigning properties, configuring the solver, saving results and more. A typical script begins with the instantiation of a LizzyModel object.
+    The main class for defining simulations in Lizzy. This class wraps all subcomponents of the solver and exposes all user-oriented scripting APIs. Provides access to methods for reading a mesh, assigning properties, configuring the solver, saving results and more. A typical script begins with the instantiation of a LizzyModel.
     """
     def __init__(self):
         self._reader = None
@@ -123,12 +123,18 @@ class LizzyModel:
     def change_inlet_pressure(self, inlet_selector, pressure_value:float, mode:str = "set"):
         self._bc_manager.change_inlet_pressure(inlet_selector, pressure_value, mode)
 
+    def open_inlet(self, inlet_selector):
+        self._bc_manager.open_inlet(inlet_selector)
+
+    def close_inlet(self, inlet_selector):
+        self._bc_manager.close_inlet(inlet_selector)
+
     def create_sensor(self, x:float, y:float, z:float, idx=None):
         self._sensor_manager.add_sensor(x, y, z, idx)
 
     def print_sensor_readings(self):
         self._sensor_manager.print_sensor_readings()
-    
+
     def get_sensor_trigger_states(self):
         return self._sensor_manager.sensor_trigger_states
     
@@ -151,6 +157,14 @@ class LizzyModel:
     
     def save_results(self, solution, result_name:str):
         self._writer.save_results(solution, result_name)
+
+    def get_node_by_id(self, node_id:int):
+        return self._mesh.nodes[node_id]
+
+# A bunch of getters
+from lizzy.lizmodel.components import *
+
+
 
 
 
