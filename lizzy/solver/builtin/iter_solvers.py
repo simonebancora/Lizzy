@@ -168,12 +168,13 @@ def solve_pressure_pyamg(k: np.ndarray, f: np.ndarray, tol: float = 1e-8, max_it
     # Create AMG hierarchy
     ml = pyamg.smoothed_aggregation_solver(k_sparse)
     
-    # Solve using AMG
-    p, info = ml.solve(f, tol=tol, maxiter=max_iter, accel=accel, cycle=cycle, return_info=True)
+    # Solve using AMG with residual tracking
+    residuals = []
+    p = ml.solve(f, tol=tol, maxiter=max_iter, accel=accel, cycle=cycle, residuals=residuals)
     
-    if verbose and info is not None:
-        print(f"PyAMG converged in {len(info['residuals'])} iterations")
-        print(f"Final residual: {info['residuals'][-1]:.2e}")
+    if verbose and len(residuals) > 0:
+        print(f"PyAMG converged in {len(residuals)} iterations")
+        print(f"Final residual: {residuals[-1]:.2e}")
     
     return p
 

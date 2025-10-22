@@ -141,8 +141,12 @@ class LizzyModel:
     def get_sensor_by_id(self, idx):
         return self._sensor_manager.get_sensor_by_id(idx)
 
-    def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_DENSE):
-        self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, self._material_manager, self._sensor_manager, solver_type)
+    def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_DENSE, 
+                         solver_tol:float = 1e-8, solver_max_iter:int = 1000, 
+                         solver_verbose:bool = False, **solver_kwargs):
+        self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, 
+                            self._material_manager, self._sensor_manager, solver_type, 
+                            solver_tol, solver_max_iter, solver_verbose, **solver_kwargs)
 
     def solve(self):
         self._latest_solution = self._solver.solve()

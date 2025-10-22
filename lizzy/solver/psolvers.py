@@ -6,17 +6,13 @@
 
 import numpy as np
 from enum import Enum, auto
-from lizzy.solver.builtin.direct_solvers import *
-from lizzy.solver.builtin.iter_solvers import *
+from lizzy.solver.builtin.direct_solvers import solve_pressure_direct_dense, solve_pressure_direct_sparse
+from lizzy.solver.builtin.iter_solvers import solve_pressure_petsc
 from scipy.sparse import csr_matrix
 
 class SolverType(Enum):
     DIRECT_DENSE = auto()
     DIRECT_SPARSE = auto()
-    ITERATIVE_CG = auto()
-    ITERATIVE_BICGSTAB = auto()
-    ITERATIVE_GMRES = auto()
-    ITERATIVE_PYAMG = auto()
     ITERATIVE_PETSC = auto()
 
 class PressureSolver:
@@ -48,18 +44,6 @@ class PressureSolver:
                 p = solve_pressure_direct_dense(k, f)
             case SolverType.DIRECT_SPARSE:
                 p = solve_pressure_direct_sparse(k, f)
-            case SolverType.ITERATIVE_CG:
-                p = solve_pressure_cg(k, f, tol=tol, max_iter=max_iter)
-            case SolverType.ITERATIVE_BICGSTAB:
-                p = solve_pressure_bicgstab(k, f, tol=tol, max_iter=max_iter)
-            case SolverType.ITERATIVE_GMRES:
-                p = solve_pressure_gmres(k, f, tol=tol, max_iter=max_iter)
-            case SolverType.ITERATIVE_PYAMG:
-                # Extract PyAMG specific parameters
-                accel = solver_kwargs.get('accel', 'cg')
-                cycle = solver_kwargs.get('cycle', 'V')
-                p = solve_pressure_pyamg(k, f, tol=tol, max_iter=max_iter, 
-                                       accel=accel, cycle=cycle, verbose=verbose)
             case SolverType.ITERATIVE_PETSC:
                 # Extract PETSc specific parameters
                 ksp_type = solver_kwargs.get('ksp_type', 'cg')
