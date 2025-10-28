@@ -45,10 +45,6 @@ class PorousMaterial:
         self.name = name
         self._assigned = False
 
-def create_material(k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str = "unnamed_material"):
-    # TODO: handle arguments bad input
-    return PorousMaterial(k1, k2, k3, porosity, thickness, name)
-
 class MaterialManager:
     def __init__(self):
         self.assigned_materials : dict = {}
@@ -69,10 +65,32 @@ class MaterialManager:
 
 
     def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name: str = None):
+        """Create a new material that can then be selected and used in the model.
+
+        Parameters
+        ----------
+        k1 : float
+            Permeability in the first principal direction.
+        k2 : float
+            Permeability in the second principal direction.
+        k3 : float
+            Permeability in the third principal direction.
+        porosity : float
+            Volumetric porosity of the material (porosity = 1 - fibre volume fraction).
+        thickness : float
+            Thickness of the material [mm].
+        name : str, optional
+            Label assigned to the material. Necessary to select the material during assignment. If none assigned, a default 'Material_{N}'name is given, where N is an incremental number of existing materials.
+
+        Returns
+        -------
+        :class:`PorousMaterial`
+            Instance of the created material.
+        """
         if name is None:
             material_count = len(self.existing_materials)
             name = f"Material_{material_count}"
-        new_material = create_material(k1, k2, k3, porosity, thickness, name)
+        new_material = PorousMaterial(k1, k2, k3, porosity, thickness, name)
         self.existing_materials[name] = new_material
         return new_material
 
