@@ -5,6 +5,7 @@
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Dict, overload
+from lizzy.lizmodel.decorators import copy_doc
 from lizzy.IO.IO import Reader, Writer
 from lizzy.cvmesh.cvmesh import Mesh
 from lizzy.materials import MaterialManager, PorousMaterial, Rosette
@@ -106,6 +107,7 @@ class LizzyModel:
         self._mesh = Mesh(self._reader)
         self._writer = Writer(self._mesh)
 
+    @copy_doc(MaterialManager.create_material)
     def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str= None):
         new_material = self._material_manager.create_material(k1, k2, k3, porosity, thickness, name)
         return new_material

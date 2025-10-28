@@ -1,4 +1,4 @@
-.. py:currentmodule:: lizzy
+.. py:currentmodule:: lizzy.IO.IO
 
 IO module
 =========
@@ -7,6 +7,9 @@ The IO module provides functionality to read in input data and write out simulat
 
 Mesh file Reader
 ________________
+
+.. autoclass:: Reader
+
 
 To read a mesh file, we instantiate a Reader object:
 
@@ -25,6 +28,4 @@ The ``Reader`` constructor parses the mesh file and populates a dictionary ``mes
 
 The purpose of the ``mesh_data`` dictionary is to collect the mesh data from any input format into a format that will be read by Lizzy when instantiating a ``Mesh`` object for the analysis.
 
-.. autoclass:: Reader()
 
-.. autoclass:: Writer()

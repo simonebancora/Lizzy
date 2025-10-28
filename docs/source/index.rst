@@ -17,7 +17,7 @@ Is is designed to simulate resin infusion processes that are used in the manufac
 
    This project is still in early development. Version 1.0 is scheduled for release by end of 2025. Stay tuned!
 
-User's Guide
+User Guide
 ------------
 
 In this section you will learn the logic behind writing a script for running simulations with Lizzy.
@@ -25,12 +25,15 @@ In this section you will learn the logic behind writing a script for running sim
 .. toctree::
    :maxdepth: 2
 
-   installation
-   tutorials
-   components
+   user_guide/user_guide_index
 
 API Reference
 -------------
 
 Here you will find in-depth description of Lizzy's modules, classes and methods.
 `Will` as, in a near future. For now, it's under construction.
+
+.. toctree::
+   :maxdepth: 1
+
+   api_reference/api_reference_index

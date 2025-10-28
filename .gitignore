@@ -89,3 +89,5 @@ WorkFolderLocal/
 
 # sphinx
 /docs/sphinx/
+/docs/build/
+/docs/_static/

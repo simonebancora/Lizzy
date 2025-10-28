@@ -8,11 +8,11 @@ This case demonstrates a minimal implementation of the solver. We will use Lizzy
 Copy the mesh file
 ------------------
 
-The mesh file used in this example is available for :download:`download <../../../examples/meshes/Rect1M_R1.msh>`.
+The mesh file used in this example is available for :download:`download <../../../../examples/meshes/Rect1M_R1.msh>`.
 Create a new folder in a preferred location and name it something descriptive of the infusion scenarion, like *channel_flow* or similar. We will refer to this folder as the *working folder* and the entire Lizzy workflow will be run inside here.
 Copy the mesh file into the working folder.
 
-.. image:: ../../images/Rect1M_R1_mesh.jpg
+.. image:: ../../../images/Rect1M_R1_mesh.jpg
    :width: 70%
    :align: center
 
@@ -158,7 +158,7 @@ Solution visualisation
 The results are saved in a folder ``results`` which is created in the current working directory of the interpreter. By default, Lizzy will save results in the ``XDMF`` format, leveraging HDF5 database in binary format to store the actual data.  Load the file ``Rect1M_R1_RES.xdmf`` into Paraview to visualise the results in a time series.
 Lizzy will save the following fields: "FillFactor", "FreeSurface", "Pressure", "Velocity". In the picture, an example of fill factor at t=300s.
 
-.. image:: ../../images/Rect1M_R1_fill.png
+.. image:: ../../../images/Rect1M_R1_fill.png
    :width: 70%
    :align: center
 
@@ -166,7 +166,7 @@ Lizzy will save the following fields: "FillFactor", "FreeSurface", "Pressure", "
 
     The mesh of control volumes can be saved by adding the optional argument ``save_cv_mesh=True`` in the ``Writer.save_results()`` method. Doing so will also export a file ``Rect1M_R1_CV.vtk`` that can be loaded in Paraview and superimposed onto the results mesh:
 
-    .. image:: ../../images/Rect1M_R1_CV.png
+    .. image:: ../../../images/Rect1M_R1_CV.png
        :width: 60%
        :align: center
 
@@ -174,5 +174,5 @@ Lizzy will save the following fields: "FillFactor", "FreeSurface", "Pressure", "
 References
 ----------
 
-.. bibliography:: ../refs.bib
+.. bibliography:: ../../refs.bib
    :style: unsrt

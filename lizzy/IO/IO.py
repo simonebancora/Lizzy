@@ -20,10 +20,9 @@ class Format(Enum):
     STL = auto()
 
 class Reader:
-    """
-    Handles reading and parsing mesh files, converting input mesh formats into the format used by Lizzy.
+    """Handles reading and parsing mesh files, converting input mesh formats into the format used by Lizzy.
 
-    Attributes
+    Parameters
     ----------
     mesh_data : dict
         A dict containing all the info from the mesh file, converted into a Lizzy-readable format.
