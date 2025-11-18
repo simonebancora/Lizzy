@@ -11,6 +11,18 @@ from lizzy.solver.builtin.iter_solvers import solve_pressure_petsc
 from scipy.sparse import csr_matrix
 
 class SolverType(Enum):
+    """
+    Enum representing the available pressure solver types.
+
+    Parameters
+    ----------
+    DIRECT_DENSE : SolverType
+        Direct solver using dense matrix factorization.
+    DIRECT_SPARSE : SolverType
+        Direct solver using sparse matrix factorization.
+    ITERATIVE_PETSC : SolverType
+        Iterative solver using PETSc.
+    """
     DIRECT_DENSE = auto()
     DIRECT_SPARSE = auto()
     ITERATIVE_PETSC = auto()

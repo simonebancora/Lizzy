@@ -17,6 +17,25 @@ class SimulationParameters:
     display_fill : bool = False
 
     def assign(self, **kwargs):
+        r"""
+        Assigns new values to one or more simulation parameters using keyword arguments.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Keyword arguments corresponding to parameter names and their new values.
+            Each key must be a valid attribute of the `SimulationParameters` class, otherwise, an `AttributeError` is raised. Valid parameters are:
+        
+            - ``mu``: viscosity [Pa s]
+            - ``wo_delta_time``: interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
+            - ``fill_tolerance``: tolerance on the fill factor to consider a CV as filled. Default: 0.01
+            - ``end_step_when_sensor_triggered``: if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
+
+        Raises
+        ------
+        AttributeError
+            If any key in `kwargs` does not correspond to a known attribute.
+        """
         self.has_been_assigned = True
         for key, value in kwargs.items():
             if hasattr(self, key):

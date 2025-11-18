@@ -7,6 +7,5 @@
 from lizzy.lizmodel.lizmodel import LizzyModel
 from lizzy.solver.psolvers import SolverType
 from lizzy.materials import Rosette
-from lizzy.bcond.bcond import create_inlet
 
 

@@ -94,7 +94,18 @@ class MaterialManager:
         self.existing_materials[name] = new_material
         return new_material
 
-    def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
+    def assign_material(self, material_selector:str, mesh_tag:str, rosette:Rosette = None):
+        """Assign an existing material to a labeled mesh region.
+
+        Parameters
+        ----------
+        material_selector : str
+            Label of the material to assign. Must correspond to an existing material created with `LizzyModel.create_material`.
+        mesh_tag : str
+            Label of the mesh region where to assign the material.
+        rosette : Rosette, optional
+            Orientation rosette to apply to the material. If none provided, a default rosette with k1 aligned with the global X axis is assigned.
+        """
         selected_material = self.fetch_material(material_selector)
         if rosette is None:
             rosette = Rosette((1, 0, 0))

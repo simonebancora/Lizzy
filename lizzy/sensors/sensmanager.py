@@ -7,40 +7,58 @@
 import numpy as np
 
 class Sensor:
+    """This class represents a virtual sensor in the model.
+    """
     def __init__(self, x, y, z):
         self.id = 0
-        self.coords = np.array((x, y, z))
-        self.pvals = None   # pressure
-        self.vvals = None   # velocity
-        self.fvals = None   # fill factor
-        self.tvals = None   # time
+        self._coords = np.array((x, y, z))
+        self._pvals = None   # pressure
+        self._vvals = None   # velocity
+        self._fvals = None   # fill factor
+        self._tvals = None   # time
         self.resin_arrived = False
 
         # temporary quick implementation node-based
         self.child_node = None
     
-    def reset(self):
-        self.pvals = []
-        self.vvals = []
-        self.fvals = []
-        self.tvals = []
+    def _reset(self):
+        """Resets all solution values in the sensor (pressure, velocity, fill factor and time). Maintains the sensor in place and active at the same location. This method is called automatically when a new simulation is initialised.
+        """
+        self._pvals = []
+        self._vvals = []
+        self._fvals = []
+        self._tvals = []
         self.resin_arrived = False
     
     @property
+    def position(self) -> np.ndarray:
+        """The (x,y,z) position of the sensor in 3D space. (read-only)
+        """
+        return self._coords
+    
+    @property
     def pressure(self) -> float:
-        return self.pvals[-1]
+        """The current value of resin pressure (Pa) at the sensor location. (read-only)
+        """
+        return self._pvals[-1]
 
     @property
     def velocity(self) -> np.ndarray:
-        return self.vvals[-1]
+        """The current value of resin velocity (m/s) at the sensor location. (read-only)
+        """
+        return self._vvals[-1]
     
     @property
     def fill_factor(self) -> float:
-        return self.fvals[-1]
+        """The current value of resin fill factor at the sensor location. (read-only)
+        """
+        return self._fvals[-1]
     
     @property
     def time(self) -> float:
-        return self.tvals[-1]
+        """The current time. (read-only)
+        """
+        return self._tvals[-1]
     
     def get_latest(self, key:str):
         match key:
@@ -56,12 +74,14 @@ class Sensor:
                 raise KeyError(f"Unrecognised sensor reading request: {key}")
 
     def info(self) -> str:
-        return f"Sensor ID: {self.id}; position: ({self.coords[0]}, {self.coords[1]}, {self.coords[2]}; child node ID: {self.child_node.id})"
+        """Returns a string with basic information about the sensor: its ID, position and the ID of the mesh node it is attached to.
+        """
+        return f"Sensor ID: {self.id}; position: ({self.position[0]}, {self.position[1]}, {self.position[2]}; child node ID: {self.child_node.id})"
 
 
 class SensorManager:
     def __init__(self):
-        self.sensors = []
+        self.sensors : list[Sensor] = []
         self.sensors_dict = {}
         self.sensor_trigger_states = []
 
@@ -79,7 +99,7 @@ class SensorManager:
             for sensor in self.sensors:
                 distances = []
                 for node_coords in all_node_coords:
-                    distances.append(np.linalg.norm(sensor.coords - node_coords))
+                    distances.append(np.linalg.norm(sensor.position - node_coords))
                 id_closest_node = np.argmin(np.array(distances))
                 sensor.child_node = mesh.nodes[id_closest_node]
             self.sensor_trigger_states = np.array([False for s in self.sensors])
@@ -87,15 +107,17 @@ class SensorManager:
     def probe_current_solution(self, p_array, v_array, f_array, current_time):
         if len(self.sensors) > 0:
             for sensor in self.sensors:
-                sensor.tvals.append(current_time)
-                sensor.pvals.append(p_array[sensor.child_node.id])
-                sensor.fvals.append(f_array[sensor.child_node.id])
-                sensor.vvals.append(v_array[sensor.child_node.id])
+                sensor._tvals.append(current_time)
+                sensor._pvals.append(p_array[sensor.child_node.id])
+                sensor._fvals.append(f_array[sensor.child_node.id])
+                sensor._vvals.append(v_array[sensor.child_node.id])
+                if sensor.fill_factor >= 0.5:
+                    sensor.resin_arrived = True
 
     def reset_sensors(self):
         if len(self.sensors) > 0:
             for sensor in self.sensors:
-                sensor.reset()
+                sensor._reset()
         self.sensor_trigger_states = np.array([False for s in self.sensors])
 
     def check_for_new_sensor_triggered(self, fill_factor_array):
@@ -116,7 +138,7 @@ class SensorManager:
             return
         sensor_readings = {}
         for sensor in self.sensors:
-            sensor_readings[sensor.id] = f"time: {sensor.tvals[-1]} s; resin pressure: {sensor.pvals[-1]} Pa; fill factor: {sensor.fvals[-1]}, resin velocity: {sensor.vvals[-1]} m/s"
+            sensor_readings[sensor.id] = f"time: {sensor.time} s; resin pressure: {sensor.pressure} Pa; fill factor: {sensor.fill_factor}, resin velocity: {sensor.velocity} m/s"
         print(sensor_readings)
     
     def get_sensor_by_id(self, idx):

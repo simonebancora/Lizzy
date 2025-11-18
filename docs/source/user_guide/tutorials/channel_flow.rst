@@ -1,4 +1,5 @@
 .. _channel_flow:
+.. py:currentmodule:: lizzy
 
 Channel Flow
 ============
@@ -45,7 +46,7 @@ The first expression in asy Lizzy script is always to create the LizzyModel that
 
     model = liz.LizzyModel()
 
-From now on, we will use this ``LizzyModel`` object to access all the relevant APIs.
+From now on, we will use this :class:`LizzyModel` object to access all the relevant APIs.
 Let's read the mesh file that we have copied:
 
 .. code-block::
@@ -55,7 +56,7 @@ Let's read the mesh file that we have copied:
 Make sure that the path given points to the mesh file that we have copied in the folder.
 In this example, both the script and the mesh are in the working folder. If your folder structure is different, adjust the mesh path accordingly.
 
-Now that the mesh is read, we need to define a few material and process properties. To do so, we use the ``assign_simulation_parameters`` method:
+Now that the mesh is read, we need to define a few material and process properties. To do so, we use the :meth:`~lizzy.LizzyModel.assign_simulation_parameters` method:
 
 .. code-block:: python
 
@@ -74,7 +75,7 @@ Next, we can define the properties of the materials in the mesh. At the moment, 
     model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "test_material")
     model.assign_material("test_material", 'domain')
 
-The method ``create_material`` instantiates a ``PorousMaterial`` object which is stored in the model. The arguments of ``create_material`` are:
+The method :meth:`~lizzy.LizzyModel.create_material` instantiates a ``PorousMaterial`` object which is stored in the model. The arguments of :meth:`~lizzy.LizzyModel.create_material` are:
 
 * ``k1`` (float): principal permeability value in local direction :math:`\mathbf{e}_1`
 * ``k2`` (float): principal permeability value in local direction :math:`\mathbf{e}_2`
@@ -100,13 +101,13 @@ At the moment, only inlets with assigned pressure are supported. Inlets are crea
     model.create_inlet(1E+05, "inlet_left")
     model.assign_inlet("inlet_left", "left_edge")
 
-The ``create_inlet`` method takes two arguments: the pressure value (``1E+05``) and the name of the inlet (``"inlet_left"``).
+The :meth:`~lizzy.LizzyModel.create_inlet` method takes two arguments: the pressure value (``1E+05``) and the name of the inlet (``"inlet_left"``).
 
 
 Initialise solver
 -----------------
 
-Once the simulation model has been completely defined, we call the ``initialise_solver`` method to finalise the model. This method should be called last, after all assignments have been made (inlets, materials, sensors, controls, etc...):
+Once the simulation model has been completely defined, we call the :meth:`~lizzy.LizzyModel.initialise_solver` method to finalise the model. This method should be called last, after all assignments have been made (inlets, materials, sensors, controls, etc...):
 
 .. code-block::
 
@@ -115,24 +116,24 @@ Once the simulation model has been completely defined, we call the ``initialise_
 Solve
 -----
 
-The next step is to call the `solve` method to run the filling simulation:
+The next step is to call the :meth:`~lizzy.LizzyModel.solve` method to run the filling simulation:
 
 .. code-block::
 
     solution = model.solve()
 
-The ``solve`` method returns a ``Solution`` object, which is **not** stored in the LizzyModel and therefore must be captured.
+The :meth:`~lizzy.LizzyModel.solve` method returns a ``solution`` dictionary, which is **not** stored in the LizzyModel and therefore must be captured.
 
 Write results
 -------------
 
-The write-out of results in Paraview-compatible format is handled by the ``save_results`` method:
+The write-out of results in Paraview-compatible format is handled by the :meth:`~lizzy.LizzyModel.save_results` method:
 
 .. code-block::
 
     model.save_results(solution, "Rect1M_R1")
 
-The ``save_results`` method takes two arguments: the solution object returned by the solver and a string that specifies the name of the folder that will be created and where the results will be saved.
+The :meth:`~lizzy.LizzyModel.save_results` method takes two arguments: the solution object returned by the solver and a string that specifies the name of the folder that will be created and where the results will be saved.
 
 The full script
 ---------------
