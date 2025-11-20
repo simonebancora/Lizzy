@@ -20,10 +20,9 @@ class Format(Enum):
     STL = auto()
 
 class Reader:
-    """
-    Handles reading and parsing mesh files, converting input mesh formats into the format used by Lizzy.
+    """Handles reading and parsing mesh files, converting input mesh formats into the format used by Lizzy.
 
-    Attributes
+    Parameters
     ----------
     mesh_data : dict
         A dict containing all the info from the mesh file, converted into a Lizzy-readable format.
@@ -112,7 +111,15 @@ class Writer:
         """
         self.mesh = mesh
 
-    def save_results(self, solution, result_name:str, **kwargs):
+    def save_results(self, solution:dict, result_name:str, **kwargs):
+        """Save the results contained in the solution dictionary into an XDMF file.
+
+        Parameters
+        ----------
+        solution : dict
+        result_name : str
+            The name of the new folder where results will be saved.
+        """
         _format = kwargs.get("format", "xdmf")
         save_cv_mesh = kwargs.get("save_cv_mesh", False)
         print("\nSaving results...")

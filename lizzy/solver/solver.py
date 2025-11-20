@@ -8,12 +8,13 @@ import numpy as np
 import time
 from lizzy.solver import *
 from lizzy.bcond.bcond import SolverBCs
+from lizzy.sensors.sensmanager import SensorManager
 
 # from scipy.sparse import lil_matrix
 # import matplotlib.pyplot as plt
 
 class Solver:
-    def __init__(self, mesh, bc_manager, simulation_parameters, material_manager, sensor_manager, 
+    def __init__(self, mesh, bc_manager, simulation_parameters, material_manager, sensor_manager:SensorManager, 
                  solver_type=SolverType.DIRECT_SPARSE, solver_tol=1e-8, solver_max_iter=1000, 
                  solver_verbose=False, use_masked_solver=True, **solver_kwargs):
         self.mesh = mesh
@@ -86,7 +87,7 @@ class Solver:
     def update_dirichlet_bcs(self):
         dirichlet_idx = []
         dirichlet_vals = []
-        for tag, inlet in self.bc_manager.assigned_inlets.items():
+        for tag, inlet in self.bc_manager._assigned_inlets.items():
             try:
                 inlet_idx = self.mesh.boundaries[tag]
             except KeyError:
@@ -239,6 +240,7 @@ class Solver:
             write_out = self.handle_wo_by_sensor_triggered(write_out, self.solver_vars["fill_factor_array"])
         self.time_step_manager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, self.solver_vars["fill_factor_array"], self.solver_vars["free_surface_array"], write_out)
         if write_out:
+            # update sensors
             self._sensor_manager.probe_current_solution(p, v_nodal_array, self.solver_vars["fill_factor_array"], self.current_time)
         # update the empty nodes for next step
         self.update_empty_nodes_idx()

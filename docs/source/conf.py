@@ -30,18 +30,18 @@ exclude_patterns = []
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
+html_static_path = []
 
 
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 
-autodoc_default_options = {
-    "members": True,
-    "undoc-members": True,
-    "show-inheritance": True,
-    "autosummary": True,
-}
-autodoc_class_attributes = True
+# autodoc_default_options = {
+#     "members": False,
+#     "undoc-members": False,
+#     "show-inheritance": False,
+#     "autosummary": False,
+# }
+# autodoc_class_attributes = True
 
 latex_engine = 'xelatex'

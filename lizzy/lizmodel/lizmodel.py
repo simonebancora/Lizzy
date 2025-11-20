@@ -4,7 +4,9 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Dict, overload
+from typing import Dict, Literal, overload
+from types import MappingProxyType
+from lizzy.lizmodel.decorators import copy_doc
 from lizzy.IO.IO import Reader, Writer
 from lizzy.cvmesh.cvmesh import Mesh
 from lizzy.materials import MaterialManager, PorousMaterial, Rosette
@@ -15,7 +17,7 @@ from lizzy.solver.solver import Solver, SolverType
 
 class LizzyModel:
     """
-    The main class for defining simulations in Lizzy. This class wraps all subcomponents of the solver and exposes all user-oriented scripting APIs. Provides access to methods for reading a mesh, assigning properties, configuring the solver, saving results and more. A typical script begins with the instantiation of a LizzyModel.
+    The main class for defining simulations in Lizzy. This class wraps all subcomponents of the solver and exposes all user-facing APIs. Provides access to methods for reading a mesh, assigning properties, configuring the solver, saving results and more. A script typically begins with the instantiation of a LizzyModel.
     """
     def __init__(self):
         self._reader = None
@@ -35,6 +37,10 @@ class LizzyModel:
         r"""Set whether to run the model in lightweight mode. Default is ``False``.
 
         When the model is run in lighweight mode, solver results are not serialised at the end of steps into solution output format. If ``lightweight=True``, :func:`~LizzyModel.save_results` cannot be called. Useful to speed up computation when saving results to an output file is not necessary
+        
+        Note
+        ----
+        This property can be both read and set.
         """
         return self._lightweight
 
@@ -44,34 +50,68 @@ class LizzyModel:
 
     @property
     def assigned_materials(self) -> Dict[str, PorousMaterial]:
-        return self._material_manager.assigned_materials
+        """Dictionary of assigned materials in the model. (read-only)
+        """
+        return MappingProxyType(self._material_manager.assigned_materials)
 
     @property
     def existing_materials(self) -> Dict[str, PorousMaterial]:
-        return self._material_manager.existing_materials
+        """Dictionary of existing materials in the model. A material can be existing (after being created with :func:`~LizzyModel.create_material`) but not assigned to any mesh region. (read-only)
+        """
+        return MappingProxyType(self._material_manager.existing_materials)
 
     @property
     def n_empty_cvs(self) -> int:
+        """
+        Number of currently empty control volumes in the mesh (read-only).
+        """
         return self._solver.n_empty_cvs
-
-    def get_number_of_empty_cvs(self) -> int:
-        return self.n_empty_cvs
 
     @property
     def current_time(self) -> float:
+        """
+        Current simulation time from the start of the infusion (read-only).
+        """
         return self._solver.current_time
+    
+    @property
+    def latest_solution(self) -> dict:
+        """The most recent solution from the model (read-only). This value is None is the model is run in `lightweight` mode.
+        """
+        return self._latest_solution
+    
+    @property
+    def bc_manager(self) -> BCManager:
+        return self._bc_manager
+    
+    @property
+    def simulation_parameters(self) -> SimulationParameters:
+        return self._simulation_parameters
+    
+    def get_number_of_empty_cvs(self) -> int:
+        """
+        Returns
+        -------
+        int:
+            :attr:`~lizzy.LizzyModel.n_empty_cvs`
+        """
+        return self.n_empty_cvs
 
     def get_current_time(self) -> float:
+        """
+        Returns
+        -------
+        float
+            :attr:`~lizzy.LizzyModel.current_time`
+        """
         return self.current_time
 
-    @property
-    def latest_solution(self):
-        return self._latest_solution
-
-    def get_latest_solution(self) -> any:
-        r"""
-        Returns the most recent solution from the model. Returns None is the model is run in lightweight mode.
-        :return: The solution at the latest time step.
+    def get_latest_solution(self) -> Dict:
+        """
+        Returns
+        -------
+        dict
+            :attr:`~lizzy.LizzyModel.latest_solution`
         """
         return self.latest_solution
 
@@ -82,18 +122,11 @@ class LizzyModel:
             mu: float,
             wo_delta_time: float,
             fill_tolerance: float,
-            has_been_assigned: bool,
             end_step_when_sensor_triggered: bool,
     ) -> None:
-        r"""
-        Assign several parameters of the simulation.
-        ``mu``: viscosity [Pa s]
-        ``wo_delta_time``: interval of simulation time between solution write-outs [s]
-        ``fill_tolerance``: tolerance on the fill factor to consider a CV as filled. Default: 0.01
-        ``end_step_when_sensor_triggered``: if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
-        """
         ...
 
+    @copy_doc(SimulationParameters.assign)
     def assign_simulation_parameters(self, **kwargs):
         self._simulation_parameters.assign(**kwargs)
 
@@ -106,27 +139,37 @@ class LizzyModel:
         self._mesh = Mesh(self._reader)
         self._writer = Writer(self._mesh)
 
+    @copy_doc(MaterialManager.create_material)
     def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str= None):
         new_material = self._material_manager.create_material(k1, k2, k3, porosity, thickness, name)
         return new_material
 
+    copy_doc(MaterialManager.assign_material)
     def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
         self._material_manager.assign_material(material_selector, mesh_tag, rosette)
 
     def create_inlet(self, initial_pressure_value:float, name:str = None):
+        """Wrapper for :meth:`~lizzy.bcond.bcond.BCManager.create_inlet`
+        """
         new_inlet = self._bc_manager.create_inlet(initial_pressure_value, name)
         return new_inlet
 
     def assign_inlet(self, inlet_selector, boundary_tag:str):
+        """Wrapper for :meth:`~lizzy.bcond.bcond.BCManager.assign_inlet`
+        """
         self._bc_manager.assign_inlet(inlet_selector, boundary_tag)
     
-    def change_inlet_pressure(self, inlet_selector, pressure_value:float, mode:str = "set"):
+    def change_inlet_pressure(self, inlet_selector, pressure_value:float, mode: Literal["set", "delta"] = "set"):
+        """Wrapper for :meth:`~lizzy.bcond.bcond.BCManager.change_inlet_pressure`
+        """
         self._bc_manager.change_inlet_pressure(inlet_selector, pressure_value, mode)
 
     def open_inlet(self, inlet_selector):
+        """Wrapper for :meth:`~lizzy.bcond.bcond.BCManager.open_inlet`"""
         self._bc_manager.open_inlet(inlet_selector)
 
     def close_inlet(self, inlet_selector):
+        """Wrapper for :meth:`~lizzy.bcond.bcond.BCManager.close_inlet`"""
         self._bc_manager.close_inlet(inlet_selector)
 
     def create_sensor(self, x:float, y:float, z:float, idx=None):
@@ -181,14 +224,13 @@ class LizzyModel:
     def initialise_new_solution(self):
         self._solver.initialise_new_solution()
     
-    def save_results(self, solution, result_name:str):
+    @copy_doc(Writer.save_results)
+    def save_results(self, solution:dict, result_name:str):
         self._writer.save_results(solution, result_name)
 
     def get_node_by_id(self, node_id:int):
         return self._mesh.nodes[node_id]
 
-# A bunch of getters
-from lizzy.lizmodel.components import *
 
 
 

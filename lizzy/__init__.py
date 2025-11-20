@@ -6,7 +6,6 @@
 
 from lizzy.lizmodel.lizmodel import LizzyModel
 from lizzy.solver.psolvers import SolverType
-from lizzy.materials import create_material, Rosette
-from lizzy.bcond.bcond import create_inlet
+from lizzy.materials import Rosette
 
 
