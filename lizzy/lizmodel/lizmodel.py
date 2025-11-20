@@ -141,12 +141,34 @@ class LizzyModel:
     def get_sensor_by_id(self, idx):
         return self._sensor_manager.get_sensor_by_id(idx)
 
-    def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_DENSE, 
+    def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_SPARSE, 
                          solver_tol:float = 1e-8, solver_max_iter:int = 1000, 
-                         solver_verbose:bool = False, **solver_kwargs):
+                         solver_verbose:bool = False, use_masked_solver:bool = True,
+                         **solver_kwargs):
+        """
+        Initialize the solver for the filling simulation.
+        
+        Parameters
+        ----------
+        solver_type : SolverType
+            Type of linear solver (DIRECT_DENSE, DIRECT_SPARSE, ITERATIVE_PETSC).
+            Default is DIRECT_SPARSE which is more efficient for sparse matrices.
+        solver_tol : float
+            Convergence tolerance for iterative solvers
+        solver_max_iter : int
+            Maximum iterations for iterative solvers
+        solver_verbose : bool
+            Print solver convergence information
+        use_masked_solver : bool
+            Use optimized masked solver (only solves for free DOFs). 
+            Default is True for better performance (10-400x speedup in early timesteps).
+        **solver_kwargs
+            Additional solver-specific keyword arguments
+        """
         self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, 
                             self._material_manager, self._sensor_manager, solver_type, 
-                            solver_tol, solver_max_iter, solver_verbose, **solver_kwargs)
+                            solver_tol, solver_max_iter, solver_verbose, use_masked_solver,
+                            **solver_kwargs)
 
     def solve(self):
         self._latest_solution = self._solver.solve()

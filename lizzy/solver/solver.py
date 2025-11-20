@@ -15,7 +15,7 @@ from lizzy.bcond.bcond import SolverBCs
 class Solver:
     def __init__(self, mesh, bc_manager, simulation_parameters, material_manager, sensor_manager, 
                  solver_type=SolverType.DIRECT_SPARSE, solver_tol=1e-8, solver_max_iter=1000, 
-                 solver_verbose=False, **solver_kwargs):
+                 solver_verbose=False, use_masked_solver=True, **solver_kwargs):
         self.mesh = mesh
         self.bc_manager = bc_manager
         self.simulation_parameters = simulation_parameters
@@ -29,6 +29,7 @@ class Solver:
         self.solver_tol = solver_tol
         self.solver_max_iter = solver_max_iter
         self.solver_verbose = solver_verbose
+        self.use_masked_solver = use_masked_solver
         self.solver_kwargs = solver_kwargs
         self.N_nodes = mesh.nodes.N
         self.K_sing = None
@@ -60,8 +61,8 @@ class Solver:
             self.mesh.preprocess(self.material_manager, self.fill_solver)
         if not self.simulation_parameters.has_been_assigned:
             print(f"Warning: Simulation parameters were not assigned. Running with default values: mu={self.simulation_parameters.mu}, wo_delta_time={self.simulation_parameters.wo_delta_time}")
-        # assemble FE global matrix (singular)
-        self.K_sing, self.f_orig = fe.Assembly(self.mesh, self.simulation_parameters.mu)
+        # assemble FE global matrix (singular) - use sparse for better performance
+        self.K_sing, self.f_orig = fe.Assembly(self.mesh, self.simulation_parameters.mu, sparse=True)
         # TODO: reorder nodes here to reduce bandwidth - then reorder the whole mesh and objects
 
         self.vsolver = VelocitySolver(self.mesh.triangles)
@@ -204,12 +205,18 @@ class Solver:
 
 
     def solve_time_step(self):
-        # k_local_all, f_local_all, dirichlet_idx_full, dirichlet_vals_full, mask_nodes, mask_elements, new_dofs_added, elem_connectivity = self.update_and_collect_solver_input()
-        k, f = PressureSolver.apply_bcs(self.K_sing, self.f_orig, self.bcs)
-        # self.K_sol, self.f_sol = PressureSolver.free_dofs(self.K_sol, self.f_sol, self.K_sing, self.f_orig, self.new_step_dofs)
-        p = PressureSolver.solve(k, f, self.solver_type, tol=self.solver_tol, 
-                                max_iter=self.solver_max_iter, verbose=self.solver_verbose, 
-                                **self.solver_kwargs)
+        # Use masked solver (optimized) or traditional solver
+        if self.use_masked_solver:
+            p = PressureSolver.solve_with_mask(
+                self.K_sing, self.f_orig, self.bcs, 
+                self.solver_type, tol=self.solver_tol,
+                max_iter=self.solver_max_iter, verbose=self.solver_verbose,
+                **self.solver_kwargs)
+        else:
+            k, f = PressureSolver.apply_bcs(self.K_sing, self.f_orig, self.bcs)
+            p = PressureSolver.solve(k, f, self.solver_type, tol=self.solver_tol, 
+                                    max_iter=self.solver_max_iter, verbose=self.solver_verbose, 
+                                    **self.solver_kwargs)
 
         v_array = self.vsolver.calculate_elem_velocities(p, self.simulation_parameters.mu)
         v_nodal_array = self.vsolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
@@ -240,7 +247,9 @@ class Solver:
 
     def solve(self, log="on"):
         solve_time_start = time.time()
-        print("SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
+        solver_mode = "masked (optimized)" if self.use_masked_solver else "traditional"
+        print("SOLVE STARTED for mesh with {} elements using {} solver".format(
+            self.mesh.triangles.N, solver_mode))
         while self.n_empty_cvs > 0:
             self.solve_time_step()
             if log == "on":
