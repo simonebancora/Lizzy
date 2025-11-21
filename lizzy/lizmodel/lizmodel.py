@@ -177,7 +177,7 @@ class LizzyModel:
         self._bc_manager.close_inlet(inlet_selector)
 
     def create_sensor(self, x:float, y:float, z:float, idx=None):
-        self._sensor_manager.add_sensor(x, y, z, idx)
+        self._sensor_manager.add_sensor(x, y, z)
 
     def print_sensor_readings(self):
         self._sensor_manager.print_sensor_readings()
