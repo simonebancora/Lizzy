@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 class Node:
     def __init__(self, coords:np.array):
         self.coords = coords
-        self.id : int = 0
+        self.idx : int = 0
         self.p : float = 0
         self.triangles = []
         self.triangle_ids = []
@@ -19,12 +19,12 @@ class Node:
         self.nodes = []
         self.node_ids = []
     def __str__(self):
-        return "Node ID: " + str(self.id)
+        return "Node ID: " + str(self.idx)
 
 
 class Element2D:
     def __init__(self):
-        self.id : int = 0
+        self.idx : int = 0
         self.material_tag : str = ""
         self.A : float = 0
         self.h = 1
@@ -68,14 +68,14 @@ class Triangle(Element2D):
         self.centroid = x.mean(0)
 
     def __str__(self):
-        return "Triangle element ID: " + str(self.id)
+        return "Triangle element ID: " + str(self.idx)
 
 class Quad(Element2D):
     pass
     
 class Element3D:
     def __init__(self):
-        self.id : int = 0
+        self.idx : int = 0
         self.material_tag : str = ""
         self.volume : float = 0
         self.k = np.empty((3,3))
@@ -131,12 +131,12 @@ class Tetrahedron(Element3D):
         ]
 
     def __str__(self):
-        return f"Tetrahedron element ID: {self.id}"
+        return f"Tetrahedron element ID: {self.idx}"
 
 class Line:
     def __init__(self, node_1:Node, node_2:Node):
         self.nodes = (node_1, node_2)
-        self.id : int = 0
+        self.idx : int = 0
         self.midpoint : np.ndarray = self.ComputeMidPoint()
         self.n : np.ndarray = self.ComputeNormal()
         self.triangles = []

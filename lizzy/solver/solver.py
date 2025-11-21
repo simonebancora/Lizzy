@@ -73,7 +73,7 @@ class Solver:
         for cv in self.mesh.CVs:
             fill_factor_list.append(cv.fill)
             cv_volumes_list.append(cv.vol)
-            self.cv_support_cvs_array[cv.id] = np.array([support_cv.id for support_cv in cv.support_CVs])
+            self.cv_support_cvs_array[cv.idx] = np.array([support_cv.idx for support_cv in cv.support_CVs])
 
         # # construct a cv adjacency matrix
         # for key, item in self.cv_support_cvs_array.items():
@@ -103,7 +103,7 @@ class Solver:
         """
         Complementary to "update_dirichlet_bcs()", this updates the indices of all nodes with a fill factor < 1.0. These will be uses to assign an internal condition p=0.
         """
-        # empty_node_ids = [cv.id for cv in self.mesh.CVs if cv.fill < 1]  # nodes with fill factor < 1
+        # empty_node_ids = [cv.idx for cv in self.mesh.CVs if cv.fill < 1]  # nodes with fill factor < 1
         empty_node_ids = np.where(self.solver_vars["fill_factor_array"] < 1.0)[0]
         self.bcs.p0_idx = np.array(empty_node_ids)
 

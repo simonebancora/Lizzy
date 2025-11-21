@@ -1,4 +1,5 @@
 import lizzy as liz
+from lizzy import SolverType
 
 model = liz.LizzyModel()
 model.read_mesh_file("../meshes/Rect1M_R2.msh")
@@ -8,6 +9,6 @@ model.assign_material("domain_material", 'domain')
 model.create_sensor(0.2, 0.25, 0)
 model.create_inlet(100000, "inlet_left")
 model.assign_inlet("inlet_left", "left_edge")
-model.initialise_solver()
+model.initialise_solver(SolverType.ITERATIVE_PETSC)
 solution = model.solve()
 # model.save_results(solution, "Rect1M_R1")

@@ -7,7 +7,8 @@ lizzy.sensors
 
     Properties
     ----------
-    
+
+    .. autoproperty:: Sensor.idx
     .. autoproperty:: Sensor.position
     .. autoproperty:: Sensor.pressure
     .. autoproperty:: Sensor.velocity
@@ -17,10 +18,15 @@ lizzy.sensors
     Methods
     -------
 
-
     .. automethod:: Sensor.info
 
 
 .. autoclass:: lizzy.sensors.sensmanager.SensorManager
-    :members:
-    :undoc-members:
+
+    Methods
+    -------
+
+    .. automethod:: SensorManager.add_sensor
+    .. automethod:: SensorManager.reset_sensors
+    .. automethod:: SensorManager.print_sensor_readings
+    .. automethod:: SensorManager.get_sensor_by_id

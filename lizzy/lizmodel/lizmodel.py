@@ -132,8 +132,12 @@ class LizzyModel:
 
     def read_mesh_file(self, mesh_file_path:str):
         r"""
-        Reads a mesh file and initialises the mesh. Currently only .MSH format is supported.
-        :param mesh_file_path: Path to the mesh file.
+        Reads a mesh file and initialises the mesh. Currently only .MSH format is supported (Version 4 ASCII).
+
+        Parameters
+        ----------
+        mesh_file_path : str
+            Path to the mesh file from the current working folder.
         """
         self._reader = Reader(mesh_file_path)
         self._mesh = Mesh(self._reader)

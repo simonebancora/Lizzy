@@ -40,7 +40,6 @@ lizzy
     .. automethod:: lizzy.LizzyModel.get_number_of_empty_cvs
     .. automethod:: lizzy.LizzyModel.get_current_time
     .. automethod:: lizzy.LizzyModel.get_latest_solution
-    .. .. automethod:: lizzy.LizzyModel.get_node_by_id
     
     .. rubric:: Core model setup methods
     .. automethod:: lizzy.LizzyModel.read_mesh_file

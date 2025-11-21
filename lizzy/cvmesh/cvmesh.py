@@ -136,7 +136,7 @@ class Mesh:
             for tri in node.triangles:
                 connected_nodes_ids.append(tri.node_ids)
             connected_nodes_ids = np.unique(connected_nodes_ids).tolist()
-            connected_nodes_ids.remove(node.id)
+            connected_nodes_ids.remove(node.idx)
             node.node_ids = connected_nodes_ids
 
     def EmptyCVs(self):
