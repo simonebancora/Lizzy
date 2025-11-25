@@ -1,9 +1,10 @@
 .. py:currentmodule:: lizzy
 
+.. _lizzymodel_api:
 
-*****
+======
 lizzy
-*****
+======
 
 .. autoclass:: lizzy.LizzyModel
 
