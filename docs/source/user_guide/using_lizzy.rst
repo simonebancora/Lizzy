@@ -105,7 +105,7 @@ All boundary condition operations can be performed directly from the LizzyModel.
     model.create_inlet(1e+05, "inlet_tag")
     model.assign_inlet("inlet_tag", "boundary_tag")
 
-Other methods, like :meth:`~lizzy.LizzyModel.change_inlet_pressure`, allow to manage inlet behaviour during the infusion. More details about boundary condition operations can be found in the **Inlet operations** section.
+Other methods, like :meth:`~lizzy.LizzyModel.change_inlet_pressure`, allow to manage inlet behaviour during the infusion. More details about boundary condition operations can be found in the :ref:`inlet_operations` section.
 
 
 
