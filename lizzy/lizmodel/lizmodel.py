@@ -229,8 +229,8 @@ class LizzyModel:
         self._solver.initialise_new_solution()
     
     @copy_doc(Writer.save_results)
-    def save_results(self, solution:dict, result_name:str):
-        self._writer.save_results(solution, result_name)
+    def save_results(self, solution:dict, result_name:str, **kwargs):
+        self._writer.save_results(solution, result_name, **kwargs)
 
     def get_node_by_id(self, node_id:int):
         return self._mesh.nodes[node_id]

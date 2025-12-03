@@ -147,6 +147,7 @@ class Line:
         x2 = self.nodes[1].coords
         return np.array((x1, x2)).mean(0)
 
+    #TODO: this is wrong in 3D but the line normal is not being used at the moment
     def ComputeNormal(self):
         x1 = self.nodes[0].coords
         x2 = self.nodes[1].coords
@@ -160,7 +161,7 @@ class Line:
 
 @dataclass
 class CV:
-    id:int = 0
+    idx:int = 0
     node:Node = None
     fill:float = 0
     area:float = 0
@@ -195,7 +196,7 @@ class CV:
             x1 = elem_side_lines[0].midpoint
             x2 = elem_side_lines[1].midpoint
             centroid = tri.centroid
-            cv_lines_tri = [CVLine(x1, centroid), CVLine(centroid, x2)]
+            cv_lines_tri = [CVLine(x1, centroid, tri.n), CVLine(centroid, x2, tri.n)]
             self.cv_lines.append(cv_lines_tri)
 
     def precompute_flux_terms(self):
@@ -231,6 +232,38 @@ class CV:
             area += x1 * y2 - y1 * x2
 
         return abs(area) / 2
+    
+    @staticmethod
+    def polygon_area_3d(points):
+        """
+        Compute the area of a planar polygon in 3D using a generalized Shoelace formula.
+
+        :param points: A list of 3D points (numpy arrays or length-3 sequences).
+        :return: area (float)
+        """
+        pts = [np.array(p, dtype=float) for p in points]
+        n = len(pts)
+        if n < 3:
+            raise ValueError("A polygon must have at least 3 points.")
+
+        # 1. Compute the plane normal using the first three non-collinear points
+        # (Assumes input is planar)
+        normal = np.cross(pts[1] - pts[0], pts[2] - pts[0])
+        norm_len = np.linalg.norm(normal)
+        if norm_len == 0:
+            raise ValueError("Points are collinear; polygon has no area.")
+        normal /= norm_len  # unit normal
+
+        # 2. Accumulate cross products like Shoelace generalized to 3D
+        cross_sum = np.zeros(3)
+        for i in range(n):
+            p1 = pts[i]
+            p2 = pts[(i + 1) % n]
+            cross_sum += np.cross(p1, p2)
+
+        # 3. Area = 1/2 * | dot(normal, cross_sum) |
+        area = 0.5 * abs(np.dot(normal, cross_sum))
+        return area
 
 
 
@@ -247,9 +280,9 @@ class CV:
                     elem_side_lines.append(line)  # here we get 2 lines
             x1 = elem_side_lines[0].midpoint
             x2 = elem_side_lines[1].midpoint
-            perimeter_points = [point_main.coords[0:2], x1[0:2], point_centroid[0:2], x2[0:2]]
+            perimeter_points = [point_main.coords, x1, point_centroid, x2]
 
-            slice_area = self.polygon_area(perimeter_points)
+            slice_area = self.polygon_area_3d(perimeter_points)
             slice_vol = slice_area*tri.h*tri.porosity
             A += slice_area
             vol += slice_vol
@@ -270,16 +303,18 @@ class CV:
 
 
 class CVLine:
-    def __init__(self, p1, p2):
+    def __init__(self, p1, p2, tri_normal):
         self.p1 = p1
         self.p2 = p2
         self.l = 0
         self.n = None
+        self.tri_normal = tri_normal
         self.ComputeLengthAndNormal()
     
     def ComputeLengthAndNormal(self):
         DX = self.p1 - self.p2
         self.midpoint = 0.5*(self.p1 + self.p2)
         self.l = np.linalg.norm(DX)
-        self.n = np.array((DX[1]/self.l, -DX[0]/self.l, 0))
+        n = np.cross(self.tri_normal, DX)
+        self.n = n / np.linalg.norm(n)
 
