@@ -8,7 +8,7 @@ In this tutorial we will explore two key concepts: material anisotropy and mater
 Copy the mesh file
 ------------------
 
-Create a folder in a preferred location and copy the :download:`mesh file <../../../../examples/meshes/Radial.msh>` in the new directory.
+Create a folder in a preferred location and copy the :download:`mesh file <../../../examples/meshes/Radial.msh>` in the new directory.
 The mesh contains 3 domain tags ("physical groups" in msh format): *inner_rim*, *outer_rim*, *domain*.
 
 Import and parameters
@@ -99,7 +99,7 @@ Solution visualisation
 
 Load up the file ``Radial_RES.xdmf`` into Paraview to visualise the results:
 
-.. image:: ../../../images/anisotropy_fill_0deg.png
+.. image:: ../../images/anisotropy_fill_0deg.png
    :width: 80%
    :align: center
 
@@ -124,7 +124,7 @@ The vector (1,1,0) lies on the :math:`x`-:math:`y` plane and describes an orient
 
 The rest of the script remains unchanged. This time, we obtain a different result:
 
-.. image:: ../../../images/anisotropy_fill_45deg.png
+.. image:: ../../images/anisotropy_fill_45deg.png
    :width: 80%
    :align: center
 

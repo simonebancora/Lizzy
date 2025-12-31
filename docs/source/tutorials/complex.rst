@@ -8,10 +8,10 @@ In this tutorial we will tackle a more complex scenario that includes several el
 Copy the mesh file
 ------------------
 
-Create a folder in a preferred location and copy the :download:`mesh file <../../../../examples/meshes/Complex_rotated.msh>` in the new directory.
+Create a folder in a preferred location and copy the :download:`mesh file <../../../examples/meshes/Complex_rotated.msh>` in the new directory.
 Let's take a look at the geometry:
 
-.. image:: ../../../images/lizzy_complex_case_layout.png
+.. image:: ../../images/lizzy_complex_case_layout.png
    :width: 80%
    :align: center
 
@@ -61,7 +61,7 @@ We need to define an orientation for the anisotropic material ``material_aniso``
 
 Luckily, the ``Rosette`` constructor can work with different input styles. In this case, the most convenient way is to use a 2-point initialisation. We can pass 2 arguments to ``Rosette``, each being an ``(x, y, z)`` tuple of values that represents a point in space. The direction vector will be constructed as the line passing through them. Using the definition ``Rosette((x1,y1,z1), (x2,y2,z2))`` we simply need to know the global coordinates of 2 points aligned in the direction of the :math:`k_1` orientation. In our example, we can use a visualisation tool to measure our coordinates (example using Paraview):
 
-.. image:: ../../../images/node_1213_labeled.png
+.. image:: ../../images/node_1213_labeled.png
     :width: 90%
     :align: center
 
@@ -140,13 +140,13 @@ Solution visualisation
 
 Load up the file ``Complex_rotated_RES.xdmf`` into Paraview to visualise the results:
 
-.. image:: ../../../images/complex_t1.png
+.. image:: ../../images/complex_t1.png
     :width: 32%
 
-.. image:: ../../../images/complex_t2.png
+.. image:: ../../images/complex_t2.png
     :width: 32%
 
-.. image:: ../../../images/complex_t3.png
+.. image:: ../../images/complex_t3.png
     :width: 32%
 
 Observing the fill pattern we see that the flow front speeds up in the racetrack (a), fills gradually the L-shape (b) and finally rotates its orientation as it traverses the ramp because of the anisotropy (c).

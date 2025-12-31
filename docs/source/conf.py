@@ -22,6 +22,8 @@ extensions = [
 
 templates_path = ['_templates']
 bibtex_bibfiles = ['refs.bib']
+html_static_path = ['_static']
+html_css_files = ['custom.css']
 exclude_patterns = []
 
 
@@ -30,7 +32,6 @@ exclude_patterns = []
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_rtd_theme'
-html_static_path = []
 
 
 napoleon_google_docstring = False

@@ -29,8 +29,8 @@ The solver assumes consistent units and does not enforce any. The user is free t
 - Pressure: Pa
 - Velocity: m/s
 
-LizzyModel
------------
+The LizzyModel class
+---------------------
 
 The :class:`~lizzy.LizzyModel` class is the main protagonist of any Lizzy script. This class provides APIs to execute all the core fucntionalities of the solver.
 When writing a Lizzy script, typically the first step (after importing the library) is to instantiate a :class:`~lizzy.LizzyModel` object:
@@ -49,11 +49,11 @@ The Lizzy API is designed so that, in most cases, the :class:`~lizzy.LizzyModel`
 
 .. admonition:: Under the hood
 
-    The LizzyModel class wraps many core components of the library: :class:`~lizzy.bcond.bcond.BCManager`, :class:`~lizzy.materials.MaterialManager`, :class:`~lizzy.sensors.sensmanager.SensorManager`, :class:`~lizzy.solver.solver.Solver` and more... These are private members of the class, and are not intended to be accessed directly. Instead, the LizzyModel provides public wrappers for all main methods of these core components. However, not all the fucntionalities of Lizzy are exposed by the LizzyModel. In some cases, it might be necessary to access a core component directly, but these special cases reserved to advanced users that are know well the solver architecture.
+    The LizzyModel class wraps many core components of the library: :class:`~lizzy.bcond.bcond.BCManager`, :class:`~lizzy.materials.MaterialManager`, :class:`~lizzy.sensors.sensmanager.SensorManager`, :class:`~lizzy.solver.solver.Solver` and more... These are private members of the class, and are not intended to be accessed directly. Instead, the LizzyModel provides public wrappers for all main methods of these core components. However, not all the fucntionalities of Lizzy are exposed by the LizzyModel. In some cases, it might be necessary to access a core component directly, but these special cases reserved to advanced users that know well the solver architecture.
 
 .. important::
     
-    In a nutshell: the :class:`~lizzy.LizzyModel` class provides all user-facing APIs needed to write a Lizzy script. If something is not there, it is likely not intended to be used in a script.
+    The :class:`~lizzy.LizzyModel` class provides all user-facing APIs needed to write a Lizzy script. If something is not there, it is likely not intended to be used in a script.
 
 
 .. seealso::

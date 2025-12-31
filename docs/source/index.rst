@@ -13,27 +13,46 @@ Is is designed to simulate resin infusion processes that are used in the manufac
    :width: 70%
    :align: center
 
+
+
+
+.. toctree::
+   :hidden:
+
+   installation/installation
+   tutorials/tutorials
+   user_guide/using_lizzy
+   api_reference/api_reference_index
+
+
+
+.. raw:: html
+
+   <div class="doc-cards">
+
+     <a class="doc-card" href="installation/installation.html">
+       <h3>Installation</h3>
+       <p>Instructions on how to install Lizzy.</p>
+     </a>
+
+     <a class="doc-card" href="tutorials/tutorials.html">
+       <h3>Tutorials</h3>
+       <p>A few tutorials to learn the basics of Lizzy.</p>
+     </a>
+
+     <a class="doc-card" href="user_guide/using_lizzy.html">
+       <h3>User Guide</h3>
+       <p>Learn how to run simulations with Lizzy.</p>
+     </a>
+
+     <a class="doc-card" href="api_reference/api_reference_index.html">
+       <h3>API Reference</h3>
+       <p>In-depth API documentation (under construction).</p>
+     </a>
+
+   </div>
+   
+
 .. note::
 
-   This project is still in early development. Version 1.0 is scheduled for release by end of 2025. Stay tuned!
-
-User Guide
-------------
-
-In this section you will learn the logic behind writing a script for running simulations with Lizzy.
-
-.. toctree::
-   :maxdepth: 2
-
-   user_guide/user_guide_index
-
-API Reference
--------------
-
-Here you will find in-depth description of Lizzy's modules, classes and methods.
-`Will` as, in a near future. For now, it's under construction.
-
-.. toctree::
-   :maxdepth: 1
-
-   api_reference/api_reference_index
+   This project is still in early development and documentation may be incomplete. Version 1.0 is scheduled for release in early 2026. Stay tuned!

@@ -8,6 +8,6 @@ We provide here a few tutorials to learn the basics of Lizzy. It is recommended 
 .. toctree::
     :maxdepth: 1
 
-    tutorials/channel_flow
-    tutorials/anisotropy
-    tutorials/complex
+    channel_flow
+    anisotropy
+    complex
