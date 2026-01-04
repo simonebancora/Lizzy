@@ -11,12 +11,12 @@ Basic script workflow
 The basic workflow for writing a Python script to use Lizzy involves the following key steps:
 
 1. Import the Lizzy package.
-2. Instantiate a LizzyModel object.
-3. Use the LizzyModel object to define the simulation.
+2. Instantiate a :class:`~lizzy.LizzyModel` object.
+3. Use the :class:`~lizzy.LizzyModel` object to define the simulation.
 4. Run the simulation.
 5. Save results.
 
-As we will see shortly, most of the model operations are performed using the :class:`~lizzy.LizzyModel` class directly.
+As we will see shortly, Lizzy is designed so that most of the operations are performed using the :class:`~lizzy.LizzyModel` class directly.
 
 Units and conventions
 ----------------------

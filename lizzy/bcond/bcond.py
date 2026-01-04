@@ -9,23 +9,65 @@ from functools import singledispatchmethod
 import numpy as np
 from typing import Literal
 
-class Boundary:
-    def __init__(self):
-        pass
 
-class Inlet(Boundary):
+class Inlet():
+    """A class representing an inlet boundary condition.
+
+    Parameters
+    ----------
+    p_value : float
+        Initial pressure value at the inlet [Pa].
+    name : str, optional
+        Label assigned to the inlet. Will be used to select the inlet in future operations. If none assigned, a default 'unnamed_inlet' name is given.
+    """
     def __init__(self, p_value:float, name:str = "unnamed_inlet"):
         super().__init__()
-        self.p0 = p_value
         self.p_value = p_value
+        self._p0 = p_value
         self.name = name
-        self.assigned = False
-        self.open = True
+        self._assigned = False
+        self._open = True
+    
+    @property
+    def p_value(self) -> float:
+        """Current pressure value [Pa]. Can be changed at any time.
+        """
+        return self._p_value
+
+    @p_value.setter
+    def p_value(self, value: float):
+        if value < 0:
+            raise ValueError("p_value must be non-negative")
+        self._p_value = value
+    
+    @property
+    def p0(self) -> float:
+        """Initial pressure value assigned at inlet creation time. (read-only)
+        """
+        return self._p0
+    
+    @property
+    def is_open(self) -> bool:
+        """Indicates whether the inlet is currently open (True) or closed (False). (read-only)
+        """
+        return self._open
 
     def reset(self):
-        """Restores the inlet :attr:`~lizzy.bcond.bcond.Inlet.p_value` to the value assigned at creation time.
+        """Restores the inlet :attr:`~lizzy.bcond.bcond.Inlet.p_value` to the value assigned at creation time and sets it to open.
         """
-        self.p_value = self.p0
+        self.p_value = self._p0
+        self._open = True
+    
+    def set_open(self, open: bool):
+        """Set the inlet state to open or closed.
+
+        Parameters
+        ----------
+        open : bool
+            The state the inlet will be instantly set to: open (True) or closed (False).
+        """
+        self._open = open
+    
 
 
 class BCManager:
@@ -93,7 +135,7 @@ class BCManager:
         selected_inlet = self._fetch_inlet(inlet_selector)
         if selected_inlet not in self._assigned_inlets.values():
             self._assigned_inlets[boundary_tag] = selected_inlet
-            selected_inlet.assigned = True
+            selected_inlet._assigned = True
 
     
     # TODO: functionality should be added to change the pressure over time, along different time interpolation options
@@ -134,7 +176,7 @@ class BCManager:
             Either the inlet object to assign, or the name of an existing inlet.
         """
         selected_inlet = self._fetch_inlet(inlet_selector)
-        selected_inlet.open = True
+        selected_inlet.set_open(True)
 
     def close_inlet(self, inlet_selector:Inlet | str):
         """Sets the selected inlet state to `closed`. When closed, the inlet acts as a Neumann natural boundary condition (no flux).
@@ -149,7 +191,7 @@ class BCManager:
         An inlet can be opened and closed at any time during the simulation to simulate valve operations. The stored p_value is preserved when the inlet is closed.
         """
         selected_inlet = self._fetch_inlet(inlet_selector)
-        selected_inlet.open = False
+        selected_inlet.set_open(False)
     
     def reset_inlets(self):
         """Calls the :meth:`~lizzy.bcond.bcond.Inlet.reset` method on all inlets currently present in the :attr:`~lizzy.bcond.bcond.BCManager.assigned_inlets` dictionary."""

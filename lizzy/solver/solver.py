@@ -4,11 +4,18 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+
 import numpy as np
 import time
 from lizzy.solver import *
 from lizzy.bcond.bcond import SolverBCs
-from lizzy.sensors.sensmanager import SensorManager
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from lizzy.sensors.sensmanager import SensorManager
+    from lizzy.bcond.bcond import BCManager
 
 # from scipy.sparse import lil_matrix
 # import matplotlib.pyplot as plt
@@ -18,7 +25,7 @@ class Solver:
                  solver_type=SolverType.DIRECT_SPARSE, solver_tol=1e-8, solver_max_iter=1000, 
                  solver_verbose=False, use_masked_solver=True, **solver_kwargs):
         self.mesh = mesh
-        self.bc_manager = bc_manager
+        self.bc_manager : BCManager = bc_manager 
         self.simulation_parameters = simulation_parameters
         self.material_manager = material_manager
         self.time_step_manager = TimeStepManager()
@@ -92,7 +99,7 @@ class Solver:
                 inlet_idx = self.mesh.boundaries[tag]
             except KeyError:
                 raise KeyError(f"Mesh does not contain physical tag: {tag}")
-            if inlet.open:
+            if inlet.is_open:
                 dirichlet_idx.append(inlet_idx)
                 dirichlet_vals.append(np.ones(len(inlet_idx)) * inlet.p_value)
         self.bcs.dirichlet_idx = np.concatenate(dirichlet_idx)
@@ -220,7 +227,8 @@ class Solver:
                                     **self.solver_kwargs)
 
         v_array = self.vsolver.calculate_elem_velocities(p, self.simulation_parameters.mu)
-        v_nodal_array = self.vsolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
+        # v_nodal_array = self.vsolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
+        v_nodal_array = np.zeros((self.N_nodes, 3))
 
         active_cvs_ids, self.solver_vars["free_surface_array"] = self.fill_solver.find_free_surface_cvs(self.solver_vars["fill_factor_array"], self.cv_support_cvs_array)
         dt = self.fill_solver.calculate_time_step(active_cvs_ids, self.solver_vars["fill_factor_array"], self.solver_vars["cv_volumes_array"], v_array)

@@ -73,7 +73,7 @@ class Sensor:
     
     @property
     def time(self) -> float:
-        """The current time. (read-only)
+        """The current time in the simulation. (read-only)
         """
         return self._tvals[-1]
     
@@ -91,7 +91,7 @@ class Sensor:
                 raise KeyError(f"Unrecognised sensor reading request: {key}")
 
     def info(self) -> str:
-        """Returns a string with basic information about the sensor: its ID, position and the ID of the mesh node it is attached to.
+        """Returns basic information about the sensor: its ID, position and the ID of the mesh node it is attached to.
         """
         return f"Sensor ID: {self.idx}; position: ({self.position[0]}, {self.position[1]}, {self.position[2]}; child node ID: {self.child_node.idx})"
 

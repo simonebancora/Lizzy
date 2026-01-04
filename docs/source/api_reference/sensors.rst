@@ -5,8 +5,7 @@ lizzy.sensors
 
 .. autoclass:: lizzy.sensors.sensmanager.Sensor
 
-    Properties
-    ----------
+    .. rubric:: Properties
 
     .. autoproperty:: Sensor.idx
     .. autoproperty:: Sensor.position
@@ -15,16 +14,14 @@ lizzy.sensors
     .. autoproperty:: Sensor.fill_factor
     .. autoproperty:: Sensor.time
 
-    Methods
-    -------
+    .. rubric:: Methods
 
     .. automethod:: Sensor.info
 
 
 .. autoclass:: lizzy.sensors.sensmanager.SensorManager
 
-    Methods
-    -------
+    .. rubric:: Methods
 
     .. automethod:: SensorManager.add_sensor
     .. automethod:: SensorManager.reset_sensors
