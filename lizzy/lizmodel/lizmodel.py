@@ -142,6 +142,14 @@ class LizzyModel:
         self._reader = Reader(mesh_file_path)
         self._mesh = Mesh(self._reader)
         self._writer = Writer(self._mesh)
+    
+    def print_mesh_info(self) -> None:
+        """Prints some information about the mesh.
+        """
+        if not self._reader:
+            print("Mesh data is empty. Please read a mesh file first.")
+            return
+        self._reader.print_mesh_info()
 
     @copy_doc(MaterialManager.create_material)
     def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str= None):
@@ -228,8 +236,9 @@ class LizzyModel:
     def initialise_new_solution(self):
         self._solver.initialise_new_solution()
     
-    @copy_doc(Writer.save_results)
     def save_results(self, solution:dict, result_name:str, **kwargs):
+        """Wrapper for :meth:`~lizzy.IO.IO.Writer.save_results`
+        """
         self._writer.save_results(solution, result_name, **kwargs)
 
     def get_node_by_id(self, node_id:int):

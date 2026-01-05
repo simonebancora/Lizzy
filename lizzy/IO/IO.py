@@ -10,6 +10,7 @@ from pathlib import Path
 from enum import Enum, auto
 import numpy as np
 import meshio
+import textwrap
 
 from lizzy.IO import geometry as geom
 
@@ -24,12 +25,8 @@ class Reader:
 
     Parameters
     ----------
-    mesh_data : dict
-        A dict containing all the info from the mesh file, converted into a Lizzy-readable format.
     mesh_path : Path
         The path to the mesh file.
-    case_name : str
-        The name of the case we are simulating.
 
     """
     def __init__(self, mesh_path:str):
@@ -40,21 +37,21 @@ class Reader:
     
     def __read_mesh_file(self):
         print(f"Reading mesh file: {self.mesh_path}")
-        _format = self.detect_format()
+        _format = self._detect_format()
         match _format:
             case Format.MSH:
-                self.mesh_data = self.read_gmsh_file()
+                self.mesh_data = self._read_gmsh_file()
 
     def __read_case_name(self):
         case_name = self.mesh_path.stem
         return case_name
 
-    def detect_format(self):
+    def _detect_format(self):
         """Read the ending of the mesh file path and detect the correct format. 
         NOT IMPLEMENTED"""
         return Format.MSH
 
-    def read_gmsh_file(self) -> dict:
+    def _read_gmsh_file(self) -> dict:
         """
         Reads a mesh file in .msh format (ASCII 4). Initialises all mesh attributes.
         """
@@ -63,6 +60,8 @@ class Reader:
         except meshio._exceptions.ReadError:
             raise FileNotFoundError(f"Mesh file not found: {self.mesh_path}")
         all_nodes_coords : np.ndarray = mesh_file.points
+        physical_domain_names = []
+        physical_line_names = []
         nodes_conn = mesh_file.cells_dict["triangle"]
         # get lines conn
         physical_lines_conn = mesh_file.cells_dict["line"]
@@ -73,8 +72,12 @@ class Reader:
         for key in mesh_file.cell_sets_dict:
             if 'triangle' in mesh_file.cell_sets_dict[key] and 'gmsh' not in key:
                 physical_domains[key] = mesh_file.cell_sets_dict[key]['triangle']
+                if key not in physical_domain_names:
+                    physical_domain_names.append(key)
             if 'line' in mesh_file.cell_sets_dict[key] and 'gmsh' not in key:
                 physical_lines[key] = mesh_file.cell_sets_dict[key]['line']
+                if key not in physical_line_names:
+                    physical_line_names.append(key)
         # get node ids for nodes in the physical lines
         for key in physical_lines:
             physical_nodes_ids[key] = geom.extract_unique_nodes(mesh_file.cells_dict["line"][physical_lines[key]])
@@ -88,8 +91,22 @@ class Reader:
             'physical_domains'      : physical_domains,
             'physical_lines'        : physical_lines,
             'physical_nodes'        : physical_nodes_ids,
+            'physical_domain_names': physical_domain_names,
+            'physical_line_names'  : physical_line_names,
             }
         return mesh_data
+    
+    def print_mesh_info(self) -> None:
+        """Returns some information about the mesh.
+        """
+        info = textwrap.dedent(rf"""
+        Mesh file format: MSH (v4 ASCII),
+        Case name:    {self.case_name}
+        Mesh contains {len(self.mesh_data['all_nodes_coords'])} nodes, {len(self.mesh_data['nodes_conn'])} elements.
+        Physical domains:        {self.mesh_data['physical_domain_names']}
+        Physical lines:          {self.mesh_data['physical_line_names']}
+        """)
+        print(info)
 
 
 class Writer:

@@ -3,20 +3,22 @@
 lizzy.IO
 =========
 
-The IO module provides functionality to read in input data and write out simulation results. The two main objects implemented by module are the ``Reader`` and the ``Writer`` classes.
-
+The IO module provides functionality to read in input data and write out simulation results. The two main objects implemented by module are the :class:`~lizzy.IO.IO.Reader` and the :class:`~lizzy.IO.IO.Writer` classes. Both are instantiated automatically by the :class:`~lizzy.lizmodel.lizmodel.LizzyModel` class when the :meth:`~lizzy.lizmodel.lizmodel.LizzyModel.read_mesh_file` is called.
 
 .. autoclass:: lizzy.IO.IO.Reader
 
+    .. rubric:: Methods
 
-Currently, only the ``msh`` format is supported. More will be added in future updates.
-The ``Reader`` constructor parses the mesh file and populates a dictionary ``mesh_data`` with all the information contained in the mesh file.
+    .. automethod:: lizzy.IO.IO.Reader.print_mesh_info
 
-.. code-block:: python
 
-    print(mesh_reader.mesh_data.keys())
-    >>> dict_keys(['all_nodes_coords', 'nodes_conn', 'lines_conn', 'physical_lines_conn', 'physical_domains', 'physical_lines', 'physical_nodes'])
+.. important::
+    Currently, only the ``msh`` format is supported. More will be added in future updates.
 
-The purpose of the ``mesh_data`` dictionary is to collect the mesh data from any input format into a format that will be read by Lizzy when instantiating a ``Mesh`` object for the analysis.
 
+.. autoclass:: lizzy.IO.IO.Writer
+
+    .. rubric:: Methods
+
+    .. automethod:: lizzy.IO.IO.Writer.save_results
 

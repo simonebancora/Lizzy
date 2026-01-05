@@ -21,6 +21,20 @@ lizzy
     Methods
     -------
     
+    .. rubric:: Core model setup methods
+
+    .. automethod:: lizzy.LizzyModel.read_mesh_file
+    .. automethod:: lizzy.LizzyModel.print_mesh_info
+    .. automethod:: lizzy.LizzyModel.create_material
+    .. automethod:: lizzy.LizzyModel.assign_material
+    .. automethod:: lizzy.LizzyModel.assign_simulation_parameters
+
+    .. rubric:: Getter methods
+
+    .. automethod:: lizzy.LizzyModel.get_number_of_empty_cvs
+    .. automethod:: lizzy.LizzyModel.get_current_time
+    .. automethod:: lizzy.LizzyModel.get_latest_solution
+    
     .. rubric:: Inlet management methods
     
     .. automethod:: lizzy.LizzyModel.create_inlet
@@ -35,18 +49,6 @@ lizzy
     .. automethod:: lizzy.LizzyModel.print_sensor_readings
     .. automethod:: lizzy.LizzyModel.get_sensor_trigger_states
     .. automethod:: lizzy.LizzyModel.get_sensor_by_id
-    
-    .. rubric:: Getter methods
-
-    .. automethod:: lizzy.LizzyModel.get_number_of_empty_cvs
-    .. automethod:: lizzy.LizzyModel.get_current_time
-    .. automethod:: lizzy.LizzyModel.get_latest_solution
-    
-    .. rubric:: Core model setup methods
-    .. automethod:: lizzy.LizzyModel.read_mesh_file
-    .. automethod:: lizzy.LizzyModel.create_material
-    .. automethod:: lizzy.LizzyModel.assign_material
-    .. automethod:: lizzy.LizzyModel.assign_simulation_parameters
 
     .. rubric:: Solver methods
     
