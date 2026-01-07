@@ -14,12 +14,11 @@ Lizzy is provided as a package. To install using pip, navigate inside the cloned
 
       (.venv) $ pip install -e .
 
-You can check that the installation was successful by opening a Python shell and trying to import Lizzy:
+You can check that the installation was successful by typing:
 
 .. code-block:: console
 
-   (.venv) $ python
-   >>> import lizzy
+   (.venv) $ lizzy
    >>>
           |    _)                
           |     | _  / _  /  |  |
@@ -36,5 +35,21 @@ Lizzy leverages the `PETSc <https://petsc.org/release/>`_ library for some of it
 
    (.venv) $ pip install petsc petsc4py
 
+You can check at any time if PETSc is installed correctly by typing:
+
+.. code-block:: console
+
+   (.venv) $ lizzy info
+   >>>
+
+   Lizzy solver - v0.1.0
+
+   Developed by S. Bancora and P. Mulye, Copyright 2025-2026
+   Licensed under the GNU General Public License v3.0
+
+   Optional dependencies:
+   PETSc solvers: installed
+   >>>
+   
 .. note::
     If you are using Windows, installing PETSc `might be challenging <https://petsc.org/main/install/windows/>`_. We recommend to use the Windows Subsystem for Linux 2 (WSL2) to install a Linux environment on your Windows machine, and then follow the Linux installation instructions for PETSc. Alternatively, PETSc can be manually built from source (advanced).

@@ -9,11 +9,12 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy.core.solver import FillSolver
     from lizzy.core.io import Reader
+    from lizzy.core.materials import MaterialManager, Rosette, PorousMaterial
+    from .entities import CV, Node, Line, Triangle
 
 import numpy as np
-from .constr import CreateNodes, CreateLines, CreateTriangles, CreateControlVolumes
+from .construction import CreateNodes, CreateLines, CreateTriangles, CreateControlVolumes
 from .collections import nodes, lines, elements
-from lizzy.core.materials import MaterialManager
 
 class Mesh:
     r"""
@@ -39,11 +40,11 @@ class Mesh:
     """
     def __init__(self, mesh_reader:Reader):
         self.mesh_data = mesh_reader.mesh_data
-        self.nodes = nodes([])
-        self.triangles = elements([])
+        self.nodes : list[Node] = nodes([])
+        self.triangles : list[Triangle] = elements([])
         self.tetras = elements([])
-        self.lines = lines([])
-        self.CVs = []
+        self.lines : list[Line] = lines([])
+        self.CVs :list[CV] = []
         self.boundaries = mesh_reader.mesh_data['physical_nodes']
         self.preprocessed = False
 
@@ -94,8 +95,8 @@ class Mesh:
         rosettes = material_manager.assigned_rosettes
         for tri in self.triangles:
             try:
-                material = materials[tri.material_tag]
-                rosette = rosettes[tri.material_tag]
+                material : PorousMaterial = materials[tri.material_tag]
+                rosette : Rosette = rosettes[tri.material_tag]
                 u, v, w = rosette.project_along_normal(tri.n)
                 R = np.array([u, v, w]).T
                 tri.k = R @ material.k_diag @ R.T

@@ -6,6 +6,7 @@
 
 import argparse
 from lizzy.utils.splash_logo import print_logo
+import textwrap
 
 def main():
     parser = argparse.ArgumentParser(
@@ -29,8 +30,25 @@ def main():
 
     # Handle commands
     if args.command == "info":
-        print ("Lizzy Solver - v0.1.0")
-        print ("Developed by S. Bancora and P. Mulye")
-        print ("Copyright 2025-2026")
-        print ("Licensed under the GNU General Public License v3.0")
-        print ("For more information, visit https://github.com/simonebancora/lizzy")
+        display_info()
+
+def display_info():
+    """Display information on installed Lizzy solver.
+    """
+    try:
+        import petsc4py
+        petsc4py.init()
+        from petsc4py import PETSc
+        petsc_installed = "installed"
+    except ImportError:
+        petsc_installed = "not installed"
+    info_text = rf"""
+        Lizzy solver - v0.1.0
+
+        Developed by S. Bancora and P. Mulye, Copyright 2025-2026
+        Licensed under the GNU General Public License v3.0
+        
+        Optional dependencies:
+        PETSc solvers: {petsc_installed}
+        """
+    print(textwrap.dedent(info_text))

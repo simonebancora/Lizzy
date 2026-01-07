@@ -12,12 +12,12 @@ class Node:
         self.coords = coords
         self.idx : int = 0
         self.p : float = 0
-        self.triangles = []
-        self.triangle_ids = []
-        self.lines = []
-        self.line_ids = []
-        self.nodes = []
-        self.node_ids = []
+        self.triangles : list[Triangle] = []
+        self.triangle_ids : list[int] = []
+        self.lines : list[Line] = []
+        self.line_ids : list[int] = []
+        self.nodes : list[Node] = []
+        self.node_ids : list[int] = []
     def __str__(self):
         return "Node ID: " + str(self.idx)
 
@@ -31,11 +31,11 @@ class Element2D:
         self.k = np.empty((3,3))
         self.grad_N = None
         self.porosity = 0.5
-        self.nodes = ()
-        self.node_ids = []
+        self.nodes : tuple[Node] = ()
+        self.node_ids : list[int] = []
         self.nodes_coords : np.ndarray = None
-        self.lines = []
-        self.line_ids = []
+        self.lines : list[Line] = []
+        self.line_ids : list[int] = []
         self.centroid = np.zeros(3)
         self.v : np.ndarray = np.zeros((3,1))
 
