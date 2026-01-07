@@ -1,4 +1,4 @@
-#  Copyright 2025-2025 Simone Bancora, Paris Mulye
+#  Copyright 2025-2026 Simone Bancora, Paris Mulye
 #
 #  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -6,20 +6,22 @@
 
 from typing import Dict, Literal, overload
 from types import MappingProxyType
-from lizzy.lizmodel.decorators import copy_doc
-from lizzy.IO.IO import Reader, Writer
-from lizzy.cvmesh.cvmesh import Mesh
-from lizzy.materials import MaterialManager, PorousMaterial, Rosette
-from lizzy.sensors.sensmanager import SensorManager
-from lizzy.simparams import SimulationParameters
-from lizzy.bcond.bcond import BCManager
-from lizzy.solver.solver import Solver, SolverType
+from lizzy.core.io import Reader, Writer
+from lizzy.core.cvmesh import Mesh
+from lizzy.core.bcond import BCManager
+from lizzy.core.solver import Solver, SolverType
+from lizzy.core.sensors import SensorManager
+from .simparams import SimulationParameters
+from lizzy.core.materials import MaterialManager, PorousMaterial, Rosette
+from lizzy.utils.splash_logo import print_logo
+
 
 class LizzyModel:
     """
     The main class for defining simulations in Lizzy. This class wraps all subcomponents of the solver and exposes all user-facing APIs. Provides access to methods for reading a mesh, assigning properties, configuring the solver, saving results and more. A script typically begins with the instantiation of a LizzyModel.
     """
     def __init__(self):
+        print_logo()
         self._reader = None
         self._writer = None
         self._mesh = None
@@ -126,7 +128,6 @@ class LizzyModel:
     ) -> None:
         ...
 
-    @copy_doc(SimulationParameters.assign)
     def assign_simulation_parameters(self, **kwargs):
         self._simulation_parameters.assign(**kwargs)
 
@@ -151,12 +152,10 @@ class LizzyModel:
             return
         self._reader.print_mesh_info()
 
-    @copy_doc(MaterialManager.create_material)
     def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str= None):
         new_material = self._material_manager.create_material(k1, k2, k3, porosity, thickness, name)
         return new_material
 
-    copy_doc(MaterialManager.assign_material)
     def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
         self._material_manager.assign_material(material_selector, mesh_tag, rosette)
 

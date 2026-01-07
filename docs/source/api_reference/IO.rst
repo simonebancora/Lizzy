@@ -1,24 +1,23 @@
-.. py:currentmodule:: lizzy.IO
+.. py:currentmodule:: lizzy.core.io
 
-lizzy.IO
-=========
+lizzy.core.io
+=============
 
-The IO module provides functionality to read in input data and write out simulation results. The two main objects implemented by module are the :class:`~lizzy.IO.IO.Reader` and the :class:`~lizzy.IO.IO.Writer` classes. Both are instantiated automatically by the :class:`~lizzy.lizmodel.lizmodel.LizzyModel` class when the :meth:`~lizzy.lizmodel.lizmodel.LizzyModel.read_mesh_file` is called.
+The IO module provides functionality to read in input data and write out simulation results. The two main objects implemented by module are the :class:`~lizzy.core.io.Reader` and the :class:`~lizzy.core.io.Writer` classes. Both are instantiated automatically by the :class:`~lizzy.lizmodel.lizmodel.LizzyModel` class when the :meth:`~lizzy.lizmodel.lizmodel.LizzyModel.read_mesh_file` is called.
 
-.. autoclass:: lizzy.IO.IO.Reader
+.. autoclass:: lizzy.core.io.Reader
 
     .. rubric:: Methods
 
-    .. automethod:: lizzy.IO.IO.Reader.print_mesh_info
+    .. automethod:: lizzy.core.io.Reader.print_mesh_info
 
 
 .. important::
     Currently, only the ``msh`` format is supported. More will be added in future updates.
 
 
-.. autoclass:: lizzy.IO.IO.Writer
+.. autoclass:: lizzy.core.io.Writer
 
     .. rubric:: Methods
 
-    .. automethod:: lizzy.IO.IO.Writer.save_results
-
+    .. automethod:: Writer.save_results

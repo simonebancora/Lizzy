@@ -25,3 +25,6 @@ petsc = ["petsc", "petsc4py"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--verbose"
+
+[project.scripts]
+lizzy = "lizzy.cli.main:main"

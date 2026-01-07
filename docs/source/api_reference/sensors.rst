@@ -1,9 +1,9 @@
-.. py:currentmodule:: lizzy.sensors
+.. py:currentmodule:: lizzy.core.sensors
 
-lizzy.sensors
-=============
+lizzy.core.sensors
+==================
 
-.. autoclass:: lizzy.sensors.sensmanager.Sensor
+.. autoclass:: lizzy.core.sensors.Sensor
 
     .. rubric:: Properties
 
@@ -19,7 +19,7 @@ lizzy.sensors
     .. automethod:: Sensor.info
 
 
-.. autoclass:: lizzy.sensors.sensmanager.SensorManager
+.. autoclass:: lizzy.core.sensors.SensorManager
 
     .. rubric:: Methods
 

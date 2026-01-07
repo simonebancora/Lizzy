@@ -48,7 +48,7 @@ The Lizzy API is designed so that, in most cases, the :class:`~lizzy.LizzyModel`
 
 .. admonition:: Under the hood
 
-    The LizzyModel class wraps many core components of the library: :class:`~lizzy.bcond.bcond.BCManager`, :class:`~lizzy.materials.MaterialManager`, :class:`~lizzy.sensors.sensmanager.SensorManager`, :class:`~lizzy.solver.solver.Solver` and more... These are private members of the class, and are not intended to be accessed directly. Instead, the LizzyModel provides public wrappers for all main methods of these core components. However, not all the functionalities of Lizzy are exposed by the LizzyModel. In some cases, it might be necessary to access a core component directly, but these special cases reserved to advanced users that know well the solver architecture.
+    The LizzyModel class wraps many core components of the library: :class:`~lizzy.core.bcond.BCManager`, :class:`~lizzy.core.materials.MaterialManager`, :class:`~lizzy.core.sensors.SensorManager`, :class:`~lizzy.core.solver.Solver` and more... These are private members of the class, and are not intended to be accessed directly. Instead, the LizzyModel provides public wrappers for all main methods of these core components. However, not all the functionalities of Lizzy are exposed by the LizzyModel. In some cases, it might be necessary to access a core component directly, but these special cases reserved to advanced users that know well the solver architecture.
 
 
 In this section, we cover the most common operations that can be performed using a LizzyModel object.

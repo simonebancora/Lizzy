@@ -1,9 +1,9 @@
-.. py:currentmodule:: lizzy.bcond
+.. py:currentmodule:: lizzy.core.bcond
 
-lizzy.bcond
-===========
+lizzy.core.bcond
+================
 
-.. autoclass:: lizzy.bcond.bcond.BCManager
+.. autoclass:: lizzy.core.bcond.BCManager
 
     .. rubric:: Properties
     
@@ -20,7 +20,7 @@ lizzy.bcond
     .. automethod:: BCManager.close_inlet
     
 
-.. autoclass:: lizzy.bcond.bcond.Inlet
+.. autoclass:: lizzy.core.bcond.Inlet
     
     .. rubric:: Properties
 
