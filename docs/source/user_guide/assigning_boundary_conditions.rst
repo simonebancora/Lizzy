@@ -1,13 +1,31 @@
+==================================
+Boundary conditions operations
+==================================
 
-Assigning boundary conditions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+In this section we look at various boundary condition operations, including creating boundary conditions and modifying them at runtime.
+All operations can be performed using the :class:`~lizzy.LizzyModel` user-facing methods. For more details about the underlying core components, please refer to the :ref:`api_reference_index` documentation.
 
-All boundary condition operations can be performed directly from the LizzyModel. For example we can create inlets using the :meth:`~lizzy.LizzyModel.create_inlet` and :meth:`~lizzy.LizzyModel.assign_inlet` methods:
+.. admonition:: Under the hood
+
+    The :class:`~lizzy.core.bcond.BCManager` core component of the :class:`~lizzy.LizzyModel` is responsible for all boundary conditions related operations, including inlet creation and runtime modification. The LizzyModel wraps some of its methods to provide user-facing APIs.
+
+Creating an inlet
+------------------
+
+To create an inlet, we use the :meth:`~lizzy.LizzyModel.create_inlet` method. This method requires two arguments: the inlet initial pressure (in Pa) and a unique string identifier (tag) for the inlet. For example, to create an inlet with a pressure of 1e5 Pa and the tag "inlet_1", we would write:
 
 .. code-block::
 
-    model.create_inlet(1e+05, "inlet_tag")
-    model.assign_inlet("inlet_tag", "boundary_tag")
+    model.create_inlet(1e5, "inlet_1")
 
-Other methods, like :meth:`~lizzy.LizzyModel.change_inlet_pressure`, allow to manage inlet behaviour during the infusion. More details about boundary condition operations can be found in the :ref:`inlet_operations` section.
+.. important::
 
+    Currently, only pressure boundary conditions at inlets are supported. Other types of inlet boundary conditions (e.g., flow rate) will be added in the future.
+
+Once that method is called, an :class:`~lizzy.core.bcond.Inlet` object is created and stored in the model, but it is not assigned yet. To assign the inlet to a specific boundary, we use the :meth:`~lizzy.LizzyModel.assign_inlet` method, providing the inlet tag of the inlet that we just created and the name of the mesh boundary where we want to assign it:
+
+.. code-block::
+
+    model.assign_inlet("inlet_1", "left_edge")
+
+The boundary tag must correspond to an existing named boundary in the mesh (in this case the one we have created in the GMSH example).

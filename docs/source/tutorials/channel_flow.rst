@@ -66,7 +66,7 @@ Now that the mesh is read, we need to define a few material and process properti
 
 .. note::
 
-    There is no particular order in the script as where the ``assign_simulation_parameters`` method should be called, as long as it is done *before* the solver is initialised by the ``initialise_solver`` method (further on). Failure to do so, or omitting the ``assign_simulation_parameters`` call entirely, will result in running the simulation with default values. The solver will warn us with a message: ``>>> Warning: Process parameters were not assigned. Running with default values: mu= 0.1, wo_delta_time= -1``
+    There is no particular order in the script as where the :meth:`~lizzy.LizzyModel.assign_simulation_parameters` method should be called, as long as it is done *before* the solver is initialised by the :meth:`~lizzy.LizzyModel.initialise_solver` method (further on). Failure to do so, or omitting the call entirely, will result in running the simulation with default values. The solver will warn us with a message: ``>>> Warning: Process parameters were not assigned. Running with default values: mu= 0.1, wo_delta_time= -1``
 
 Next, we can define the properties of the materials in the mesh. At the moment, material definition is handled in the script (in the future this will change). We can do so by creating a material and then assigning it to a selected domain:
 

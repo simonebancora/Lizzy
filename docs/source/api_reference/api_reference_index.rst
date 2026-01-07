@@ -12,6 +12,9 @@ Namespaces
     :maxdepth: 1
 
     lizzy
+    io
     bcond
     sensors
-    io
+    materials
+    cvmesh
+    solver

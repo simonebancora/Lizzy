@@ -3,6 +3,8 @@
 lizzy.core.bcond
 ================
 
+The BCOND module provides functionality related to all boundary condition operations. The most important component is the :class:`~lizzy.core.bcond.BCManager` class, which is responsible for managing all boundary conditions. The :class:`~lizzy.core.bcond.BCManager` is instantiated by the constructor of the :class:`~lizzy.lizmodel.lizmodel.LizzyModel`, and belongs to the model.
+
 .. autoclass:: lizzy.core.bcond.BCManager
 
     .. rubric:: Properties

@@ -153,46 +153,67 @@ class LizzyModel:
         self._reader.print_mesh_info()
 
     def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str= None):
+        """Wrapper for :meth:`~lizzy.core.materials.MaterialManager.create_material`
+        """
         new_material = self._material_manager.create_material(k1, k2, k3, porosity, thickness, name)
         return new_material
 
     def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
+        """Wrapper for :meth:`~lizzy.core.materials.MaterialManager.assign_material`
+        """
         self._material_manager.assign_material(material_selector, mesh_tag, rosette)
 
     def create_inlet(self, initial_pressure_value:float, name:str = None):
-        """Wrapper for :meth:`~lizzy.bcond.bcond.BCManager.create_inlet`
+        """Wrapper for :meth:`~lizzy.core.bcond.BCManager.create_inlet`
         """
         new_inlet = self._bc_manager.create_inlet(initial_pressure_value, name)
         return new_inlet
 
     def assign_inlet(self, inlet_selector, boundary_tag:str):
-        """Wrapper for :meth:`~lizzy.bcond.bcond.BCManager.assign_inlet`
+        """Wrapper for :meth:`~lizzy.core.bcond.BCManager.assign_inlet`
         """
         self._bc_manager.assign_inlet(inlet_selector, boundary_tag)
     
     def change_inlet_pressure(self, inlet_selector, pressure_value:float, mode: Literal["set", "delta"] = "set"):
-        """Wrapper for :meth:`~lizzy.bcond.bcond.BCManager.change_inlet_pressure`
+        """Wrapper for :meth:`~lizzy.core.bcond.BCManager.change_inlet_pressure`
         """
         self._bc_manager.change_inlet_pressure(inlet_selector, pressure_value, mode)
 
     def open_inlet(self, inlet_selector):
-        """Wrapper for :meth:`~lizzy.bcond.bcond.BCManager.open_inlet`"""
+        """Wrapper for :meth:`~lizzy.core.bcond.BCManager.open_inlet`"""
         self._bc_manager.open_inlet(inlet_selector)
 
     def close_inlet(self, inlet_selector):
-        """Wrapper for :meth:`~lizzy.bcond.bcond.BCManager.close_inlet`"""
+        """Wrapper for :meth:`~lizzy.core.bcond.BCManager.close_inlet`"""
         self._bc_manager.close_inlet(inlet_selector)
 
-    def create_sensor(self, x:float, y:float, z:float, idx=None):
+    #TODO: get coords arg as tuple or np array, then ids as int or string
+    def create_sensor(self, x:float, y:float, z:float, idx:int=None):
+        """Create a virtual sensor at the specified position and add it to the model.
+
+        Parameters
+        ----------
+        x : float
+            The x coordinate of the sensor
+        y : float
+            The y coordinate of the sensor
+        z : float
+            The z coordinate of the sensor
+        idx : int, optional
+            The index of the sensor, by default None
+        """
         self._sensor_manager.add_sensor(x, y, z)
 
     def print_sensor_readings(self):
+        """Wrapper for :meth:`~lizzy.core.sensors.SensorManager.print_sensor_readings`"""
         self._sensor_manager.print_sensor_readings()
 
     def get_sensor_trigger_states(self):
+        """Wrapper for :meth:`~lizzy.core.sensors.SensorManager.get_sensor_trigger_states`"""
         return self._sensor_manager.sensor_trigger_states
     
     def get_sensor_by_id(self, idx):
+        """Wrapper for :meth:`~lizzy.core.sensors.SensorManager.get_sensor_by_id`"""
         return self._sensor_manager.get_sensor_by_id(idx)
 
     def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_SPARSE, 
@@ -236,7 +257,7 @@ class LizzyModel:
         self._solver.initialise_new_solution()
     
     def save_results(self, solution:dict, result_name:str, **kwargs):
-        """Wrapper for :meth:`~lizzy.IO.IO.Writer.save_results`
+        """Wrapper for :meth:`~lizzy.core.io.Writer.save_results`
         """
         self._writer.save_results(solution, result_name, **kwargs)
 

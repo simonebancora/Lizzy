@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Lizzy'
-copyright = '2025-2025, Simone Bancora, Paris Mulye'
+copyright = '2025-2026, Simone Bancora, Paris Mulye'
 author = 'Simone Bancora'
 
 # -- General configuration ---------------------------------------------------
