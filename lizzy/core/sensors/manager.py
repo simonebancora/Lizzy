@@ -4,9 +4,13 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from lizzy.core.cvmesh.mesh import Mesh
+    from lizzy.core.cvmesh.entities import Node
+
 import numpy as np
-from lizzy.core.cvmesh.entities import Node
-from lizzy.core.cvmesh.cvmesh import Mesh
 
 class Sensor:
     """This class represents a virtual sensor in the model.
