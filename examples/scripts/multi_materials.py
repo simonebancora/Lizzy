@@ -10,7 +10,6 @@ model.create_material(1E-13, 1E-13, 1E-13, 0.5, 1.0, "low_perm_material")
 model.assign_material("high_perm_material", 'background')
 model.assign_material("low_perm_material", 'triforce')
 
-
 model.create_inlet(1E+05, "inner_inlet")
 model.assign_inlet("inner_inlet", "inner_rim")
 

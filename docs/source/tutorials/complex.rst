@@ -35,11 +35,11 @@ To begin with, we create a mesh and define some process parameters as usual:
     import lizzy as liz
 
     # read mesh
-    mesh_reader = liz.Reader("Complex_rotated.msh")
-    mesh = liz.Mesh(mesh_reader)
+    model = liz.LizzyModel()
+    model.read_mesh_file("Complex_rotated.msh")
 
     # assign viscosity
-    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
+    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
 
 Creating materials
 ------------------
@@ -48,18 +48,18 @@ We shall create the following materials:
 
 .. code-block::
 
-    material_iso = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
-    material_aniso = liz.PorousMaterial(1E-10, 1E-11, 1E-11, 0.5, 1.0)
-    material_racetrack = liz.PorousMaterial(1E-7, 1E-7, 1E-7, 0.5, 0.5)
+    model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "material_iso")
+    model.create_material(1E-10, 1E-11, 1E-11, 0.5, 1.0, "material_aniso")
+    model.create_material(1E-7, 1E-7, 1E-7, 0.5, 0.5, "material_racetrack")
 
 As we can see, one of the materials (``material_aniso``) is anisotropic by one order of magnitude between :math:`k_1` and :math:`k_2`. Furthermore, the racetrack material has a mich higher permeability (3 orders of magnitude higher than ``material_iso`` and half the thickness.
 
 Defining orientations
 ---------------------
 
-We need to define an orientation for the anisotropic material ``material_aniso``. In this special case, this is particularly important because the entire geometry is arbitrarily rotated in space, so that the default rosette is useless. In the example :ref:`anisotropy` we have seen how we can define a ``Rosette`` by passing an orientation vector. There are cases, however, when this is inconvenient and would require effort to calculate, as the components of the orientation vector may not be known before.
+We need to define an orientation for the anisotropic material ``material_aniso``. In this special case, this is particularly important because the entire geometry is arbitrarily rotated in space, so the default rosette is useless. In the example :ref:`anisotropy` we have seen how we can define a ``Rosette`` by passing an orientation vector. There are cases, however, when this is inconvenient and would require effort to calculate, as the components of the orientation vector may not be known before.
 
-Luckily, the ``Rosette`` constructor can work with different input values. In this case, the most convenient way is to use a 2-point initialisation. We can pass 2 arguments to ``Rosette``, each being an ``(x, y, z)`` tuple of values that represents a point in space. The direction vector will be constructed as the line passing through them. Using the definition ``Rosette((x1,y1,z1), (x2,y2,z2))`` we simply need to know the global coordinates of 2 points aligned in the direction of the :math:`k_1` orientation. In our example, we can use a visualisation tool to measure our coordinates (example using Paraview):
+Luckily, the ``Rosette`` constructor can work with different input styles. In this case, the most convenient way is to use a 2-point initialisation. We can pass 2 arguments to ``Rosette``, each being an ``(x, y, z)`` tuple of values that represents a point in space. The direction vector will be constructed as the line passing through them. Using the definition ``Rosette((x1,y1,z1), (x2,y2,z2))`` we simply need to know the global coordinates of 2 points aligned in the direction of the :math:`k_1` orientation. In our example, we can use a visualisation tool to measure our coordinates (example using Paraview):
 
 .. image:: ../../images/node_1213_labeled.png
     :width: 90%
@@ -70,11 +70,14 @@ By inspecting the mesh we obtain the following information:
     * node 1: id = 12, coordinates = (1.017, 0.607, -0.196)
     * node 2: id = 13, coordinates = (1.780, 0.431, 0.018)
 
-We could now create an orientation rosette by simply using these values: ``Rosette( (1.017, 0.607, -0.196), (1.780, 0.431, 0.018) )``. However, we can leverage Lizzy's "pythonic" core to avoid working with copy-paste numbers. All we need is to know the number (ID) of the nodes that span the orientation vector, in this case 12 and 13. Then, we can use the ``coords`` attribute of the ``Node`` class to get the values neatly:
+We could now create an orientation rosette by simply using these values: ``Rosette( (1.017, 0.607, -0.196), (1.780, 0.431, 0.018) )``. Even better, we can avoid working with copy-paste numbers. All we need is to know the number (ID) of the nodes that span the orientation vector: in this case 12 and 13. Then, we can get the ``Node`` objects from the model using the ``get_node_by_id`` method, and use the ``coords`` attribute of the node to get the (:math:`x, y, z`) values neatly:
 
 .. code-block::
 
-    rosette_ramp = liz.Rosette(mesh.nodes[12].coords, mesh.nodes[13].coords)
+    rosette_ramp = liz.Rosette(model.get_node_by_id(12).coords, model.get_node_by_id(13).coords)
+
+.. note::
+    The ``Rosette`` APIs are being reworked and may change in a future update.
 
 Assigning materials
 -------------------
@@ -83,9 +86,9 @@ Now that our orientation rosette for the anisotropic region is defined, we can p
 
 .. code-block::
 
-    liz.MaterialManager.add_material('Lshape', material_iso)
-    liz.MaterialManager.add_material('ramp', material_aniso, rosette_ramp)
-    liz.MaterialManager.add_material('racetrack', material_racetrack)
+    model.assign_material("material_iso", "Lshape")
+    model.assign_material("material_aniso", "ramp", rosette_ramp)
+    model.assign_material("material_racetrack", "racetrack")
 
 Completing the script
 ---------------------
@@ -95,18 +98,15 @@ We can now conclude the script by assigning BCs and launching the solver. Nothin
 .. code-block::
 
     # BCs
-    bc_manager = liz.BCManager()
-    inlet_1 = liz.Inlet('inlet', 1E+05)
-    bc_manager.add_inlet(inlet_1)
+    model.create_inlet(1E+05, "inlet")
+    model.assign_inlet("inlet", "inlet")
 
     # Solve
-    solver = liz.Solver(mesh, bc_manager)
-    solution = solver.solve(log="on")
+    model.initialise_solver()
+    solution = model.solve()
 
     # Save results
-    writer = liz.Writer(mesh)
-    writer.save_results(solution, "Complex_rotated")
-
+    model.save_results(solution, "Complex_rotated")
 
 The full script
 ---------------
@@ -115,28 +115,25 @@ The full script
 
     import lizzy as liz
 
-    liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
+    model = liz.LizzyModel()
+    model.read_mesh_file("Complex_rotated.msh")
 
-    mesh_reader = liz.Reader("../meshes/Complex_rotated.msh")
-    mesh = liz.Mesh(mesh_reader)
+    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
 
-    material_iso = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)
-    material_aniso = liz.PorousMaterial(1E-10, 1E-11, 1E-11, 0.5, 1.0)
-    material_racetrack = liz.PorousMaterial(1E-7, 1E-7, 1E-7, 0.5, 0.5)
+    model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "material_iso")
+    model.create_material(1E-10, 1E-11, 1E-11, 0.5, 1.0, "material_aniso")
+    model.create_material(1E-7, 1E-7, 1E-7, 0.5, 0.5, "material_racetrack")
+    rosette_ramp = liz.Rosette(model.get_node_by_id(12).coords, model.get_node_by_id(13).coords)
+    model.assign_material("material_iso", "Lshape")
+    model.assign_material("material_aniso", "ramp", rosette_ramp)
+    model.assign_material("material_racetrack", "racetrack")
 
-    rosette_ramp = liz.Rosette(mesh.nodes[12].coords, mesh.nodes[13].coords)
-    liz.MaterialManager.add_material("Lshape", material_iso)
-    liz.MaterialManager.add_material("ramp", material_aniso, rosette_ramp)
-    liz.MaterialManager.add_material("racetrack", material_racetrack)
+    model.create_inlet(1E+05, "inlet")
+    model.assign_inlet("inlet", "inlet")
 
-    bc_manager = liz.BCManager()
-    bc_manager.add_inlet(liz.Inlet("inlet", 1E+05))
-
-    solver = liz.Solver(mesh, bc_manager, liz.SolverType.DIRECT_SPARSE)
-    solution = solver.solve(log="on")
-
-    writer = liz.Writer(mesh)
-    writer.save_results(solution, "Complex_rotated")
+    model.initialise_solver()
+    solution = model.solve()
+    model.save_results(solution, "Complex_rotated")
 
 Solution visualisation
 ----------------------

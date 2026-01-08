@@ -14,4 +14,4 @@ model.assign_inlet("inner_inlet", "inner_rim")
 model.initialise_solver()
 solution = model.solve()
 
-model.save_results(solution, "Aniso")
+model.save_results(solution, "Anisotropic_Radial")

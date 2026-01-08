@@ -57,6 +57,7 @@ ipython_config.py
 # Environments
 .env
 .venv
+.linuxvenv/
 env/
 venv/
 ENV/
@@ -88,3 +89,5 @@ WorkFolderLocal/
 
 # sphinx
 /docs/sphinx/
+/docs/build/
+/docs/_static/

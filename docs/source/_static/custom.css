@@ -1,0 +1,36 @@
+.doc-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.2rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.doc-card {
+  display: block;
+  padding: 1.25rem;
+  border-radius: 3px;
+  border: 1px solid #e1e4e5;
+  background: #f4f8fa;
+  text-decoration: none !important;
+  color: inherit !important;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.doc-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.doc-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+  color: #486c95;
+}
+
+.doc-card p {
+  margin: 0;
+  color: #555;
+  font-size: 0.95rem;
+}
