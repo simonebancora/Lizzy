@@ -6,6 +6,8 @@
 lizzy
 ======
 
+The LIZZY namespace exposes the :class:`~lizzy.LizzyModel` class, which provides all the user-facing APIs to interact with Lizzy. It also exposes the :class:`~lizzy.SolverType` enum, which contains the available solver types to choose from.
+
 .. autoclass:: lizzy.LizzyModel
 
     Properties
