@@ -16,7 +16,7 @@ The basic workflow for writing a Python script to use Lizzy involves the followi
 4. Run the simulation.
 5. Save results.
 
-As we will see shortly, Lizzy is designed so that most of the operations are performed using the :class:`~lizzy.LizzyModel` class directly.
+Lizzy is designed so that most of the operations are performed using the :class:`~lizzy.LizzyModel` class directly.
 
 Units and conventions
 ----------------------
@@ -49,7 +49,6 @@ The Lizzy API is designed so that, in most cases, the :class:`~lizzy.LizzyModel`
 .. admonition:: Under the hood
 
     The LizzyModel class wraps many core components of the library: :class:`~lizzy.core.bcond.BCManager`, :class:`~lizzy.core.materials.MaterialManager`, :class:`~lizzy.core.sensors.SensorManager`, :class:`~lizzy.core.solver.Solver` and more... These are private members of the class, and are not intended to be accessed directly. Instead, the LizzyModel provides public wrappers for all main methods of these core components. However, not all the functionalities of Lizzy are exposed by the LizzyModel. In some cases, it might be necessary to access a core component directly, but these special cases reserved to advanced users that know well the solver architecture.
-
 
 In this section, we cover the most common operations that can be performed using a LizzyModel object.
 

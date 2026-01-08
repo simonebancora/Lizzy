@@ -257,8 +257,10 @@ class Solver:
     def solve(self, log="on"):
         solve_time_start = time.time()
         solver_mode = "masked (optimized)" if self.use_masked_solver else "traditional"
+        self.step_end_time = np.inf  # reset step end time for full solve
         print("SOLVE STARTED for mesh with {} elements using {} solver".format(
             self.mesh.triangles.N, solver_mode))
+        self.update_dirichlet_bcs()
         while self.n_empty_cvs > 0:
             self.solve_time_step()
             if log == "on":
