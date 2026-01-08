@@ -8,12 +8,21 @@ import numpy as np
 
 class Rosette:
     """Rosette object to define the orientation of the material in the mesh elements. The rosette is always projected on each element along the element normal direction. Can be initialised by passing one vector, or 2 points.
+
+    Parameters
+    ----------
+    u : tuple[float, float, float]
+        Direction vector defining the first axis of the rosette (k1 direction).
+    p0 : tuple[float, float, float]
+        Point defining the origin of the rosette.
     """
-    def __init__(self, u=(1.0,1.0,1.0), p0=(0.0,0.0,0.0)):
+    def __init__(self, u=(1.0,0,0), p0=(0.0,0.0,0.0), name:str=None):
         u = np.array(u)
         self.p0 = np.array(p0)
         self.u = p0 - u
+        self.name = name
 
+    #TODO: this needs reviewing
     def project_along_normal(self, normal):
         u_normal = np.dot(self.u, normal) * normal
         u_project = self.u - u_normal

@@ -6,10 +6,8 @@
 
 from lizzy.lizmodel import LizzyModel
 from lizzy.core.solver import SolverType
-from lizzy.core.materials import Rosette
 
 __all__ = [
     "LizzyModel",
     "SolverType",
-    "Rosette",
 ]

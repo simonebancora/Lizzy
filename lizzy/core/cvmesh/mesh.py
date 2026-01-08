@@ -27,16 +27,6 @@ class Mesh:
     mesh_reader : IO.Reader
         Dictionary containing mesh data, returned by IO.Reader
 
-    Attributes
-    ----------
-    nodes
-        List of all nodes in the mesh.
-    triangles
-        List of all elements in the mesh.
-    lines
-        List of all lines (element edges) in the mesh. Lines shared by adjacent elements are repeated. Only boundary lines are unique.
-    CVs
-        List of all CVs in the mesh.
     """
     def __init__(self, mesh_reader:Reader):
         self.mesh_data = mesh_reader.mesh_data
@@ -90,7 +80,7 @@ class Mesh:
         self.lines = CreateLines(mesh_data, self.triangles)
 
     def preprocess(self, material_manager: MaterialManager, fill_solver: FillSolver):
-        # assign permeability to elements
+        """ Pre-processes the mesh before simulation. Assigns material properties to elements, creates control volumes (CVs), and prepares data structures for simulation."""
         materials = material_manager.assigned_materials
         rosettes = material_manager.assigned_rosettes
         for tri in self.triangles:

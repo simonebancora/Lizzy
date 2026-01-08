@@ -66,8 +66,3 @@ lizzy
     :undoc-members:
     :show-inheritance:
 
-.. autoclass:: lizzy.Rosette
-    :members:
-    :member-order: bysource
-    :undoc-members:
-    :show-inheritance:
