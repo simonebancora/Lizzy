@@ -163,10 +163,10 @@ class LizzyModel:
         """
         self._material_manager.assign_material(material_selector, mesh_tag, rosette)
     
-    def create_rosette(self, u:tuple[float, float, float], p0:tuple[float, float, float]=(0.0,0.0,0.0), name:str=None):
+    def create_rosette(self, p1:tuple[float, float, float], p0:tuple[float, float, float]=(0.0,0.0,0.0), name:str=None):
         """Wrapper for :meth:`~lizzy.core.materials.MaterialManager.create_rosette`
         """
-        new_rosette = self._material_manager.create_rosette(u, p0, name)
+        new_rosette = self._material_manager.create_rosette(p1, p0, name)
         return new_rosette
 
     def create_inlet(self, initial_pressure_value:float, name:str = None):

@@ -81,16 +81,16 @@ class MaterialManager:
         new_material = PorousMaterial(k1, k2, k3, porosity, thickness, name)
         self._existing_materials[name] = new_material
         return new_material
-    
-    def create_rosette(self, u: tuple[float, float, float] = (1.0, 0, 0), p0: tuple[float, float, float] = (0.0, 0.0, 0.0), name: str = None):
+
+    def create_rosette(self, p1: tuple[float, float, float] = (1.0, 0, 0), p0: tuple[float, float, float] = (0.0, 0.0, 0.0), name: str = None):
         """Create a new rosette that can then be selected and used in the model.
 
         Parameters
         ----------
-        u : tuple[float, float, float], optional
-            Direction vector defining the first axis of the rosette (k1 direction). The default is (1.0, 1.0, 1.0).
-        p0 : tuple[float, float, float], optional
-            Point defining the origin of the rosette. The default is (0.0, 0.0, 0.0).
+        p1 : tuple[float, float, float]
+            The first point defining the first axis of the rosette (k1 direction).
+        p0 : tuple[float, float, float]
+            The second point defining the first axis of the rosette (k1 direction). Default is (0,0,0).
         name : str, optional
             Label assigned to the rosette. Necessary to select the rosette during assignment. If none assigned, a default 'Rosette_{N}'name is given, where N is an incremental number of existing rosettes.
 
@@ -102,7 +102,7 @@ class MaterialManager:
         if name is None:
             rosette_count = len(self._assigned_rosettes)
             name = f"Rosette_{rosette_count}"
-        new_rosette = Rosette(u, p0, name)
+        new_rosette = Rosette(p1, p0, name)
         self._assigned_rosettes[name] = new_rosette
         return new_rosette
 

@@ -7,19 +7,19 @@
 import numpy as np
 
 class Rosette:
-    """Rosette object to define the orientation of the material in the mesh elements. The rosette is always projected on each element along the element normal direction. Can be initialised by passing one vector, or 2 points.
+    """Rosette object to define the orientation of the material in the mesh elements. The rosette is always projected on each element along the element normal direction. It is initialised by defining the e1 axis of the rosette (k1 direction) as two points in 3D space: e1 = p1 - p0
 
     Parameters
     ----------
-    u : tuple[float, float, float]
-        Direction vector defining the first axis of the rosette (k1 direction).
+    p1 : tuple[float, float, float]
+        The first point defining the first axis of the rosette (k1 direction).
     p0 : tuple[float, float, float]
-        Point defining the origin of the rosette.
+        The second point defining the first axis of the rosette (k1 direction). Default is (0,0,0).
     """
-    def __init__(self, u=(1.0,0,0), p0=(0.0,0.0,0.0), name:str=None):
-        u = np.array(u)
-        self.p0 = np.array(p0)
-        self.u = p0 - u
+    def __init__(self, p1=(1.0,0,0), p0=(0.0,0.0,0.0), name:str=None):
+        p1 = np.array(p1)
+        p0 = np.array(p0)
+        self.u = p1 - p0
         self.name = name
 
     #TODO: this needs reviewing
