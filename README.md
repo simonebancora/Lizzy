@@ -17,8 +17,7 @@ Introducing Lizzy, a Liquid Composite Molding (LCM) simulation package written i
 </div>
 
 ---
-**NOTE:**
-This project is still in early development. Version 1.0 is on track for release by end of 2025. Stay tuned!
+This project is still under development. Version 1.0 is on track for release in early 2026. Stay tuned!
 ---
 
 Lizzy uses the FE/CV method to simulate a macro-scale infusion problem in porous media. The solver is mainly designed to simulate composite resin infusion processes, but can be generalised to any porous media.
@@ -26,16 +25,12 @@ The name "Lizzy" was inspired by the character of Elizabeth Bennet, companion of
 
 This project is licensed under the GNU General Public License v3.0 - see the LICENSE file for details.
 
-### Development stage and Issues
-This project is still in early development stage and has **not reached a release version** yet.
-While the solver results are generally correct, there may still be cases where it fails.
-As development is still unfinished, Contributions and Issues reporting are not open yet.
-
-You are welcome to test / use Lizzy, but be wary of possible issues until Version 1.0 is reached (currently planned by end of 2025).
+### Development stage
+This project is still in development stage and has **not reached a release version** yet.
+Contributions and Issues reporting are not open yet.
 
 ### Documentation
 
-Partial documentation (under construction):
 https://lizzy.readthedocs.io/en/latest/
 
 ### Visualisation

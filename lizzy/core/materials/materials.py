@@ -7,22 +7,28 @@
 import numpy as np
 
 class PorousMaterial:
-    def __init__(self, k1:float, k2:float, k3:float,  porosity:float, thickness:float, name:str = "unnamed_material"):
-        """
-        Permeability tensor defined as principal permeability values k1, k2, k3 and by porosity and thickness.
+    """
+    Porous material defined by principal permeability values, porosity and thickness.
 
-        Parameters
-        ----------
-        k1: float
-            Principal permeability in local direction e1.
-        k2: float
-            Principal permeability in local direction e2.
-        theta: float
-            Rotation angle in degrees, counter-clockwise.
-        """
+    Parameters
+    ----------
+    k1: float
+        Principal permeability in local direction e1.
+    k2: float
+        Principal permeability in local direction e2.
+    k3: float
+        Principal permeability in local direction e3.
+    porosity: float
+        Porosity of the material (between 0 and 1).
+    thickness: float
+        Thickness of the material in the out-of-plane direction.
+    name: str
+        Name/label of the material.
+    """
+    def __init__(self, k1:float, k2:float, k3:float,  porosity:float, thickness:float, name:str = "unnamed_material"):
         self.k_diag = np.array([[k1, 0, 0],[0, k2, 0],[0, 0, k3]])
         self.porosity = porosity
         self.thickness = thickness
         self.name = name
-        self._assigned = False
+        self.assigned = False
 

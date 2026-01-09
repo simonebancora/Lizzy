@@ -5,28 +5,52 @@
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
-from functools import singledispatchmethod
 from .materials import PorousMaterial
 from .rosette import Rosette
 
 class MaterialManager:
+    """Manager for all material operations.
+    """
     def __init__(self):
-        self.assigned_materials : dict = {}
-        self.assigned_rosettes : dict = {}
-        self.existing_materials : dict = {}
+        self._existing_materials : dict[str, PorousMaterial] = {}
+        self._assigned_materials : dict[str, PorousMaterial] = {}
+        self._assigned_rosettes : dict[str, Rosette] = {}
     
-    @singledispatchmethod
-    def fetch_material(self, material_selector):
-        return material_selector
+    @property
+    def assigned_materials(self) -> dict[str, PorousMaterial]:
+        """Dictionary of materials that have been assigned to mesh regions (read-only).
+        """
+        return self._assigned_materials
     
-    @fetch_material.register
-    def _(self, material_selector:str):
+    @property
+    def assigned_rosettes(self) -> dict[str, Rosette]:
+        """Dictionary of rosettes assigned to materials in mesh regions (read-only).
+        """
+        return self._assigned_rosettes
+    
+    @property
+    def existing_materials(self) -> dict[str, PorousMaterial]:
+        """Dictionary of materials that exist in the model, but may have not been assigned yet (read-only).
+        """
+        return self._existing_materials
+    
+    def fetch_material(self, material_selector:str):
+        """Fetch an existing material by its label.
+        Parameters
+        ----------
+        material_selector : str
+            Label of the material to fetch.
+        Returns
+        -------
+        :class:`PorousMaterial`
+            Instance of the selected material.
+        """
         try:
-            selected_material = self.existing_materials[material_selector]
+            selected_material = self._existing_materials[material_selector]
         except KeyError:
             raise KeyError(f"Inlet '{material_selector}' is not found in existing inlets. Check the name, or create the inlet first using `LizzyModel.create_inlet`.")
         return selected_material
-
+    
 
     def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name: str = None):
         """Create a new material that can then be selected and used in the model.
@@ -52,13 +76,56 @@ class MaterialManager:
             Instance of the created material.
         """
         if name is None:
-            material_count = len(self.existing_materials)
+            material_count = len(self._existing_materials)
             name = f"Material_{material_count}"
         new_material = PorousMaterial(k1, k2, k3, porosity, thickness, name)
-        self.existing_materials[name] = new_material
+        self._existing_materials[name] = new_material
         return new_material
 
-    def assign_material(self, material_selector:str, mesh_tag:str, rosette:Rosette = None):
+    def create_rosette(self, p1: tuple[float, float, float] = (1.0, 0, 0), p0: tuple[float, float, float] = (0.0, 0.0, 0.0), name: str = None):
+        """Create a new rosette that can then be selected and used in the model.
+
+        Parameters
+        ----------
+        p1 : tuple[float, float, float]
+            The first point defining the first axis of the rosette (k1 direction).
+        p0 : tuple[float, float, float]
+            The second point defining the first axis of the rosette (k1 direction). Default is (0,0,0).
+        name : str, optional
+            Label assigned to the rosette. Necessary to select the rosette during assignment. If none assigned, a default 'Rosette_{N}'name is given, where N is an incremental number of existing rosettes.
+
+        Returns
+        -------
+        :class:`Rosette`
+            Instance of the created rosette.
+        """
+        if name is None:
+            rosette_count = len(self._assigned_rosettes)
+            name = f"Rosette_{rosette_count}"
+        new_rosette = Rosette(p1, p0, name)
+        self._assigned_rosettes[name] = new_rosette
+        return new_rosette
+
+    def _fetch_rosette(self, rosette_selector: str):
+        """Fetch an existing rosette by its label.
+
+        Parameters
+        ----------
+        rosette_selector : str
+            Label of the rosette to fetch.
+
+        Returns
+        -------
+        :class:`Rosette`
+            Instance of the selected rosette.
+        """
+        try:
+            selected_rosette = self._assigned_rosettes[rosette_selector]
+        except KeyError:
+            raise KeyError(f"Rosette '{rosette_selector}' is not found in assigned rosettes. Check the name, or create the rosette first using `LizzyModel.create_rosette`.")
+        return selected_rosette
+
+    def assign_material(self, material_selector:str, mesh_tag:str, rosette_selector:str | Rosette = None):
         """Assign an existing material to a labeled mesh region.
 
         Parameters
@@ -70,9 +137,13 @@ class MaterialManager:
         rosette : Rosette, optional
             Orientation rosette to apply to the material. If none provided, a default rosette with k1 aligned with the global X axis is assigned.
         """
-        selected_material = self.fetch_material(material_selector)
-        if rosette is None:
+        selected_material : PorousMaterial = self.fetch_material(material_selector)
+        if rosette_selector is None:
             rosette = Rosette((1, 0, 0))
-        selected_material._assigned = True
-        self.assigned_materials[mesh_tag] = selected_material
-        self.assigned_rosettes[mesh_tag] = rosette
+        elif isinstance(rosette_selector, str):
+            rosette = self._fetch_rosette(rosette_selector)
+        else:
+            rosette = rosette_selector
+        selected_material.assigned = True
+        self._assigned_materials[mesh_tag] = selected_material
+        self._assigned_rosettes[mesh_tag] = rosette
