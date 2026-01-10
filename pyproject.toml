@@ -4,8 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lizzy"
-version = "0.0.1"
-authors = [{ name = "Simone Bancora", email = "simone.bancora@gmail.com" }]
+version = "0.1.0"
+authors = [
+    {name = "Simone Bancora", email = "simone.bancora@gmail.com" },
+    ]
+maintainers = [
+    {name = "Simone Bancora", email = "simone.bancora@gmail.com" },
+    ]
 requires-python = ">=3.10"
 dependencies = [
     "meshio==5.3.5",
@@ -14,9 +19,13 @@ dependencies = [
     "h5py",
     "matplotlib"
 ]
+description = "A filling simulation solver for Liquid Composite Molding (LCM) processes"
+readme = "README.md"
+keywords = ["rtm", "resin infusion", "finite elements", "solver", "simulation", "lcm"]
 
-[tool.setuptools]
-packages = ["lizzy"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lizzy*"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
