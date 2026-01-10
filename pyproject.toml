@@ -24,7 +24,7 @@ readme = "README.md"
 keywords = ["rtm", "resin infusion", "finite elements", "solver", "simulation", "lcm"]
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = ["src"]
 include = ["lizzy*"]
 
 [project.optional-dependencies]
