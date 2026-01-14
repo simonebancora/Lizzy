@@ -7,13 +7,13 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from lizzy.core.sensors import SensorManager
-    from lizzy.core.bcond import BCManager
+    from lizzy._core.sensors import SensorManager
+    from lizzy._core.bcond import BCManager
 
 import numpy as np
 import time
-from lizzy.core.solver import *
-from lizzy.core.bcond import SolverBCs
+from lizzy._core.solver import *
+from lizzy._core.bcond import SolverBCs
 
 
 # from scipy.sparse import lil_matrix
@@ -254,7 +254,7 @@ class Solver:
         # Print number of empty cvs
         self.update_n_empty_cvs()
 
-    def solve(self, log="on"):
+    def solve(self, log="on") -> dict:
         solve_time_start = time.time()
         solver_mode = "masked (optimized)" if self.use_masked_solver else "traditional"
         self.step_end_time = np.inf  # reset step end time for full solve
@@ -272,7 +272,7 @@ class Solver:
         print("\nSOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
         return solution
 
-    def solve_step(self, step_period, log="off", lightweight=False):
+    def solve_step(self, step_period:float, log="off", lightweight=False) -> dict:
         self.step_completed = False
         self.step_end_time = self.current_time + step_period
         solve_time_start = time.time()

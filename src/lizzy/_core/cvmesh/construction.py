@@ -7,11 +7,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from lizzy.core.solver import FillSolver
+    from lizzy._core.solver import FillSolver
 
 import numpy as np
 from .collections import nodes, lines, elements
-from .entities import Node, Line, Triangle, CV
+from lizzy._core.cvmesh.entities import Node, Line, Triangle, CV
 
 
 def CreateNodes(mesh_data):

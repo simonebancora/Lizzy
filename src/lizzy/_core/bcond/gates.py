@@ -28,7 +28,7 @@ class Inlet():
     
     @property
     def p_value(self) -> float:
-        """Current pressure value [Pa]. Can be changed at any time.
+        """Current pressure value [Pa].
         """
         return self._p_value
 
@@ -51,7 +51,7 @@ class Inlet():
         return self._open
 
     def reset(self):
-        """Restores the inlet :attr:`~lizzy.bcond.bcond.Inlet.p_value` to the value assigned at creation time and sets it to open.
+        """Restores the inlet :attr:`~lizzy.core.bcond.Inlet.p_value` to the value assigned at creation time and sets it to open.
         """
         self.p_value = self._p0
         self._open = True
@@ -62,7 +62,7 @@ class Inlet():
         Parameters
         ----------
         open : bool
-            The state the inlet will be instantly set to: open (True) or closed (False).
+            The state the inlet will be set to: open (True) or closed (False).
         """
         self._open = open
     

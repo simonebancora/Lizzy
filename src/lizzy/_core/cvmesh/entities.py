@@ -8,6 +8,7 @@ import numpy as np
 from dataclasses import dataclass, field
 
 class Node:
+    """Class representing a mesh node."""
     def __init__(self, coords:np.array):
         self.coords = coords
         self.idx : int = 0
@@ -41,6 +42,8 @@ class Element2D:
 
 
 class Triangle(Element2D):
+    """Class representing a triangular element.
+    """
     ### Triangle element stuff
     # xi is 'xchi'
     dNdxi = np.array([[-1, -1],
@@ -134,6 +137,8 @@ class Tetrahedron(Element3D):
         return f"Tetrahedron element ID: {self.idx}"
 
 class Line:
+    """Class representing a line between two nodes in the mesh.
+    """
     def __init__(self, node_1:Node, node_2:Node):
         self.nodes = (node_1, node_2)
         self.idx : int = 0
@@ -161,6 +166,8 @@ class Line:
 
 @dataclass
 class CV:
+    """Class representing a control volume in the mesh.
+    """
     idx:int = 0
     node:Node = None
     fill:float = 0
@@ -216,9 +223,9 @@ class CV:
         """
         Calculate the area of an irregular polygon using the Shoelace formula.
 
-        :param points: A list of (x, y) tuples representing the vertices of the polygon.
+        points: A list of (x, y) tuples representing the vertices of the polygon.
                        The vertices should be provided in order (clockwise or counterclockwise).
-        :return: The area of the polygon.
+        return: The area of the polygon.
         """
         n = len(points)
         if n < 3:
@@ -238,8 +245,8 @@ class CV:
         """
         Compute the area of a planar polygon in 3D using a generalized Shoelace formula.
 
-        :param points: A list of 3D points (numpy arrays or length-3 sequences).
-        :return: area (float)
+        points: A list of 3D points (numpy arrays or length-3 sequences).
+        return: area (float)
         """
         pts = [np.array(p, dtype=float) for p in points]
         n = len(pts)
@@ -267,7 +274,7 @@ class CV:
 
 
 
-    # TODO: check this is correct :
+    # TODO: check if this is correct :
     def calculate_area_and_volume(self):
         vol = 0
         A = 0

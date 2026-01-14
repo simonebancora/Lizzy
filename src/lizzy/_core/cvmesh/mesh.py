@@ -7,10 +7,10 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from lizzy.core.solver import FillSolver
-    from lizzy.core.io import Reader
-    from lizzy.core.materials import MaterialManager, Rosette, PorousMaterial
-    from .entities import CV, Node, Line, Triangle
+    from lizzy._core.solver import FillSolver
+    from lizzy._core.io import Reader
+    from lizzy._core.materials import MaterialManager, Rosette, PorousMaterial
+    from lizzy._core.cvmesh.entities import Node, Line, Triangle, CV
 
 import numpy as np
 from .construction import CreateNodes, CreateLines, CreateTriangles, CreateControlVolumes
