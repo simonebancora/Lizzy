@@ -12,9 +12,8 @@ The basic workflow for writing a Python script to use Lizzy involves the followi
 
 1. Import the Lizzy package.
 2. Instantiate a :class:`~lizzy.LizzyModel` object.
-3. Use the :class:`~lizzy.LizzyModel` object to define the simulation.
-4. Run the simulation.
-5. Save results.
+3. Use the :class:`~lizzy.LizzyModel` API to define and run the simulation.
+4. Save results.
 
 Lizzy is designed so that most of the operations are performed using the :class:`~lizzy.LizzyModel` class directly.
 
@@ -28,6 +27,14 @@ The solver assumes consistent units and does not enforce any. The user is free t
 - Time: s
 - Pressure: Pa
 - Velocity: m/s
+
+Time step vs time interval
+--------------------------
+
+Throughout this documentation, we will encounter multiple times the terms "time step" and "time interval". It is important to clarify the difference between these two concepts:
+
+- Time step: the discrete increment of time used by the solver to advance the simulation. The time step is determined by the solver at runtime and **the user has no control over this quantity**.
+- Time interval: an amount of time over which the simulation advances. A time interval is tipically composed of multiple time steps. **The user has full control over this quantity**. For example, if a simulation is run until the part is completely filled, then the time interval is the entird fill time. Conversely, we can set our simulation to run for a fixed time interval, e.g., 60 seconds, then pause and do something, and then resume the simulation for another time interval... and so on.
 
 The LizzyModel class
 ---------------------
@@ -45,10 +52,6 @@ The Lizzy API is designed so that, in most cases, the :class:`~lizzy.LizzyModel`
 
     operation_output = model.some_method(args)
 
-
-.. admonition:: Under the hood
-
-    The LizzyModel class wraps many core components of the library: :class:`~lizzy.core.bcond.BCManager`, :class:`~lizzy.core.materials.MaterialManager`, :class:`~lizzy.core.sensors.SensorManager`, :class:`~lizzy.core.solver.Solver` and more... These are private members of the class, and are not intended to be accessed directly. Instead, the LizzyModel provides public wrappers for all main methods of these core components. However, not all the functionalities of Lizzy are exposed by the LizzyModel. In some cases, it might be necessary to access a core component directly, but these special cases reserved to advanced users that know well the solver architecture.
 
 In this section, we cover the most common operations that can be performed using a LizzyModel object.
 

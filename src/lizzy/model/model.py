@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from lizzy._core.materials import PorousMaterial, Rosette
     from lizzy._core.bcond.gates import Inlet
 
-from typing import Dict, Literal, overload
+from typing import Dict, Literal
 from types import MappingProxyType
 from lizzy._core.io import Reader, Writer
 from lizzy._core.cvmesh import Mesh
@@ -124,18 +124,32 @@ class LizzyModel:
         """
         return self.latest_solution
 
-    @overload
-    def assign_simulation_parameters(
-            self,
-            *,
-            mu: float,
-            wo_delta_time: float,
-            fill_tolerance: float,
-            end_step_when_sensor_triggered: bool,
-    ) -> None:
-        ...
 
     def assign_simulation_parameters(self, **kwargs):
+        r"""
+        Assigns new values to one or more simulation parameters using keyword arguments.
+
+        Parameters
+        ----------
+        **kwargs : dict
+            Keyword arguments corresponding to parameter names and their new values.
+            Valid parameters are:
+        
+            - ``mu``: viscosity [Pa s]
+            - ``wo_delta_time``: interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
+            - ``fill_tolerance``: tolerance on the fill factor to consider a CV as filled. Default: 0.01
+            - ``end_step_when_sensor_triggered``: if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
+        
+        Examples
+        --------
+        >>> model.assign_simulation_parameters(mu=0.2, wo_delta_time=50)
+        
+
+        Raises
+        ------
+        AttributeError
+            If any key in `kwargs` does not correspond to a known attribute.
+        """
         self._simulation_parameters.assign(**kwargs)
 
     def read_mesh_file(self, mesh_file_path:str):
@@ -271,35 +285,27 @@ class LizzyModel:
         self._bc_manager.change_inlet_pressure(inlet_selector, pressure_value, mode)
 
     def open_inlet(self, inlet_selector:Inlet | str):
-        """Sets the selected inlet state to `open`. When open, the inlet applies its p_value as a Dirichlet boundary condition.
+        """Sets the selected inlet state to `open`. When open, the inlet applies its p_value as a Dirichlet boundary condition. An inlet can be opened at any time during the simulation.
 
         Parameters
         ----------
         inlet_selector : Inlet | str
-            Either the inlet object to assign, or the name of an existing inlet.
-        
-        Note
-        ----
-        An inlet can be opened and closed at any time during the simulation to simulate valve operations. The stored p_value is preserved when the inlet is closed.
+            Either the inlet object reference, or the name of an existing inlet.
         """
         self._bc_manager.open_inlet(inlet_selector)
 
     def close_inlet(self, inlet_selector:Inlet | str):
-        """Sets the selected inlet state to `closed`. When closed, the inlet acts as a Neumann natural boundary condition (no flux).
+        """Sets the selected inlet state to `closed`. When closed, the inlet acts as a Neumann natural boundary condition (no flux). An inlet can be closed at any time during the simulation. The stored p_value is preserved when the inlet is closed.
 
         Parameters
         ----------
         inlet_selector : Inlet | str
-            Either the inlet object to assign, or the name of an existing inlet.
-        
-        Note
-        ----
-        An inlet can be opened and closed at any time during the simulation to simulate valve operations. The stored p_value is preserved when the inlet is closed.
+            Either the inlet object reference, or the name of an existing inlet.
         """
         self._bc_manager.close_inlet(inlet_selector)
 
     #TODO: get coords arg as tuple or np array, then ids as int or string
-    def create_sensor(self, x:float, y:float, z:float, idx:int=None):
+    def create_sensor(self, x:float, y:float, z:float):
         """Create a virtual sensor at the specified position and add it to the model.
 
         Parameters
@@ -310,13 +316,11 @@ class LizzyModel:
             The y coordinate of the sensor
         z : float
             The z coordinate of the sensor
-        idx : int, optional
-            The index of the sensor, by default None
         """
         self._sensor_manager.add_sensor(x, y, z)
 
     def print_sensor_readings(self):
-        """Prints to the console the current values of :attr:`~lizzy.core.sensors.Sensor.time`, :attr:`~lizzy.core.sensors.Sensor.pressure`, :attr:`~lizzy.core.sensors.Sensor.fill_factor` and :attr:`~lizzy.core.sensors.Sensor.velocity` of each sensor.
+        """Prints to the console the current values of :attr:`~lizzy.sensors.Sensor.time`, :attr:`~lizzy.sensors.Sensor.pressure`, :attr:`~lizzy.sensors.Sensor.fill_factor` and :attr:`~lizzy.sensors.Sensor.velocity` of each sensor.
         """
         self._sensor_manager.print_sensor_readings()
 
