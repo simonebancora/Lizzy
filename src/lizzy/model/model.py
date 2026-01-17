@@ -29,12 +29,12 @@ class LizzyModel:
     """
     def __init__(self):
         print_logo()
-        self._reader = None
-        self._writer = None
-        self._mesh = None
-        self._solver = None
-        self._renderer = None
-        self._latest_solution: any = None
+        self._reader : Reader = None
+        self._writer : Writer = None
+        self._mesh : Mesh = None
+        self._solver : Solver = None
+        self._renderer : any = None
+        self._latest_solution: dict = None
         self._simulation_parameters = SimulationParameters()
         self._material_manager = MaterialManager()
         self._bc_manager = BCManager()

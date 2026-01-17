@@ -22,7 +22,6 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
     'sphinxcontrib.bibtex',
-    'sphinxcontrib.mermaid'
 ]
 
 
