@@ -86,10 +86,13 @@ class Mesh:
         for tri in self.triangles:
             try:
                 material : PorousMaterial = materials[tri.material_tag]
-                rosette : Rosette = rosettes[tri.material_tag]
-                u, v, w = rosette.project_along_normal(tri.n)
-                R = np.array([u, v, w]).T
-                tri.k = R @ material.k_diag @ R.T
+                if material.is_isotropic:
+                    tri.k = material.k_diag
+                else:
+                    rosette : Rosette = rosettes[tri.material_tag]
+                    u, v, w = rosette.project_along_normal(tri.n)
+                    R = np.array([u, v, w]).T
+                    tri.k = R @ material.k_diag @ R.T
                 tri.porosity = materials[tri.material_tag].porosity
                 tri.h = materials[tri.material_tag].thickness
             except KeyError:
@@ -130,6 +133,6 @@ class Mesh:
             connected_nodes_ids.remove(node.idx)
             node.node_ids = connected_nodes_ids
 
-    def EmptyCVs(self):
+    def empty_cvs(self):
         for cv in self.CVs:
             cv.fill = 0

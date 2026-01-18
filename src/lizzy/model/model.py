@@ -263,6 +263,22 @@ class LizzyModel:
         """
         self._bc_manager.assign_inlet(inlet_selector, boundary_tag)
     
+    def fetch_inlet_by_name(self, inlet_name: str) -> Inlet:
+        """Fetches an inlet from existing ones in the model.
+
+        Parameters
+        ----------
+        inlet_name :  str
+            The name of an existing inlet.
+
+        Returns
+        -------
+        :class:`~lizzy.gates.Inlet`
+            The fetched inlet object.
+        """
+        selected_inlet = self._bc_manager._fetch_inlet(inlet_name)
+        return selected_inlet
+    
     def change_inlet_pressure(self, inlet_selector:Inlet | str, pressure_value:float, mode: Literal["set", "delta"] = "set"):
         """Changes the pressure value at the selected inlet to a new value, according to the selected mode.
 
@@ -378,12 +394,12 @@ class LizzyModel:
         self._latest_solution = self._solver.solve(log=log)
         return self._latest_solution
 
-    def solve_step(self, step_period:float, log="off") -> dict:
-        """Advance the filling simulation from the current time for the specified time period.
+    def solve_time_interval(self, time_interval:float, log="off") -> dict:
+        """Advance the filling simulation from the current time for the specified time interval.
 
         Parameters
         ----------
-        step_period : float
+        time_interval : float
             The time period to advance the simulation for.
         log : str, optional
             Whether to print the progress of the solution, by default "off"
@@ -393,7 +409,7 @@ class LizzyModel:
         solution : dict
             A dictionary containing the solution up to the time step reached.
         """
-        self._latest_solution = self._solver.solve_step(step_period, log=log, lightweight=self._lightweight)
+        self._latest_solution = self._solver.solve_time_interval(time_interval, log=log, lightweight=self._lightweight)
         return self._latest_solution
     
     def initialise_new_solution(self):

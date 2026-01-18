@@ -9,7 +9,9 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy._core.sensors import SensorManager
     from lizzy._core.bcond import BCManager
+    from lizzy._core.cvmesh import Mesh
 
+import sys
 import numpy as np
 import time
 from lizzy._core.solver import *
@@ -23,7 +25,7 @@ class Solver:
     def __init__(self, mesh, bc_manager, simulation_parameters, material_manager, sensor_manager:SensorManager, 
                  solver_type=SolverType.DIRECT_SPARSE, solver_tol=1e-8, solver_max_iter=1000, 
                  solver_verbose=False, use_masked_solver=True, **solver_kwargs):
-        self.mesh = mesh
+        self.mesh : Mesh = mesh
         self.bc_manager : BCManager = bc_manager 
         self.simulation_parameters = simulation_parameters
         self.material_manager = material_manager
@@ -97,13 +99,19 @@ class Solver:
             try:
                 inlet_idx = self.mesh.boundaries[tag]
             except KeyError:
-                raise KeyError(f"Mesh does not contain physical tag: {tag}")
+                print("\nFatal error: The application has terminated.")
+                print(f"Mesh does not contain physical tag: {tag}")
+                sys.exit(1)
             if inlet.is_open:
                 dirichlet_idx.append(inlet_idx)
                 dirichlet_vals.append(np.ones(len(inlet_idx)) * inlet.p_value)
-        self.bcs.dirichlet_idx = np.concatenate(dirichlet_idx)
-        self.bcs.dirichlet_vals = np.concatenate(dirichlet_vals)
-
+        try:
+            self.bcs.dirichlet_idx = np.concatenate(dirichlet_idx)
+            self.bcs.dirichlet_vals = np.concatenate(dirichlet_vals)
+        except ValueError:
+            print("\nFatal error: The application has terminated.")
+            print("No inlets are currently open. At least one inlet must be open at all times to allow resin to flow into the part.")
+            sys.exit(1)
 
     def update_empty_nodes_idx(self):
         """
@@ -136,7 +144,7 @@ class Solver:
         self.next_wo_time = self.simulation_parameters.wo_delta_time
         self.solver_vars["fill_factor_array"] = np.zeros(self.N_nodes)
         self.bcs = SolverBCs()
-        self.mesh.EmptyCVs()
+        self.mesh.empty_cvs()
         self.bc_manager.reset_inlets()
         self.update_dirichlet_bcs()
         self.fill_initial_cvs()
@@ -272,9 +280,9 @@ class Solver:
         print("\nSOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
         return solution
 
-    def solve_step(self, step_period:float, log="off", lightweight=False) -> dict:
+    def solve_time_interval(self, time_interval:float, log="off", lightweight=False) -> dict:
         self.step_completed = False
-        self.step_end_time = self.current_time + step_period
+        self.step_end_time = self.current_time + time_interval
         solve_time_start = time.time()
         # print("STEP SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
         while self.step_completed == False and self.n_empty_cvs > 0:
