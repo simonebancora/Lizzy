@@ -1,4 +1,3 @@
-===========
 Using Lizzy
 ===========
 
@@ -28,13 +27,6 @@ The solver assumes consistent units and does not enforce any. The user is free t
 - Pressure: Pa
 - Velocity: m/s
 
-Time step vs time interval
---------------------------
-
-Throughout this documentation, we will encounter multiple times the terms "time step" and "time interval". It is important to clarify the difference between these two concepts:
-
-- Time step: the discrete increment of time used by the solver to advance the simulation. The time step is determined by the solver at runtime and **the user has no control over this quantity**.
-- Time interval: an amount of time over which the simulation advances. A time interval is tipically composed of multiple time steps. **The user has full control over this quantity**. For example, if a simulation is run until the part is completely filled, then the time interval is the entird fill time. Conversely, we can set our simulation to run for a fixed time interval, e.g., 60 seconds, then pause and do something, and then resume the simulation for another time interval... and so on.
 
 The LizzyModel class
 ---------------------
@@ -59,9 +51,10 @@ In this section, we cover the most common operations that can be performed using
    :maxdepth: 1
 
    reading_a_mesh
+   assigning_boundary_conditions
    assigning_parameters
    managing_materials
-   assigning_boundary_conditions
+   solver_operations
 
 .. seealso::
 
