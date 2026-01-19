@@ -8,8 +8,9 @@ import numpy as np
 from dataclasses import dataclass, field
 
 class Node:
-    def __init__(self, coords:np.array):
-        self.coords = coords
+    """Class representing a mesh node."""
+    def __init__(self, x: float, y: float, z: float):
+        self.coords = np.array([x, y, z])
         self.idx : int = 0
         self.p : float = 0
         self.triangles : list[Triangle] = []
@@ -41,6 +42,8 @@ class Element2D:
 
 
 class Triangle(Element2D):
+    """Class representing a triangular element.
+    """
     ### Triangle element stuff
     # xi is 'xchi'
     dNdxi = np.array([[-1, -1],
@@ -134,6 +137,8 @@ class Tetrahedron(Element3D):
         return f"Tetrahedron element ID: {self.idx}"
 
 class Line:
+    """Class representing a line between two nodes in the mesh.
+    """
     def __init__(self, node_1:Node, node_2:Node):
         self.nodes = (node_1, node_2)
         self.idx : int = 0
@@ -159,22 +164,25 @@ class Line:
         return np.array((nx, ny, nz))
 
 
-@dataclass
 class CV:
-    idx:int = 0
-    node:Node = None
-    fill:float = 0
-    area:float = 0
-    free_surface:int = 0
-    support_CVs:list = field(default_factory=list)
-    support_lines:list = field(default_factory=list)
-    support_nodes:list = field(default_factory=list)
-    support_triangles : list = field(default_factory=list)
-    support_triangle_ids = None
-    edges:list = field(default_factory=list)
-    flux_terms:list = field(default_factory=list)
-    A:float = 0
-    vol = 0
+    """Class representing a control volume in the mesh.
+    """
+    def __init__(self, node:Node):
+        self.node : Node = node
+        self.idx : int = node.idx
+        self.fill : float = 0
+        self.area : float = 0
+        self.free_surface : int = 0
+        self.support_CVs : list[CV] = []
+        self.support_lines : list[Line] = []
+        self.support_nodes : list[Node] = []
+        self.support_triangles : list[Triangle] = node.triangles
+        self.support_triangle_ids = None
+        self.edges = []
+        self.flux_terms = []
+        self.cv_lines = []
+        self.A, self.vol = self._calculate_area_and_volume()
+    
 
     # The CV has this structure:
     #   support_triangles = [tri1, tri2, tri3, ... ]
@@ -211,35 +219,34 @@ class CV:
 
 
 
-    @staticmethod
-    def polygon_area(points):
-        """
-        Calculate the area of an irregular polygon using the Shoelace formula.
+    # @staticmethod
+    # def polygon_area(points):
+    #     """
+    #     Calculate the area of an irregular polygon using the Shoelace formula.
 
-        :param points: A list of (x, y) tuples representing the vertices of the polygon.
-                       The vertices should be provided in order (clockwise or counterclockwise).
-        :return: The area of the polygon.
-        """
-        n = len(points)
-        if n < 3:
-            raise ValueError("A polygon must have at least 3 points.")
+    #     points: A list of (x, y) tuples representing the vertices of the polygon.
+    #                    The vertices should be provided in order (clockwise or counterclockwise).
+    #     return: The area of the polygon.
+    #     """
+    #     n = len(points)
+    #     if n < 3:
+    #         raise ValueError("A polygon must have at least 3 points.")
 
-        # Compute the Shoelace formula
-        area = 0
-        for i in range(n):
-            x1, y1 = points[i]
-            x2, y2 = points[(i + 1) % n]  # Next vertex (wrap around)
-            area += x1 * y2 - y1 * x2
+    #     # Compute the Shoelace formula
+    #     area = 0
+    #     for i in range(n):
+    #         x1, y1 = points[i]
+    #         x2, y2 = points[(i + 1) % n]  # Next vertex (wrap around)
+    #         area += x1 * y2 - y1 * x2
 
-        return abs(area) / 2
-    
-    @staticmethod
-    def polygon_area_3d(points):
+    #     return abs(area) / 2
+
+    def _polygon_area_3d(self, points):
         """
         Compute the area of a planar polygon in 3D using a generalized Shoelace formula.
 
-        :param points: A list of 3D points (numpy arrays or length-3 sequences).
-        :return: area (float)
+        points: A list of 3D points (numpy arrays or length-3 sequences).
+        return: area (float)
         """
         pts = [np.array(p, dtype=float) for p in points]
         n = len(pts)
@@ -267,10 +274,10 @@ class CV:
 
 
 
-    # TODO: check this is correct :
-    def calculate_area_and_volume(self):
+    # TODO: check if this is correct :
+    def _calculate_area_and_volume(self) -> tuple[float, float]:
+        area = 0
         vol = 0
-        A = 0
         for tri in self.support_triangles:
             point_main = self.node
             point_centroid = tri.centroid
@@ -282,12 +289,11 @@ class CV:
             x2 = elem_side_lines[1].midpoint
             perimeter_points = [point_main.coords, x1, point_centroid, x2]
 
-            slice_area = self.polygon_area_3d(perimeter_points)
+            slice_area = self._polygon_area_3d(perimeter_points)
             slice_vol = slice_area*tri.h*tri.porosity
-            A += slice_area
+            area += slice_area
             vol += slice_vol
-        self.A = A
-        self.vol = vol
+        return area, vol
 
     def CheckFluxNormalOrientations(self):
         # by convention, normals are oriented outwards from the CV. This function checks and enforces that

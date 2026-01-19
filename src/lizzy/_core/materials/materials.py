@@ -30,5 +30,6 @@ class PorousMaterial:
         self.porosity = porosity
         self.thickness = thickness
         self.name = name
+        self.is_isotropic = np.allclose([k1, k2, k3], k1, atol=1e-14, rtol=0)
         self.assigned = False
 

@@ -41,6 +41,7 @@ The LIZZY namespace exposes the :class:`~lizzy.LizzyModel` class, which provides
     
     .. automethod:: lizzy.LizzyModel.create_inlet
     .. automethod:: lizzy.LizzyModel.assign_inlet
+    .. automethod:: lizzy.LizzyModel.fetch_inlet_by_name
     .. automethod:: lizzy.LizzyModel.change_inlet_pressure
     .. automethod:: lizzy.LizzyModel.open_inlet
     .. automethod:: lizzy.LizzyModel.close_inlet
@@ -56,7 +57,7 @@ The LIZZY namespace exposes the :class:`~lizzy.LizzyModel` class, which provides
     
     .. automethod:: lizzy.LizzyModel.initialise_solver
     .. automethod:: lizzy.LizzyModel.solve
-    .. automethod:: lizzy.LizzyModel.solve_step
+    .. automethod:: lizzy.LizzyModel.solve_time_interval
     .. automethod:: lizzy.LizzyModel.initialise_new_solution
     .. automethod:: lizzy.LizzyModel.save_results
     

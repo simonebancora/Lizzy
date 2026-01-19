@@ -7,11 +7,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from lizzy.core.solver import FillSolver
+    from lizzy._core.solver import FillSolver
 
 import numpy as np
 from .collections import nodes, lines, elements
-from .entities import Node, Line, Triangle, CV
+from lizzy._core.cvmesh.entities import Node, Line, Triangle, CV
 
 
 def CreateNodes(mesh_data):
@@ -20,8 +20,8 @@ def CreateNodes(mesh_data):
     """
     nodes_coords = np.array(mesh_data['all_nodes_coords'])
     all_nodes = nodes([])
-    for n, X in enumerate(nodes_coords):
-        node = Node(X)
+    for n, coords in enumerate(nodes_coords):
+        node = Node(coords[0], coords[1], coords[2])
         node.idx = n
         all_nodes.append(node)
     all_nodes.XYZ = nodes_coords # redundant but might be useful
@@ -103,17 +103,11 @@ def CreateTriangles(mesh_data, nodes):
     all_triangles.N = len(all_triangles)
     return all_triangles
 
-def CreateControlVolumes(nodes, fill_solver : FillSolver):
+def CreateControlVolumes(nodes : list[Node], fill_solver : FillSolver):
     # for every nodes:
     CVs : list[CV] = []
     for node in nodes:
-        # retrieve elements that contain that node
-        new_CV = CV()
-        new_CV.idx = node.idx
-        new_CV.node = node
-        new_CV.support_triangles = node.triangles
-        new_CV.calculate_area_and_volume()
-        CVs.append(new_CV)
+        CVs.append(CV(node))
     CVs = np.array(CVs)
     # reference support CVs
     for cv in CVs:

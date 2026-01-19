@@ -1,5 +1,5 @@
 Assigning simulation parameters
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+================================
 
 When simulating an infusion using Lizzy, there are some process and simulation parameters which are assigned globally. These are notably the resin viscosity, the frequence of solution write-outs and more. All global parameters are assigned to the model using the :meth:`~lizzy.LizzyModel.assign_simulation_parameters` method:
 

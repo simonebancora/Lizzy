@@ -13,7 +13,7 @@ class FillSolver:
         self.map_cv_id_to_support_triangle_ids = {}
         self.map_cv_id_to_flux_terms = {}
 
-    def find_free_surface_cvs(self, fill_factor_array, cv_support_cvs_array):
+    def find_free_surface_cvs(self, fill_factor_array : np.ndarray, cv_support_cvs_array : np.ndarray):
         """
         Finds the control volumes that are on the flow front. These cvs have a fill factor < 1.
         """

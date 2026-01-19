@@ -91,3 +91,4 @@ WorkFolderLocal/
 /docs/sphinx/
 /docs/build/
 /docs/_static/
+/private/*
