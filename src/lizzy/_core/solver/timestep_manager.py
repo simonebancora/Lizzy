@@ -15,15 +15,7 @@ class TimeStepManager:
         self.time_step_count = 0
 
     def save_timestep(self, time, dt, P, v_array, v_nodal_array, fill_factor, flow_front, write_out):
-        if(v_array.shape[1]==3):
-            v_full = v_array
-            v_nodal_full = v_nodal_array
-        else:
-            v3_nul = np.zeros((np.size(v_array,0), 1))
-            v3_nodal_nul = np.zeros((np.size(v_nodal_array,0), 1))
-            v_full = np.hstack((v_array, v3_nul))
-            v_nodal_full = np.hstack((v_nodal_array, v3_nodal_nul))
-        timestep = TimeStep(self.time_step_count, time, dt, P, v_full, v_nodal_full, np.clip(fill_factor, 0, 1), flow_front, write_out)
+        timestep = TimeStep(self.time_step_count, time, dt, P, v_array, v_nodal_array, np.clip(fill_factor, 0, 1), flow_front, write_out)
         self.time_steps.append(timestep)
         self.time_step_count += 1
 
@@ -32,15 +24,15 @@ class TimeStepManager:
 
     def save_initial_timestep(self, mesh, bcs):
         time_0 = 0
-        p_0 = [0] * mesh.nodes.N
-        fill_factor_0 = [0] * mesh.nodes.N
-        flow_front_0 = [0] * mesh.nodes.N
-        for i, val in enumerate(bcs.dirichlet_idx):
-            p_0[val] = bcs.dirichlet_vals[i]
-            fill_factor_0[val] = 1
-            flow_front_0[val] = 1
-        v_0 = np.zeros((mesh.triangles.N, 2))
-        v_nodal_0 = np.zeros((mesh.nodes.N, 2))
+        p_0 = np.zeros(mesh.nodes.N)
+        fill_factor_0 = np.zeros(mesh.nodes.N)
+        flow_front_0 = np.zeros(mesh.nodes.N)
+        for idx, val in zip(bcs.dirichlet_idx, bcs.dirichlet_vals):
+            p_0[idx] = val
+            fill_factor_0[idx] = 1
+            flow_front_0[idx] = 1
+        v_0 = np.zeros((mesh.triangles.N, 3))
+        v_nodal_0 = np.zeros((mesh.nodes.N, 3))
         self.save_timestep(time_0, 0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0, True)
 
     def pack_solution(self):
