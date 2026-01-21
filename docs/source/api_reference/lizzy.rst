@@ -30,6 +30,7 @@ The LIZZY namespace exposes the :class:`~lizzy.LizzyModel` class, which provides
     .. automethod:: lizzy.LizzyModel.create_material
     .. automethod:: lizzy.LizzyModel.assign_material
     .. automethod:: lizzy.LizzyModel.assign_simulation_parameters
+    .. automethod:: lizzy.LizzyModel.print_simulation_parameters
 
     .. rubric:: Getter methods
 

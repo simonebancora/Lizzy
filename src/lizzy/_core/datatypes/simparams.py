@@ -4,9 +4,25 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 from dataclasses import dataclass
+import textwrap
 
 @dataclass
 class SimulationParameters:
+    """Data class that stores several parameters used by the simulation.
+
+    Attributes
+    ----------
+    mu : float
+        Viscosity [Pa s]
+    wo_delta_time : float
+        Interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
+    fill_tolerance : float
+        Tolerance on the fill factor to consider a CV as filled. Default: 0.01
+    end_step_when_sensor_triggered : bool
+        If True, ends current solution step and creates a write-out when a sensor changes state. Default: False
+
+    
+    """
     mu: float = 0.1
     wo_delta_time: float = -1
     fill_tolerance: float = 0.01
@@ -15,6 +31,18 @@ class SimulationParameters:
     generate_fill_image :bool = False
     fill_image_resolution : int = 250
     display_fill : bool = False
+
+    def print_current(self):
+        """Prints the currently assigned simulation parameters to the console."""
+        params = textwrap.dedent(rf"""
+        Currently assigned simulation parameters:
+        - "mu": {self.mu} [Pa s],
+        - "wo_delta_time": {self.wo_delta_time} [s],
+        - "fill_tolerance": {self.fill_tolerance},
+        - "end_step_when_sensor_triggered": {self.end_step_when_sensor_triggered}
+        """)
+        print(params)
+
 
     def assign(self, **kwargs):
         r"""

@@ -8,8 +8,9 @@ Lizzy is an evolving project, and new features are continuously being developed 
 
 **Short term:**
 
-- Additional boundary condition types (flow rate, you're next).
+- Additional boundary condition types.
 - Support for additional mesh import formats.
+- Layup definition utility to build multi-layer laminates from individual layers.
 - Support for 3D elements.
 
 **Long term:**

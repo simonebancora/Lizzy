@@ -18,7 +18,7 @@ from lizzy._core.cvmesh import Mesh
 from lizzy._core.bcond import BCManager
 from lizzy._core.solver import Solver, SolverType
 from lizzy._core.sensors import SensorManager
-from .simparams import SimulationParameters
+from lizzy._core.datatypes import SimulationParameters
 from lizzy._core.materials import MaterialManager
 from lizzy.utils.splash_logo import print_logo
 
@@ -96,6 +96,12 @@ class LizzyModel:
     @property
     def simulation_parameters(self) -> SimulationParameters:
         return self._simulation_parameters
+
+    def print_simulation_parameters(self) -> None:
+        """
+        Print the currently assigned simulation parameters.
+        """
+        self._simulation_parameters.print_current()
     
     def get_number_of_empty_cvs(self) -> int:
         """

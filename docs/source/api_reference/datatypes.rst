@@ -1,0 +1,10 @@
+.. py:currentmodule:: lizzy.datatypes
+
+lizzy.datatypes
+===============
+
+
+.. autoclass:: lizzy.datatypes.SimulationParameters
+
+
+

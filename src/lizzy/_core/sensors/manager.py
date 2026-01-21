@@ -6,9 +6,10 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from lizzy._core.sensors.sensor import Sensor
 if TYPE_CHECKING:
     from lizzy._core.cvmesh.mesh import Mesh
-    from lizzy._core.sensors.sensor import Sensor
+    
     
 import numpy as np
 

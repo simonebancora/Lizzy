@@ -12,6 +12,7 @@ Namespaces
     :maxdepth: 1
 
     lizzy
+    datatypes
     entities
     gates
     sensors
