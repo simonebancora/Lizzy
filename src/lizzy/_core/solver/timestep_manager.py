@@ -4,20 +4,10 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass
-import numpy as np
 
-@dataclass()
-class TimeStep:
-    index : int
-    time : float
-    dt : float
-    P : any
-    V : any
-    V_nodal : any
-    fill_factor : any
-    flow_front : any
-    write_out : bool
+import numpy as np
+from lizzy._core.datatypes import TimeStep, Solution
+
 
 class TimeStepManager:
     def __init__(self):
@@ -58,6 +48,14 @@ class TimeStepManager:
         self.time_steps[-1].write_out = True
         # populate solution with write-out time steps:
         wo_time_steps = self.get_write_out_steps()
+        solution_obj = Solution(len(wo_time_steps),
+                                    np.array([step.P for step in wo_time_steps]),
+                                    np.array([step.V.tolist() for step in wo_time_steps]),
+                                    np.array([step.V_nodal for step in wo_time_steps]),
+                                    np.array([step.time for step in wo_time_steps]),
+                                    np.array([step.fill_factor for step in wo_time_steps]),
+                                    np.array([step.flow_front for step in wo_time_steps]),
+                                    )
         solution = {"time_steps" : len(wo_time_steps),
                     "p" : [step.P for step in wo_time_steps],
                     "v" : [step.V.tolist() for step in wo_time_steps],

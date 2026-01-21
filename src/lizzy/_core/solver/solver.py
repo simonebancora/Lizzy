@@ -16,6 +16,10 @@ import numpy as np
 import time
 from lizzy._core.solver import *
 from lizzy._core.bcond import SolverBCs
+from .timestep_manager import TimeStepManager
+from .vsolvers import VelocitySolver
+from .fillsolver import FillSolver
+from .psolvers import PressureSolver, SolverType
 
 
 # from scipy.sparse import lil_matrix

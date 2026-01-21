@@ -2,7 +2,7 @@ Boundary conditions operations
 ==================================
 
 In this section we look at various boundary condition operations, including creating boundary conditions and modifying them at runtime.
-All operations can be performed using the :class:`~lizzy.LizzyModel` user-facing methods. For more details about the underlying core components, please refer to the :ref:`api_reference_index` documentation.
+All operations can be performed using the :class:`~lizzy.LizzyModel` user-facing methods.
 
 
 Creation and assignment of inlets
