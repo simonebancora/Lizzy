@@ -24,8 +24,7 @@ def test_solver_config(solver_type, use_masked, name, **kwargs):
         solution = model.solve()
         elapsed = time.time() - start
         print(f"  ✓ Success: {elapsed:.2f}s")
-        print(f"    - Fill time: {solution['time'][-1]:.5f}s")
-        print(f"    - Time steps: {solution['time_steps']}")
+        print(f"    - Fill time: {solution.time[-1]:.5f}s")
         return True, elapsed, solution
     except Exception as e:
         print(f"  ✗ Failed: {e}")

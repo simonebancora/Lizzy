@@ -23,7 +23,7 @@ def test_fill_1bar(model: liz.LizzyModel):
     model.assign_inlet("inlet_left", "left_edge")
     model.initialise_solver()
     solution = model.solve()
-    fill_time = solution["time"][-1]
+    fill_time = solution.time[-1]
     assert abs(fill_time - analytical_solution) / analytical_solution < tol_err
 
 def test_fill_01bar(model: liz.LizzyModel):
@@ -32,5 +32,5 @@ def test_fill_01bar(model: liz.LizzyModel):
     model.assign_inlet("inlet_left", "left_edge")
     model.initialise_solver()
     solution = model.solve()
-    fill_time = solution["time"][-1]
+    fill_time = solution.time[-1]
     assert abs(fill_time - analytical_solution) / analytical_solution < tol_err
