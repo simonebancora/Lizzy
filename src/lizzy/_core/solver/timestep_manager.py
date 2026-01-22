@@ -6,7 +6,7 @@
 
 
 import numpy as np
-from lizzy._core.datatypes import TimeStep, Solution
+from lizzy._core.datatypes import Solution
 
 
 class TimeStepManager:

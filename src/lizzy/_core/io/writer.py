@@ -63,7 +63,7 @@ class Writer:
             mesh_cv.write(destination_path / f"{result_name}_CV.vtk")
 
         if _format == "xdmf":
-            filename = f"{result_name}_RES.xdmf"
+            filename = f"{result_name}.xdmf"
             with meshio.xdmf.TimeSeriesWriter(filename) as writer:
                 writer.write_points_cells(points, [("triangle", cells_list)])
                 for i in range(solution.time_steps_in_solution):
@@ -76,6 +76,6 @@ class Writer:
                     cell_data = { "Velocity" : solution.v[i] }
                     writer.write_data(time, point_data=point_data, cell_data=cell_data)
             shutil.move(filename, destination_path / filename)
-            shutil.move(f"{result_name}_RES.h5", destination_path / f"{result_name}_RES.h5")
+            shutil.move(f"{result_name}.h5", destination_path / f"{result_name}.h5")
 
         print(f"Results saved in {destination_path}")
