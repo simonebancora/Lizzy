@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
+
+from lizzy._core.cvmesh import mesh
 if TYPE_CHECKING:
     from lizzy._core.sensors import SensorManager
     from lizzy._core.bcond import BCManager
@@ -33,7 +35,7 @@ class Solver:
         self.bc_manager : BCManager = bc_manager 
         self.simulation_parameters = simulation_parameters
         self.material_manager = material_manager
-        self.time_step_manager = TimeStepManager()
+        self.time_step_manager = TimeStepManager(mesh.nodes.N, mesh.triangles.N)
         self._sensor_manager = sensor_manager
         self.bcs = SolverBCs()
         self.vsolver = None
@@ -139,6 +141,23 @@ class Solver:
         Must be called AFTER calling "update_empty_nodes_idx()"
         """
         self.n_empty_cvs = len(self.bcs.p0_idx)
+    
+    def generate_initial_time_step(self):
+        time_0 = 0
+        dt_0 = 0
+        p_0 = np.zeros(self.mesh.nodes.N)
+        fill_factor_0 = np.zeros(self.mesh.nodes.N)
+        flow_front_0 = np.zeros(self.mesh.nodes.N)
+        for idx, val in zip(self.bcs.dirichlet_idx, self.bcs.dirichlet_vals):
+            p_0[idx] = val
+            fill_factor_0[idx] = 1
+            flow_front_0[idx] = 1
+        v_0 = np.zeros((self.mesh.triangles.N, 3))
+        v_nodal_0 = np.zeros((self.mesh.nodes.N, 3))
+        write_out_0 = True
+        initial_time_step = (time_0, dt_0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0, write_out_0)
+        return initial_time_step
+        
 
     def initialise_new_solution(self):
         """
@@ -160,10 +179,11 @@ class Solver:
         active_cvs_ids, self.solver_vars["free_surface_array"] = self.fill_solver.find_free_surface_cvs(
             self.solver_vars["fill_factor_array"], self.cv_support_cvs_array)
         self.time_step_manager.reset()
-        self.time_step_manager.save_initial_timestep(self.mesh, self.bcs)
+        initial_time_step = self.generate_initial_time_step()
+        self.time_step_manager.save_timestep(*initial_time_step)
         self._sensor_manager.reset_sensors()
         # TODO: this first probe is temporary and should be cleaner
-        self._sensor_manager.probe_current_solution(self.time_step_manager.time_steps[0].P, self.time_step_manager.time_steps[0].V_nodal, self.time_step_manager.time_steps[0].fill_factor, 0.0)
+        self._sensor_manager.probe_current_solution(self.time_step_manager.p_buffer[0], self.time_step_manager.v_nodal_buffer[0], self.time_step_manager.fill_factor_buffer[0], 0.0)
 
     def handle_wo_criterion(self, dt):
         write_out = False
