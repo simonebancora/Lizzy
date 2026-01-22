@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from lizzy._core.sensors import Sensor
     from lizzy._core.materials import PorousMaterial, Rosette
     from lizzy._core.bcond.gates import Inlet
+    from lizzy.datatypes import Solution
 
 from typing import Dict, Literal
 from types import MappingProxyType
@@ -29,12 +30,13 @@ class LizzyModel:
     """
     def __init__(self):
         print_logo()
+        self._model_name : str = None
         self._reader : Reader = None
         self._writer : Writer = None
         self._mesh : Mesh = None
         self._solver : Solver = None
         self._renderer : any = None
-        self._latest_solution: dict = None
+        self._latest_solution: Solution = None
         self._simulation_parameters = SimulationParameters()
         self._material_manager = MaterialManager()
         self._bc_manager = BCManager()
@@ -168,6 +170,7 @@ class LizzyModel:
             Path to the mesh file from the current working folder.
         """
         self._reader = Reader(mesh_file_path)
+        self._model_name = self._reader.case_name
         self._mesh = Mesh(self._reader)
         self._writer = Writer(self._mesh)
     
@@ -424,15 +427,20 @@ class LizzyModel:
         """
         self._solver.initialise_new_solution()
     
-    def save_results(self, solution:dict, result_name:str, **kwargs):
+    def save_results(self, solution: Solution = None, result_name:str = None, **kwargs):
         """Save the results contained in the solution dictionary into an XDMF file.
 
         Parameters
         ----------
-        solution : dict
-        result_name : str
-            The name of the new folder where results will be saved.
+        solution : :class:`~lizzy.datatypes.Solution`, optional
+            The solution that should be written to the XDMF file. If none passed, the latest solution present in the model will be used.
+        result_name : str, optional
+            The name of the solution file that will be created. If none passed, the name of the mesh file with appended '_RES' will be used.
         """
+        if solution == None:
+            solution = self._latest_solution
+        if result_name == None:
+            result_name = self._model_name + '_RES'
         self._writer.save_results(solution, result_name, **kwargs)
 
     def get_node_by_id(self, node_id:int):

@@ -6,66 +6,89 @@
 
 
 import numpy as np
-from lizzy._core.datatypes import TimeStep, Solution
+from lizzy._core.datatypes import Solution
 
 
 class TimeStepManager:
-    def __init__(self):
-        self.time_steps = []
-        self.time_step_count = 0
+    def __init__(self, n_nodes, n_elements):
+        self.n_nodes : int = n_nodes
+        self.n_elements : int = n_elements
+        self.time_step_buffer_size : int = None
+        self.time_step_count : int = None
+        self.time_buffer : np.ndarray = None
+        self.dt_buffer : np.ndarray = None
+        self.p_buffer : np.ndarray = None
+        self.v_buffer : np.ndarray = None
+        self.v_nodal_buffer : np.ndarray = None
+        self.fill_factor_buffer : np.ndarray = None
+        self.flow_front_buffer : np.ndarray = None
+        self.write_out_buffer : np.ndarray = None
+        self.reset()
 
     def save_timestep(self, time, dt, P, v_array, v_nodal_array, fill_factor, flow_front, write_out):
-        if(v_array.shape[1]==3):
-            v_full = v_array
-            v_nodal_full = v_nodal_array
-        else:
-            v3_nul = np.zeros((np.size(v_array,0), 1))
-            v3_nodal_nul = np.zeros((np.size(v_nodal_array,0), 1))
-            v_full = np.hstack((v_array, v3_nul))
-            v_nodal_full = np.hstack((v_nodal_array, v3_nodal_nul))
-        timestep = TimeStep(self.time_step_count, time, dt, P, v_full, v_nodal_full, np.clip(fill_factor, 0, 1), flow_front, write_out)
-        self.time_steps.append(timestep)
+        if self.time_step_count >= self.time_step_buffer_size:
+            self.grow_buffers()
+        self.time_buffer[self.time_step_count] = time
+        self.dt_buffer[self.time_step_count] = dt
+        self.p_buffer[self.time_step_count, :] = P
+        self.v_buffer[self.time_step_count, :, :] = v_array
+        self.v_nodal_buffer[self.time_step_count, :, :] = v_nodal_array
+        self.fill_factor_buffer[self.time_step_count, :] = fill_factor
+        self.flow_front_buffer[self.time_step_count, :] = flow_front
+        self.write_out_buffer[self.time_step_count] = write_out
         self.time_step_count += 1
 
-    def get_write_out_steps(self):
-        return [step for step in self.time_steps if step.write_out == True]
+    
+    def grow_buffers(self):
+            new_size = self.time_step_buffer_size * 2
+            self.time_buffer = np.resize(self.time_buffer, new_size)
+            self.dt_buffer = np.resize(self.dt_buffer, new_size)
+            self.p_buffer = np.resize(self.p_buffer, (new_size, self.p_buffer.shape[1]))
+            self.v_buffer = np.resize(self.v_buffer, (new_size, self.v_buffer.shape[1], self.v_buffer.shape[2]))
+            self.v_nodal_buffer = np.resize(self.v_nodal_buffer, (new_size, self.v_nodal_buffer.shape[1], self.v_nodal_buffer.shape[2]))
+            self.fill_factor_buffer = np.resize(self.fill_factor_buffer, (new_size, self.fill_factor_buffer.shape[1]))
+            self.flow_front_buffer = np.resize(self.flow_front_buffer, (new_size, self.flow_front_buffer.shape[1]))
+            self.write_out_buffer = np.resize(self.write_out_buffer, new_size)
+            self.time_step_buffer_size = new_size
 
-    def save_initial_timestep(self, mesh, bcs):
-        time_0 = 0
-        p_0 = [0] * mesh.nodes.N
-        fill_factor_0 = [0] * mesh.nodes.N
-        flow_front_0 = [0] * mesh.nodes.N
-        for i, val in enumerate(bcs.dirichlet_idx):
-            p_0[val] = bcs.dirichlet_vals[i]
-            fill_factor_0[val] = 1
-            flow_front_0[val] = 1
-        v_0 = np.zeros((mesh.triangles.N, 2))
-        v_nodal_0 = np.zeros((mesh.nodes.N, 2))
-        self.save_timestep(time_0, 0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0, True)
+
+    def get_write_out_indices(self):
+        write_out_array = self.write_out_buffer[:self.time_step_count]
+        return np.nonzero(write_out_array)[0]
 
     def pack_solution(self):
         # flag the last time step as write-out regardless of its setting:
-        self.time_steps[-1].write_out = True
+        if self.time_step_count > 0:
+            self.write_out_buffer[self.time_step_count - 1] = True
         # populate solution with write-out time steps:
-        wo_time_steps = self.get_write_out_steps()
-        solution_obj = Solution(len(wo_time_steps),
-                                    np.array([step.P for step in wo_time_steps]),
-                                    np.array([step.V.tolist() for step in wo_time_steps]),
-                                    np.array([step.V_nodal for step in wo_time_steps]),
-                                    np.array([step.time for step in wo_time_steps]),
-                                    np.array([step.fill_factor for step in wo_time_steps]),
-                                    np.array([step.flow_front for step in wo_time_steps]),
-                                    )
-        solution = {"time_steps" : len(wo_time_steps),
-                    "p" : [step.P for step in wo_time_steps],
-                    "v" : [step.V.tolist() for step in wo_time_steps],
-                    "v_nodal" : [step.V_nodal for step in wo_time_steps],
-                    "time" : [step.time for step in wo_time_steps],
-                    "fill_factor" : [step.fill_factor for step in wo_time_steps],
-                    "free_surface" : [step.flow_front for step in wo_time_steps],
-                    }
-        return solution
+        wo_idx = self.get_write_out_indices()
+        solution_obj = Solution(len(wo_idx),
+                                wo_idx,
+                                self.p_buffer[wo_idx, :],
+                                self.v_buffer[wo_idx, :, :],
+                                self.v_nodal_buffer[wo_idx, :, :],
+                                self.time_buffer[wo_idx],
+                                self.fill_factor_buffer[wo_idx, :],
+                                self.flow_front_buffer[wo_idx, :],
+                                )
+        # solution = {"time_steps" : len(wo_idx),
+        #             "p" : [step.P for step in wo_time_steps],
+        #             "v" : [step.V.tolist() for step in wo_time_steps],
+        #             "v_nodal" : [step.V_nodal for step in wo_time_steps],
+        #             "time" : [step.time for step in wo_time_steps],
+        #             "fill_factor" : [step.fill_factor for step in wo_time_steps],
+        #             "free_surface" : [step.flow_front for step in wo_time_steps],
+        #             }
+        return solution_obj
 
     def reset(self):
-        self.time_steps = []
+        self.time_step_buffer_size = 1000
         self.time_step_count = 0
+        self.time_buffer = np.empty(self.time_step_buffer_size, dtype=float)
+        self.dt_buffer = np.empty(self.time_step_buffer_size, dtype=float)
+        self.p_buffer = np.empty((self.time_step_buffer_size, self.n_nodes), dtype=float)
+        self.v_buffer = np.empty((self.time_step_buffer_size, self.n_elements, 3), dtype=float)
+        self.v_nodal_buffer = np.empty((self.time_step_buffer_size, self.n_nodes, 3), dtype=float)
+        self.fill_factor_buffer = np.empty((self.time_step_buffer_size, self.n_nodes), dtype=float)
+        self.flow_front_buffer = np.empty((self.time_step_buffer_size, self.n_nodes), dtype=int)
+        self.write_out_buffer = np.empty(self.time_step_buffer_size, dtype=bool)

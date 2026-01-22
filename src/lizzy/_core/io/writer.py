@@ -11,6 +11,7 @@ from enum import Enum, auto
 import numpy as np
 import meshio
 import textwrap
+from lizzy._core.datatypes import Solution
 
 
 class Writer:
@@ -32,7 +33,7 @@ class Writer:
         """
         self.mesh = mesh
 
-    def save_results(self, solution:dict, result_name:str, **kwargs):
+    def save_results(self, solution:Solution, result_name:str, **kwargs):
         """Save the results contained in the solution dictionary into an XDMF file.
 
         Parameters
@@ -53,28 +54,6 @@ class Writer:
         cells_list = []
         for i in range(len(cells)) :
             cells_list.append(cells[i])
-        # Iterate over time steps
-        for i in range(solution["time_steps"]):
-            # Create point data and cell data for the current time step
-            point_data = {
-                "FillFactor": solution["fill_factor"][i],  # Point data
-                "Pressure": solution["p"][i],  # Point data
-                "Time" : solution["time"],
-                "FreeSurface" : solution["free_surface"][i],
-                "Velocity" : solution["v_nodal"][i],
-            }
-            cell_data = {
-                "Velocity": [solution["v"][i]],  # Cell data for velocity
-            }
-            if _format == "vtk":# Create the meshio object with correct point and cell data
-                mesh_res = meshio.Mesh(
-                    points=points,
-                    cells=[("triangle", cells_list)],  # Triangle connectivity
-                    point_data=point_data,
-                    cell_data=cell_data,
-                )
-                # write the time step
-                mesh_res.write(destination_path / f"{result_name}_RES_{i}.vtk")
 
         if save_cv_mesh:
             mesh_cv = meshio.Mesh(
@@ -84,19 +63,19 @@ class Writer:
             mesh_cv.write(destination_path / f"{result_name}_CV.vtk")
 
         if _format == "xdmf":
-            filename = f"{result_name}_RES.xdmf"
+            filename = f"{result_name}.xdmf"
             with meshio.xdmf.TimeSeriesWriter(filename) as writer:
                 writer.write_points_cells(points, [("triangle", cells_list)])
-                for j in range(solution["time_steps"]):
-                    time = solution["time"][j]
-                    point_data = {  "Pressure" : np.array(solution["p"][j]),
-                                    "FillFactor" : np.array(solution["fill_factor"][j]),
-                                    "FreeSurface" : np.array(solution["free_surface"][j]),
-                                    "Velocity" : np.array(solution["v_nodal"][j])
+                for i in range(solution.time_steps_in_solution):
+                    time = solution.time[i]
+                    point_data = {  "Pressure" : solution.p[i],
+                                    "FillFactor" : solution.fill_factor[i],
+                                    "FreeSurface" : solution.free_surface[i],
+                                    "Velocity" : solution.v_nodal[i]
                                  }
-                    cell_data = { "Velocity" : np.array(solution["v"][j]) }
+                    cell_data = { "Velocity" : solution.v[i] }
                     writer.write_data(time, point_data=point_data, cell_data=cell_data)
             shutil.move(filename, destination_path / filename)
-            shutil.move(f"{result_name}_RES.h5", destination_path / f"{result_name}_RES.h5")
+            shutil.move(f"{result_name}.h5", destination_path / f"{result_name}.h5")
 
         print(f"Results saved in {destination_path}")
