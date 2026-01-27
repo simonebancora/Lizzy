@@ -23,7 +23,22 @@ Time step vs time interval
 
 Throughout this section, we will encounter multiple times the terms "time step" and "time interval". It is important to clarify the difference between these two concepts:
 
-- **Time step:**
-    The discrete increment of time used by the solver to advance the simulation. The time step is determined by the solver at runtime and **the user has no control over this quantity**.
-- **Time interval:**
-    An amount of time over which the simulation advances. A time interval is tipically composed of multiple time steps. **The user has full control over this quantity**. For example, if a simulation is run until the part is completely filled, then the time interval is the entird fill time. Conversely, we can set our simulation to run for a fixed time interval, e.g., 60 seconds, then pause and do something, and then resume the simulation for another time interval... and so on.
+- **Time step:** The discrete increment of time used by the solver to advance the simulation. The time step is determined by the solver at runtime. **The user has no control over this quantity**.
+- **Time interval:** An amount of time over which the simulation advances. A time interval is tipically composed of multiple time steps. **The user has full control over this quantity**. For example, if a simulation is run until the part is completely filled, then the time interval is the entird fill time. Conversely, if we set our simulation to run for a fixed time interval, e.g., 60 seconds, then pause and do something, and then resume the simulation, then the time interval is 60 seconds.
+
+Solver initialization
+---------------------
+
+Every Lizzy script is broadly divided in two parts:
+
+- Model definition: the model is created and all elements of the simulation are set. This includes creating mesh, materials, sensors, intlets, etc...
+- Solution: the simulation is run and the solution is computed.
+
+The solver initialisation is what separates these two parts. Before it can run the simulation, the solver must always be initialised by calling the :meth:`~lizzy.LizzyModel.initialise_solver` method: 
+
+.. code-block::
+
+    model.initialise_solver()
+
+The solver initialization is a critical point in every Lizzy simulation, because it is the point where a lot of object data types are converted into faster types for performance. As a consequence, several methods do not work anymore after the solver initialisation critical point. Let's look at a simple example to illustrate the idea:
+

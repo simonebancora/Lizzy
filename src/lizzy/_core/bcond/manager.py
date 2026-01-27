@@ -20,25 +20,8 @@ class BCManager:
         """
         return self._existing_inlets
 
-    def create_inlet(self, initial_pressure_value:float, name:str = None) -> Inlet:
-        """Creates a new inlet and add it to the :attr:`~lizzy.bcond.bcond.BCManager.existing_inlets` dictionary.
-
-        Parameters
-        ----------
-        initial_pressure_value : float
-            Initial pressure value at the inlet.
-        name : str, optional
-            Label assigned to the inlet. Will be used to select the inlet in future operations. If none assigned, a default 'Inlet_{N}'name is given, where N is an incremental number of existing inlets.
-
-        Returns
-        -------
-        :class:`~lizzy.bcond.bcond.Inlet`
-            The created inlet object.
-        """
-        if name is None:
-            inlet_count = len(self._existing_inlets)
-            name = f"Inlet_{inlet_count}"
-        new_inlet = Inlet(initial_pressure_value, name)
+    def create_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
+        new_inlet = Inlet(name, initial_pressure_value)
         self._existing_inlets[name] = new_inlet
         return new_inlet
 

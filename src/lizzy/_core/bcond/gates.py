@@ -13,12 +13,12 @@ class Inlet():
 
     Parameters
     ----------
+    name : str
+        Name of the inlet.
     p_value : float
         Initial pressure value at the inlet [Pa].
-    name : str, optional
-        Label assigned to the inlet. Will be used to select the inlet in future operations. If none assigned, a default 'unnamed_inlet' name is given.
     """
-    def __init__(self, p_value:float, name:str = "unnamed_inlet"):
+    def __init__(self, name:str, p_value:float):
         super().__init__()
         self.p_value = p_value
         self._p0 = p_value

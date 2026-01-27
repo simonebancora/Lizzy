@@ -4,11 +4,11 @@ Boundary conditions operations
 In this section we look at various boundary condition operations, including creating boundary conditions and modifying them at runtime.
 All operations can be performed using the :class:`~lizzy.LizzyModel` user-facing methods.
 
-
 Creation and assignment of inlets
 ----------------------------------
 
-The following operations are to be performed **before** the solver is initialised by calling :meth:`~lizzy.LizzyModel.initialise_solver`.
+.. note::
+    The following operations are to be performed **before** the solver is initialised by calling :meth:`~lizzy.LizzyModel.initialise_solver`.
 
 Creating an inlet
 ~~~~~~~~~~~~~~~~~~
@@ -29,13 +29,13 @@ Let's say we have imported a mesh with one boundary named "left_edge" and one bo
         Physical domains:        ['domain']
         Physical lines:          ['left_edge', 'right_edge']
 
-First, we will create an inlet using the :meth:`~lizzy.LizzyModel.create_inlet` method. This method requires two arguments: the inlet initial pressure (in Pa) and a unique string identifier for the inlet. Let's create an inlet with a pressure of 1.0E05 Pa tagged as "inlet_1":
+First, we will create an inlet using the :meth:`~lizzy.LizzyModel.create_inlet` method. This method requires two arguments: a unique name for the inlet and the inlet initial pressure (in Pa). Let's create an inlet named "inlet_1" with a pressure of 1.0E05 Pa:
 
 .. code-block::
 
-    model.create_inlet(1e5, "inlet_1")
+    model.create_inlet("inlet_1", 1e5)
 
-An :class:`~lizzy.gates.Inlet` object is created and stored in the model, but it is not assigned yet. To assign the inlet to a specific boundary, we use the :meth:`~lizzy.LizzyModel.assign_inlet` method, providing the name of the inlet and the name of the mesh boundary where we want to assign it:
+An :class:`~lizzy.gates.Inlet` object is created and stored in the model, but it is not assigned yet to any boundary. To do so, we use the :meth:`~lizzy.LizzyModel.assign_inlet` method, providing the name of the inlet and the name of the mesh boundary where we want to assign it:
 
 .. code-block::
 
@@ -47,14 +47,14 @@ An :class:`~lizzy.gates.Inlet` object is created and stored in the model, but it
 
     .. code-block::
 
-        new_inlet = model.create_inlet(1e5, "inlet_1")
+        new_inlet = model.create_inlet("inlet_1", 1e5)
         model.assign_inlet(new_inlet, "left_edge")
 
 Once an inlet is assigned, it is set to "open" state by default. We can check its state at any time using the :attr:`~lizzy.gates.Inlet.is_open` property (read-only).
 
 .. code-block:: console
 
-    >>> new_inlet = model.create_inlet(1e5, "inlet_1")
+    >>> new_inlet = model.create_inlet("inlet_1", 1e5)
     >>> model.assign_inlet(new_inlet, "left_edge")
     >>> new_inlet.is_open
 
@@ -78,8 +78,8 @@ This expression returns the :class:`~lizzy.gates.Inlet` object with that name. W
 Runtime operations
 -------------------
 
-The following operations can be performed at any time **after** the solver has been initialised by calling :meth:`~lizzy.LizzyModel.initialise_solver`.
-
+.. note::
+    The following operations can be performed at any time **after** the solver has been initialised by calling :meth:`~lizzy.LizzyModel.initialise_solver`.
 
 Opening / closing inlets
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -141,7 +141,6 @@ This will produce the same effect as using the :meth:`~lizzy.LizzyModel.open_inl
 
         >>> Fatal error: The application has terminated.
         >>> No inlets are currently open. At least one inlet must be open at all times.
-        
 
 Modifying inlet pressure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

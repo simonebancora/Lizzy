@@ -4,6 +4,7 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+import sys
 import numpy as np
 from .materials import PorousMaterial
 from .rosette import Rosette
@@ -35,90 +36,29 @@ class MaterialManager:
         return self._existing_materials
     
     def fetch_material(self, material_selector:str):
-        """Fetch an existing material by its label.
-        Parameters
-        ----------
-        material_selector : str
-            Label of the material to fetch.
-        Returns
-        -------
-        :class:`PorousMaterial`
-            Instance of the selected material.
-        """
         try:
             selected_material = self._existing_materials[material_selector]
         except KeyError:
             raise KeyError(f"Inlet '{material_selector}' is not found in existing inlets. Check the name, or create the inlet first using `LizzyModel.create_inlet`.")
         return selected_material
-    
 
-    def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name: str = None):
-        """Create a new material that can then be selected and used in the model.
-
-        Parameters
-        ----------
-        k1 : float
-            Permeability in the first principal direction.
-        k2 : float
-            Permeability in the second principal direction.
-        k3 : float
-            Permeability in the third principal direction.
-        porosity : float
-            Volumetric porosity of the material (porosity = 1 - fibre volume fraction).
-        thickness : float
-            Thickness of the material [mm].
-        name : str, optional
-            Label assigned to the material. Necessary to select the material during assignment. If none assigned, a default 'Material_{N}'name is given, where N is an incremental number of existing materials.
-
-        Returns
-        -------
-        :class:`PorousMaterial`
-            Instance of the created material.
-        """
-        if name is None:
-            material_count = len(self._existing_materials)
-            name = f"Material_{material_count}"
-        new_material = PorousMaterial(k1, k2, k3, porosity, thickness, name)
+    def create_material(self, name:str, k_vals : tuple[float, float, float], porosity: float, thickness: float):
+        if name in self._existing_materials.keys():
+            print(f"ERROR: the material name '{name}' is not unique. Another material with the same name already exists in the model.")
+            sys.exit(1)
+        new_material = PorousMaterial(name, k_vals, porosity, thickness)
         self._existing_materials[name] = new_material
         return new_material
 
-    def create_rosette(self, p1: tuple[float, float, float] = (1.0, 0, 0), p0: tuple[float, float, float] = (0.0, 0.0, 0.0), name: str = None):
-        """Create a new rosette that can then be selected and used in the model.
-
-        Parameters
-        ----------
-        p1 : tuple[float, float, float]
-            The first point defining the first axis of the rosette (k1 direction).
-        p0 : tuple[float, float, float]
-            The second point defining the first axis of the rosette (k1 direction). Default is (0,0,0).
-        name : str, optional
-            Label assigned to the rosette. Necessary to select the rosette during assignment. If none assigned, a default 'Rosette_{N}'name is given, where N is an incremental number of existing rosettes.
-
-        Returns
-        -------
-        :class:`Rosette`
-            Instance of the created rosette.
-        """
-        if name is None:
-            rosette_count = len(self._assigned_rosettes)
-            name = f"Rosette_{rosette_count}"
-        new_rosette = Rosette(p1, p0, name)
+    def create_rosette(self, name:str, u: tuple[float, float, float] = (1.0, 0, 0)):
+        if name in self._assigned_rosettes.keys():
+            print(f"ERROR: the rosette name '{name}' is not unique. Another rosette with the same name already exists in the model.")
+            sys.exit(1)
+        new_rosette = Rosette(name, u)
         self._assigned_rosettes[name] = new_rosette
         return new_rosette
 
     def _fetch_rosette(self, rosette_selector: str):
-        """Fetch an existing rosette by its label.
-
-        Parameters
-        ----------
-        rosette_selector : str
-            Label of the rosette to fetch.
-
-        Returns
-        -------
-        :class:`Rosette`
-            Instance of the selected rosette.
-        """
         try:
             selected_rosette = self._assigned_rosettes[rosette_selector]
         except KeyError:
@@ -126,17 +66,6 @@ class MaterialManager:
         return selected_rosette
 
     def assign_material(self, material_selector:str, mesh_tag:str, rosette_selector:str | Rosette = None):
-        """Assign an existing material to a labeled mesh region.
-
-        Parameters
-        ----------
-        material_selector : str
-            Label of the material to assign. Must correspond to an existing material created with `LizzyModel.create_material`.
-        mesh_tag : str
-            Label of the mesh region where to assign the material.
-        rosette : Rosette, optional
-            Orientation rosette to apply to the material. If none provided, a default rosette with k1 aligned with the global X axis is assigned.
-        """
         selected_material : PorousMaterial = self.fetch_material(material_selector)
         if rosette_selector is None:
             rosette = Rosette((1, 0, 0))

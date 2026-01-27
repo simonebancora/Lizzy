@@ -139,14 +139,18 @@ class LizzyModel:
 
         Parameters
         ----------
-        **kwargs : dict
+        **kwargs
             Keyword arguments corresponding to parameter names and their new values.
-            Valid parameters are:
+            Valid keywords are:
         
-            - ``mu``: viscosity [Pa s]
-            - ``wo_delta_time``: interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
-            - ``fill_tolerance``: tolerance on the fill factor to consider a CV as filled. Default: 0.01
-            - ``end_step_when_sensor_triggered``: if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
+            mu: float, optional
+                Viscosity [Pa s]. Default: 0.1
+            wo_delta_time: float, optional
+                Interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
+            fill_tolerance: float, optional
+                Tolerance on the fill factor to consider a CV as filled. Default: 0.01
+            end_step_when_sensor_triggered: bool, optional
+                If True, ends current solution step and creates a write-out when a sensor changes state. Default: False
         
         Examples
         --------
@@ -182,11 +186,13 @@ class LizzyModel:
             return
         self._reader.print_mesh_info()
 
-    def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str= None) -> PorousMaterial:
+    def create_material(self, name : str, k_vals : tuple[float, float, float], porosity: float, thickness: float) -> PorousMaterial:
         """Create a new material that can then be selected and used in the model.
 
         Parameters
         ----------
+        name : str
+            Unique name of the new material.
         k1 : float
             Permeability in the first principal direction.
         k2 : float
@@ -197,15 +203,13 @@ class LizzyModel:
             Volumetric porosity of the material (porosity = 1 - fibre volume fraction).
         thickness : float
             Thickness of the material [mm].
-        name : str, optional
-            Label assigned to the material. Necessary to select the material during assignment. If none assigned, a default 'Material_{N}'name is given, where N is an incremental number of existing materials.
-
+        
         Returns
         -------
         :class:`~lizzy.core.materials.PorousMaterial`
             Instance of the created material.
         """
-        new_material = self._material_manager.create_material(k1, k2, k3, porosity, thickness, name)
+        new_material = self._material_manager.create_material(name, k_vals, porosity, thickness)
         return new_material
 
     def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
@@ -222,42 +226,40 @@ class LizzyModel:
         """
         self._material_manager.assign_material(material_selector, mesh_tag, rosette)
 
-    def create_rosette(self, p1:tuple[float, float, float], p0:tuple[float, float, float]=(0.0,0.0,0.0), name:str=None) -> Rosette:
+    def create_rosette(self, name:str, u:tuple[float, float, float]) -> Rosette:
         """Create a new rosette that can then be selected and used in the model.
 
         Parameters
         ----------
-        p1 : tuple[float, float, float]
+        name : str
+            Name unique name of the new rosette.
+        u : tuple[float, float, float]
             The first point defining the first axis of the rosette (k1 direction).
-        p0 : tuple[float, float, float]
-            The second point defining the first axis of the rosette (k1 direction). Default is (0,0,0).
-        name : str, optional
-            Label assigned to the rosette. Necessary to select the rosette during assignment. If none assigned, a default 'Rosette_{N}'name is given, where N is an incremental number of existing rosettes.
 
         Returns
         -------
         :class:`~lizzy.core.materials.Rosette`
             Instance of the created rosette.
         """
-        new_rosette = self._material_manager.create_rosette(p1, p0, name)
+        new_rosette = self._material_manager.create_rosette(name, u)
         return new_rosette
 
-    def create_inlet(self, initial_pressure_value:float, name:str = None) -> Inlet:
+    def create_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
         """Creates a new inlet and add it to model existing inlets.
 
         Parameters
         ----------
+        name : str
+            Name of the inlet.
         initial_pressure_value : float
             Initial pressure value at the inlet.
-        name : str, optional
-            Label assigned to the inlet. Will be used to select the inlet in future operations. If none assigned, a default 'Inlet_{N}'name is given, where N is an incremental number of existing inlets.
 
         Returns
         -------
         :class:`~lizzy.core.bcond.Inlet`
             The created inlet object.
         """
-        new_inlet = self._bc_manager.create_inlet(initial_pressure_value, name)
+        new_inlet = self._bc_manager.create_inlet(name, initial_pressure_value)
         return new_inlet
 
     def assign_inlet(self, inlet_selector:Inlet | str, boundary_tag:str):

@@ -87,12 +87,12 @@ class Mesh:
             try:
                 material : PorousMaterial = materials[tri.material_tag]
                 if material.is_isotropic:
-                    tri.k = material.k_diag
+                    tri.k = material.k_princ
                 else:
                     rosette : Rosette = rosettes[tri.material_tag]
                     u, v, w = rosette.project_along_normal(tri.n)
                     R = np.array([u, v, w]).T
-                    tri.k = R @ material.k_diag @ R.T
+                    tri.k = R @ material.k_princ @ R.T
                 tri.porosity = materials[tri.material_tag].porosity
                 tri.h = materials[tri.material_tag].thickness
             except KeyError:

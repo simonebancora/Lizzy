@@ -13,13 +13,13 @@ def model():
     model = liz.LizzyModel()
     model.read_mesh_file("tests/test_meshes/Rect_1M_R1.msh")
     model.assign_simulation_parameters(mu=0.1, wo_delta_time=100, fill_tolerance=0.00)
-    model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "test_material")
+    model.create_material("test_material", (1E-10, 1E-10, 1E-10), 0.5, 1.0)
     model.assign_material("test_material", 'domain')
     return model
 
 def test_fill_1bar(model: liz.LizzyModel):
     analytical_solution = 2500
-    model.create_inlet(1E+05, "inlet_left")
+    model.create_inlet("inlet_left", 1E+05)
     model.assign_inlet("inlet_left", "left_edge")
     model.initialise_solver()
     solution = model.solve()
@@ -28,7 +28,7 @@ def test_fill_1bar(model: liz.LizzyModel):
 
 def test_fill_01bar(model: liz.LizzyModel):
     analytical_solution = 25000
-    model.create_inlet(1E+04, "inlet_left")
+    model.create_inlet("inlet_left", 1E+04)
     model.assign_inlet("inlet_left", "left_edge")
     model.initialise_solver()
     solution = model.solve()

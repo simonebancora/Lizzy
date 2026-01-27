@@ -11,16 +11,14 @@ class Rosette:
 
     Parameters
     ----------
+    name : str
+        The unique name of the rosette.
     p1 : tuple[float, float, float]
-        The first point defining the first axis of the rosette (k1 direction).
-    p0 : tuple[float, float, float]
-        The second point defining the first axis of the rosette (k1 direction). Default is (0,0,0).
+        The vector defining the first axis of the rosette (k1 direction).
     """
-    def __init__(self, p1=(1.0,0,0), p0=(0.0,0.0,0.0), name:str=None):
-        p1 = np.array(p1)
-        p0 = np.array(p0)
-        self.u = p1 - p0
+    def __init__(self, name:str, u=(1.0,0,0)):
         self.name = name
+        self.u = np.array(u)
 
     #TODO: this needs reviewing
     def project_along_normal(self, normal):

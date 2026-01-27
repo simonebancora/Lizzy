@@ -7,7 +7,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from lizzy._core.solver import FillSolver
+    from lizzy._core.solver.fillsolver import FillSolver
 
 import numpy as np
 from .collections import nodes, lines, elements
