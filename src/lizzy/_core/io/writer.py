@@ -66,7 +66,7 @@ class Writer:
             filename = f"{result_name}.xdmf"
             with meshio.xdmf.TimeSeriesWriter(filename) as writer:
                 writer.write_points_cells(points, [("triangle", cells_list)])
-                for i in range(solution.time_steps_in_solution):
+                for i in range(solution.n_time_states):
                     time = solution.time[i]
                     point_data = {  "Pressure" : solution.p[i],
                                     "FillFactor" : solution.fill_factor[i],

@@ -29,7 +29,7 @@ from .psolvers import PressureSolver, SolverType
 
 class Solver:
     def __init__(self, mesh, bc_manager, simulation_parameters, material_manager, sensor_manager:SensorManager, 
-                 solver_type=SolverType.DIRECT_SPARSE, solver_tol=1e-8, solver_max_iter=1000, 
+                 solver_type=SolverType.ITERATIVE_PETSC, solver_tol=1e-8, solver_max_iter=1000, 
                  solver_verbose=False, use_masked_solver=True, **solver_kwargs):
         self.mesh : Mesh = mesh
         self.bc_manager : BCManager = bc_manager 
@@ -41,6 +41,14 @@ class Solver:
         self.vsolver = None
         self.fill_solver = None
         self.solver_type = solver_type
+        if solver_type == SolverType.ITERATIVE_PETSC:
+            try:
+                import petsc4py
+                petsc4py.init()
+                from petsc4py import PETSc
+            except ImportError:
+                print("Import Error: PETSc not available. Reverting to DIRECT_SPARSE builtin solver.")
+                self.solver_type = SolverType.DIRECT_SPARSE
         self.solver_tol = solver_tol
         self.solver_max_iter = solver_max_iter
         self.solver_verbose = solver_verbose
@@ -296,7 +304,7 @@ class Solver:
         while self.n_empty_cvs > 0:
             self.solve_time_step()
             if log == "on":
-                print("\rFill time: {:.5f}".format(self.current_time) + ", Empty CVs: {:4}".format(self.n_empty_cvs), end='')
+                print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs), end='')
         solution = self.time_step_manager.pack_solution()
         # good night and good luck
         solve_time_end = time.time()
@@ -313,7 +321,7 @@ class Solver:
             self.update_dirichlet_bcs()
             self.solve_time_step()
             if log == "on":
-                print("\rFill time: {:.5f}".format(self.current_time) + ", Empty CVs: {:4}".format(self.n_empty_cvs),
+                print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs),
                       end='')
         if lightweight:
             solution = "Lightweight mode: no solution is saved"

@@ -14,12 +14,8 @@ class PorousMaterial:
     ----------
     name: str
         Name/label of the material.
-    k1: float
-        Principal permeability in local direction e1.
-    k2: float
-        Principal permeability in local direction e2.
-    k3: float
-        Principal permeability in local direction e3.
+    k_vals: tuple[float, float, float]
+        Permeability values in principal directions.
     porosity: float
         Porosity of the material (between 0 and 1).
     thickness: float

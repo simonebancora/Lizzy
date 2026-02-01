@@ -29,7 +29,7 @@ class SolverType(Enum):
 
 class PressureSolver:
     @staticmethod
-    def solve(k:np.ndarray, f:np.ndarray, method:SolverType = SolverType.DIRECT_SPARSE, 
+    def solve(k:np.ndarray, f:np.ndarray, method:SolverType, 
               tol:float = 1e-8, max_iter:int = 1000, verbose:bool = False, **solver_kwargs):
         """
         Solve the system `K p = f`.

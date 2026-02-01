@@ -67,11 +67,3 @@ When the assignment happens, the remaining components of the local rosette (:mat
         k_iso = 1.0E-11
         model.create_material("material_iso", (k_iso, k_iso, k_iso), 0.5, 1.0)
         model.assign_material("material_iso", "domain_01")
-
-
-
-References
-----------
-
-.. bibliography:: ../refs.bib
-   :style: unsrt

@@ -86,7 +86,7 @@ class LizzyModel:
         return self._solver.current_time
     
     @property
-    def latest_solution(self) -> dict:
+    def latest_solution(self) -> Solution:
         """The most recent solution from the model (read-only). This value is None is the model is run in `lightweight` mode.
         """
         return self._latest_solution
@@ -360,7 +360,7 @@ class LizzyModel:
         """
         return self._sensor_manager.get_sensor_by_id(idx)
 
-    def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_SPARSE, 
+    def initialise_solver(self, solver_type:SolverType = SolverType.ITERATIVE_PETSC, 
                          solver_tol:float = 1e-8, solver_max_iter:int = 1000, 
                          solver_verbose:bool = False, use_masked_solver:bool = True,
                          **solver_kwargs):
@@ -371,7 +371,7 @@ class LizzyModel:
         ----------
         solver_type : SolverType
             Type of linear solver (DIRECT_DENSE, DIRECT_SPARSE, ITERATIVE_PETSC).
-            Default is DIRECT_SPARSE which is more efficient for sparse matrices.
+            Default is ITERATIVE_PETSC and will revert to DIRECT_SPARSE is PETSc is not installed.
         solver_tol : float
             Convergence tolerance for iterative solvers
         solver_max_iter : int
@@ -380,7 +380,7 @@ class LizzyModel:
             Print solver convergence information
         use_masked_solver : bool
             Use optimized masked solver (only solves for free DOFs). 
-            Default is True for better performance (10-400x speedup in early timesteps).
+            Default is True for better performance.
         **solver_kwargs
             Additional solver-specific keyword arguments
         """
@@ -389,7 +389,7 @@ class LizzyModel:
                             solver_tol, solver_max_iter, solver_verbose, use_masked_solver,
                             **solver_kwargs)
 
-    def solve(self, log="on") -> dict:
+    def solve(self, log="on") -> Solution:
         """Advance the filling simulation from the current time until the part is filled.
 
         Parameters
@@ -399,13 +399,13 @@ class LizzyModel:
 
         Returns
         -------
-        solution : dict
-            A dictionary containing the solution.
+        solution : :class:`~lizzy.datatypes.Solution`
+            A Solution object storing the solution fields up to the time step reached
         """
         self._latest_solution = self._solver.solve(log=log)
         return self._latest_solution
 
-    def solve_time_interval(self, time_interval:float, log="off") -> dict:
+    def solve_time_interval(self, time_interval:float, log="off") -> Solution:
         """Advance the filling simulation from the current time for the specified time interval.
 
         Parameters
@@ -417,8 +417,8 @@ class LizzyModel:
 
         Returns
         -------
-        solution : dict
-            A dictionary containing the solution up to the time step reached.
+        solution : :class:`~lizzy.datatypes.Solution`
+            A Solution object storing the solution fields up to the time step reached.
         """
         self._latest_solution = self._solver.solve_time_interval(time_interval, log=log, lightweight=self._lightweight)
         return self._latest_solution

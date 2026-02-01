@@ -82,3 +82,9 @@ Consult our :ref:`Roadmap <roadmap>` for planned feature implementations.
 .. note::
 
    This project is still in early development and documentation may be incomplete. Version 1.0 is scheduled for release in early 2026. Stay tuned!
+
+
+.. toctree::
+   :hidden:
+
+   references
