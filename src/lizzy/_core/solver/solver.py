@@ -80,10 +80,7 @@ class Solver:
         self.solver_vars = {"fill_factor_array" : np.zeros(self.N_nodes, dtype=float),
                             "filled_node_ids" : np.empty(self.N_nodes, dtype=int),
                             "free_surface_array" : np.empty(self.N_nodes),
-                            "cv_volumes_array" : np.empty(self.N_nodes),
-                            "dirichlet_idx" : np.empty(0, dtype=np.uint32),
-                            "dirichlet_vals" : np.empty(0, dtype=np.float64),
-                            "p0_idx" : np.empty(0, dtype=np.uint32)}
+                            "cv_volumes_array" : np.empty(self.N_nodes),}
         # self.cv_adj_matrix = lil_matrix((self.N_nodes, self.N_nodes), dtype=int)
         self.cv_support_cvs_array = self.mesh.mesh_view.node_idx_to_node_idxs # TODO do cleaner
 
@@ -113,6 +110,7 @@ class Solver:
         
 
     def update_dirichlet_bcs(self):
+        # TODO this is more "update inlet dirichlet bcs" since it only applies pressure (doesn't add empty 0 pressure). It can be faster, but it doesn't run often (only at beginning of time intervals) so it's not critical
         dirichlet_idx = []
         dirichlet_vals = []
         for tag, inlet in self.bc_manager._assigned_inlets.items():
@@ -124,7 +122,7 @@ class Solver:
                 sys.exit(1)
             if inlet.is_open:
                 dirichlet_idx.append(inlet_idx)
-                dirichlet_vals.append(np.ones(len(inlet_idx)) * inlet.p_value)
+                dirichlet_vals.append(np.full(len(inlet_idx), inlet.p_value, dtype=np.float64))
         try:
             self.bcs.dirichlet_idx = np.concatenate(dirichlet_idx)
             self.bcs.dirichlet_vals = np.concatenate(dirichlet_vals)
