@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from lizzy._core.bcond.gates import Inlet
     from lizzy.datatypes import Solution
 
+
 from typing import Dict, Literal
 from types import MappingProxyType
 from lizzy._core.io import Reader, Writer
@@ -22,7 +23,7 @@ from lizzy._core.sensors import SensorManager
 from lizzy._core.datatypes import SimulationParameters
 from lizzy._core.materials import MaterialManager
 from lizzy.utils.splash_logo import print_logo
-
+from lizzy.utils.decorators import State, preinit_only, postinit_only
 
 class LizzyModel:
     """
@@ -30,18 +31,28 @@ class LizzyModel:
     """
     def __init__(self):
         print_logo()
-        self._model_name : str = None
-        self._reader : Reader = None
-        self._writer : Writer = None
-        self._mesh : Mesh = None
-        self._solver : Solver = None
+        self._model_name:str = None
+        self._reader:Reader = None
+        self._writer:Writer = None
+        self._simulation_parameters:SimulationParameters = None
+        self._material_manager:MaterialManager = None
+        self._bc_manager:BCManager = None
+        self._sensor_manager:SensorManager = None
+        self._mesh:Mesh = None
+        self._solver:Solver = None
         self._renderer : any = None
         self._latest_solution: Solution = None
+        self._lightweight:bool = False
+        self._state:State = State.PRE_INIT
+        self._create_components()
+
+    def _create_components(self):
+        self._reader = Reader()
+        self._writer = Writer()
         self._simulation_parameters = SimulationParameters()
         self._material_manager = MaterialManager()
         self._bc_manager = BCManager()
         self._sensor_manager = SensorManager()
-        self._lightweight = False
 
     @property
     def lightweight(self):
@@ -123,6 +134,7 @@ class LizzyModel:
         """
         return self.current_time
 
+    @postinit_only
     def get_latest_solution(self) -> Dict:
         """
         Returns
@@ -132,7 +144,7 @@ class LizzyModel:
         """
         return self.latest_solution
 
-
+    @preinit_only
     def assign_simulation_parameters(self, **kwargs):
         r"""
         Assigns new values to one or more simulation parameters using keyword arguments.
@@ -164,6 +176,7 @@ class LizzyModel:
         """
         self._simulation_parameters.assign(**kwargs)
 
+    @preinit_only
     def read_mesh_file(self, mesh_file_path:str):
         r"""
         Reads a mesh file and initialises the mesh. Currently only .MSH format is supported (Version 4 ASCII).
@@ -173,10 +186,9 @@ class LizzyModel:
         mesh_file_path : str
             Path to the mesh file from the current working folder.
         """
-        self._reader = Reader(mesh_file_path)
+        self._reader.read_mesh_file(mesh_file_path)
         self._model_name = self._reader.case_name
-        self._mesh = Mesh(self._reader)
-        self._writer = Writer(self._mesh)
+        
     
     def print_mesh_info(self) -> None:
         """Prints some information about the mesh.
@@ -186,6 +198,7 @@ class LizzyModel:
             return
         self._reader.print_mesh_info()
 
+    @preinit_only
     def create_material(self, name : str, k_vals : tuple[float, float, float], porosity: float, thickness: float) -> PorousMaterial:
         """Create a new material that can then be selected and used in the model.
 
@@ -212,6 +225,7 @@ class LizzyModel:
         new_material = self._material_manager.create_material(name, k_vals, porosity, thickness)
         return new_material
 
+    @preinit_only
     def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
         """Assign an existing material to a labeled mesh region.
 
@@ -226,6 +240,7 @@ class LizzyModel:
         """
         self._material_manager.assign_material(material_selector, mesh_tag, rosette)
 
+    @preinit_only
     def create_rosette(self, name:str, u:tuple[float, float, float]) -> Rosette:
         """Create a new rosette that can then be selected and used in the model.
 
@@ -244,6 +259,7 @@ class LizzyModel:
         new_rosette = self._material_manager.create_rosette(name, u)
         return new_rosette
 
+    @preinit_only
     def create_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
         """Creates a new inlet and add it to model existing inlets.
 
@@ -262,6 +278,7 @@ class LizzyModel:
         new_inlet = self._bc_manager.create_inlet(name, initial_pressure_value)
         return new_inlet
 
+    @preinit_only
     def assign_inlet(self, inlet_selector:Inlet | str, boundary_tag:str):
         """Selects an inlet from existing ones and assigns it to the indicated mesh boundary.
 
@@ -290,6 +307,7 @@ class LizzyModel:
         selected_inlet = self._bc_manager._fetch_inlet(inlet_name)
         return selected_inlet
     
+
     def change_inlet_pressure(self, inlet_selector:Inlet | str, pressure_value:float, mode: Literal["set", "delta"] = "set"):
         """Changes the pressure value at the selected inlet to a new value, according to the selected mode.
 
@@ -332,6 +350,7 @@ class LizzyModel:
         self._bc_manager.close_inlet(inlet_selector)
 
     #TODO: get coords arg as tuple or np array, then ids as int or string
+    @preinit_only
     def create_sensor(self, x:float, y:float, z:float):
         """Create a virtual sensor at the specified position and add it to the model.
 
@@ -346,6 +365,7 @@ class LizzyModel:
         """
         self._sensor_manager.add_sensor(x, y, z)
 
+
     def print_sensor_readings(self):
         """Prints to the console the current values of :attr:`~lizzy.sensors.Sensor.time`, :attr:`~lizzy.sensors.Sensor.pressure`, :attr:`~lizzy.sensors.Sensor.fill_factor` and :attr:`~lizzy.sensors.Sensor.velocity` of each sensor.
         """
@@ -359,6 +379,7 @@ class LizzyModel:
         """Fetches a sensor by its index.
         """
         return self._sensor_manager.get_sensor_by_id(idx)
+
 
     def initialise_solver(self, solver_type:SolverType = SolverType.ITERATIVE_PETSC, 
                          solver_tol:float = 1e-8, solver_max_iter:int = 1000, 
@@ -384,11 +405,15 @@ class LizzyModel:
         **solver_kwargs
             Additional solver-specific keyword arguments
         """
+        self._mesh = Mesh(self._reader)
         self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, 
                             self._material_manager, self._sensor_manager, solver_type, 
                             solver_tol, solver_max_iter, solver_verbose, use_masked_solver,
                             **solver_kwargs)
+        
+        self._state = State.POST_INIT
 
+    @postinit_only
     def solve(self, log="on") -> Solution:
         """Advance the filling simulation from the current time until the part is filled.
 
@@ -405,6 +430,7 @@ class LizzyModel:
         self._latest_solution = self._solver.solve(log=log)
         return self._latest_solution
 
+    @postinit_only
     def solve_time_interval(self, time_interval:float, log="off") -> Solution:
         """Advance the filling simulation from the current time for the specified time interval.
 
@@ -423,12 +449,14 @@ class LizzyModel:
         self._latest_solution = self._solver.solve_time_interval(time_interval, log=log, lightweight=self._lightweight)
         return self._latest_solution
     
+    @postinit_only
     def initialise_new_solution(self):
         """
         Initialises a new solution, resetting all simulation variables. The part will be emptied and initial boundary conditions restored. This method can be called to reset a simulation and run a new one, without resetting the model.
         """
         self._solver.initialise_new_solution()
     
+    @postinit_only
     def save_results(self, solution: Solution = None, result_name:str = None, **kwargs):
         """Save the results contained in the solution dictionary into an XDMF file.
 
@@ -443,6 +471,7 @@ class LizzyModel:
             solution = self._latest_solution
         if result_name == None:
             result_name = self._model_name + '_RES'
+        self._writer.assign_mesh(self._mesh)
         self._writer.save_results(solution, result_name, **kwargs)
 
     def get_node_by_id(self, node_id:int):

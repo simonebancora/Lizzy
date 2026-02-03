@@ -13,110 +13,181 @@ import numpy as np
 from .collections import nodes, lines, elements
 from lizzy._core.cvmesh.entities import Node, Line, Triangle, CV
 
+import timeit
 
-def CreateNodes(mesh_data):
-    """
-    Creates a Nodes. Returns a "nodes" list.
-    """
-    nodes_coords = np.array(mesh_data['all_nodes_coords'])
-    all_nodes = nodes([])
-    for n, coords in enumerate(nodes_coords):
-        node = Node(coords[0], coords[1], coords[2])
-        node.idx = n
-        all_nodes.append(node)
-    all_nodes.XYZ = nodes_coords # redundant but might be useful
-    all_nodes.N = len(nodes_coords)
-    return all_nodes
+class MeshBuilder():
+    def __init__(self):
+        self.n_nodes = 0
+        self.n_triangles = 0
+        self.n_lines = 0
+        self.node_idx_to_node_idxs = None
+        self.node_idx_to_line_idxs = None
+        self.node_idx_to_tri_idxs = None
 
-def CreateLines(mesh_data, triangles):
-    """
-    Creates Lines. Returns a "lines" list.
-    """
-    all_lines = lines([])
-    line_counter = 0
-    for n, triangle in enumerate(triangles):
-        #line 1
-        line_1 = Line(triangle.nodes[0], triangle.nodes[1])
-        line_1.idx = line_counter
-        line_1.triangles.append(triangle)
-        line_1.triangle_ids.append(triangle.idx)
-        line_counter += 1
-        all_lines.append(line_1)
-        # line 2
-        line_2 = Line(triangle.nodes[1], triangle.nodes[2])
-        line_2.idx = line_counter
-        line_2.triangles.append(triangle)
-        line_2.triangle_ids.append(triangle.idx)
-        line_counter += 1
-        all_lines.append(line_2)
-        # line 3
-        line_3 = Line(triangle.nodes[2], triangle.nodes[0])
-        line_3.idx = line_counter
-        line_3.triangles.append(triangle)
-        line_3.triangle_ids.append(triangle.idx)
-        line_counter += 1
-        all_lines.append(line_3)
+        self.line_idx_to_node_idxs = None
+        self.line_idx_to_line_idxs = None
+        self.line_idx_to_triangle_idxs = None
 
-        # reference created lines to triangle
-        triangle.lines.append(line_1)
-        triangle.line_ids.append(line_1.idx)
-        triangle.lines.append(line_2)
-        triangle.line_ids.append(line_2.idx)
-        triangle.lines.append(line_3)
-        triangle.line_ids.append(line_3.idx)
+        self.triangle_idx_to_node_idxs = None
+        self.triangle_idx_to_triangle_idxs = None
+        self.triangle_idx_to_line_idxs = None
 
-    all_lines.N = len(all_lines)
-    return all_lines
+    
+    def create_cross_referencing_maps(self, tri_conn):
+        n_nodes = self.n_nodes
+        n_triangles = self.n_triangles
+        n_lines = self.n_lines
+        capacity_tris_per_node = 8 # initial buffer size
+        capacity_nodes_per_node = 8 # initial buffer size
+        node_idx_to_tri_idxs_buffer = np.full((n_nodes, capacity_tris_per_node), -1, dtype=np.int32)
+        tri_idxs_local_pointer = np.zeros(n_nodes, dtype=np.uint8)
+        triangle_idx_to_line_idxs = np.empty((n_triangles, 3), dtype=np.int32)
+        line_idx_to_node_idxs = np.empty((n_lines, 2), dtype=np.int32)
 
-def CreateTriangles(mesh_data, nodes):
-    """
-    Creates triangles. Returns a "triangles" list.
+        line_nodes_from_conn_selectors = [[0,1],[1,2],[2,0]]
+        for tri_id in range(n_triangles):
+            local_conn = tri_conn[tri_id]
 
-    Preliminary calculations (pre-processing) for tri elements.
-    Put triangles in planes and calculate Jacobians and areas:
-    A_el = A_xi * det(J) = 0.5 * abs(det(J))
-    """
-    conn = mesh_data['nodes_conn']
-    all_triangles = elements([])
-    for n, local_conn in enumerate(conn):
-        node_1 = nodes[local_conn[0]]
-        node_2 = nodes[local_conn[1]]
-        node_3 = nodes[local_conn[2]]
-        tri = Triangle(node_1, node_2, node_3)
-        tri.idx = n
-        tri.node_ids = [node_1.idx, node_2.idx, node_3.idx]
-        all_triangles.append(tri)
-        # also assign triangle to nodes
-        node_1.triangles.append(tri)
-        node_1.triangle_ids.append(tri.idx)
-        node_2.triangles.append(tri)
-        node_2.triangle_ids.append(tri.idx)
-        node_3.triangles.append(tri)
-        node_3.triangle_ids.append(tri.idx)
+            # populate `line_idx_to_node_idxs`
+            local_conn_pairs = [(local_conn[pair[0]], local_conn[pair[1]]) for pair in line_nodes_from_conn_selectors]
+            for j in range(3):
+                line_idx = tri_id*3+j
+                local_node_idxs = local_conn_pairs[j]
+                line_idx_to_node_idxs[line_idx] = local_node_idxs
+            
+                # populate `triangle_idx_to_line_idxs`
+                triangle_idx_to_line_idxs[tri_id, j] = line_idx
 
-    # assign material_tag tag
-    for key in mesh_data['physical_domains']:
-        for i in mesh_data['physical_domains'][key]:
-            all_triangles[i].material_tag = key
+            # populate `node_idx_to_tri_idxs_buffer`
+            for local_node_id_selector in range(3):
+                node_id = local_conn[local_node_id_selector]
+                # check if we still have room for more ids
+                if tri_idxs_local_pointer[node_id] > capacity_tris_per_node - 1:
+                    # increase bufefr size
+                    capacity_tris_per_node *=2
+                    node_idx_to_tri_idxs_buffer = np.resize(node_idx_to_tri_idxs_buffer, (n_nodes, capacity_tris_per_node))
+                # write the triangle id in the buffer (which is initially 5 tris per node)
+                node_idx_to_tri_idxs_buffer[node_id, tri_idxs_local_pointer[node_id]] = tri_id
+                # move local pointer
+                tri_idxs_local_pointer[node_id] +=1    
+         
+        # store
+        self.node_idx_to_tri_idxs = node_idx_to_tri_idxs_buffer
+        self.line_idx_to_node_idxs = line_idx_to_node_idxs
+        self.triangle_idx_to_node_idxs = tri_conn
+        self.triangle_idx_to_line_idxs = triangle_idx_to_line_idxs
 
-    all_triangles.nodes_conn_table = mesh_data['nodes_conn'] # needed?
-    all_triangles.N = len(all_triangles)
-    return all_triangles
+    def create_entities(self, node_coords, tri_conn):
+        n_nodes = self.n_nodes
+        n_triangles = self.n_triangles
+        n_lines = self.n_lines
+        # preallocate lists
+        new_nodes = nodes([None]*n_nodes)
+        new_lines = lines([None]*n_lines)
+        new_triangles = elements([None]*n_triangles)
+        # create nodes
+        for i in range(n_nodes):
+            new_nodes[i] = Node(node_coords[i,0], node_coords[i,1], node_coords[i,2], i)
+        new_nodes.XYZ = node_coords
+        new_nodes.N = len(new_nodes)
+        # create lines
+        for i in range(n_lines):
+            local_conn = self.line_idx_to_node_idxs[i]
+            local_node_objs = [new_nodes[idx] for idx in local_conn]
+            new_lines[i] = Line(*local_node_objs, i)
+        new_lines.N = len(new_lines)
+        # create triangles
+        for i in range(n_triangles):
+            local_nodes_conn = self.triangle_idx_to_node_idxs[i]
+            local_node_objs = [new_nodes[idx] for idx in local_nodes_conn]
+            local_lines_conn = self.triangle_idx_to_line_idxs[i]
+            local_line_objs = [new_lines[idx] for idx in local_lines_conn]
 
-def CreateControlVolumes(nodes : list[Node], fill_solver : FillSolver):
+            new_triangles[i] = Triangle(*local_node_objs, *local_line_objs, i)
+        new_triangles.nodes_conn_table = tri_conn
+        new_triangles.N = len(new_triangles)
+
+        
+        
+        return new_nodes, new_lines, new_triangles
+
+    def assign_materials_to_elements(self, mesh_data, triangles:list[Triangle]):
+        # assign material_tag tag. key is a string (name of physical group)
+        for key in mesh_data['physical_domains']:
+            for i in mesh_data['physical_domains'][key]:
+                triangles[i].material_tag = key
+
+
+
+    def assign_varying_number_references(self, nodes:list[Node], triangles, tri_conn):
+        for i in range(len(nodes)):
+            # assign triangles to nodes (varying number)
+            tri_ids_buffer = self.node_idx_to_tri_idxs[i]
+            tri_ids = tri_ids_buffer[tri_ids_buffer >= 0]
+            nodes[i].triangle_ids = tri_ids
+            triangle_objs = [triangles[idx] for idx in tri_ids]
+            nodes[i].triangles = triangle_objs
+
+            connected_node_idxs = [idx for triangle in triangle_objs for idx in triangle.node_ids]
+            connected_node_idxs = list(set(connected_node_idxs)-{i})
+            nodes[i].node_ids = connected_node_idxs
+            nodes[i].nodes = [nodes[idx] for idx in connected_node_idxs]
+
+            
+    def build_mesh(self, mesh_data):
+        tri_conn:np.ndarray = mesh_data['nodes_conn']
+        node_coords:np.ndarray = mesh_data['all_nodes_coords']
+        self.n_triangles = tri_conn.shape[0]
+        self.n_nodes = node_coords.shape[0]
+        self.n_lines = self.n_triangles*3
+        # time_create_cross_referencing(self, tri_conn)
+        self.create_cross_referencing_maps(tri_conn)
+        # time_create_entities(self, node_coords, tri_conn)
+        new_nodes, new_lines, new_triangles = self.create_entities(node_coords, tri_conn)
+        # time_assign_varying_number_references(self, new_nodes, new_triangles, tri_conn)
+        self.assign_varying_number_references(new_nodes, new_triangles, tri_conn)
+
+        self.assign_materials_to_elements(mesh_data, new_triangles)
+        return new_nodes, new_lines, new_triangles
+
+
+def time_create_cross_referencing(self, tri_conn):
+    elapsed = timeit.timeit(lambda: self.create_cross_referencing_maps(tri_conn), number=1000)
+    print(f"CREATE CROSS REFERENCING: Average per run: {elapsed/1000:.10f} seconds")
+
+def time_create_entities(self, node_coords, tri_conn):
+    elapsed = timeit.timeit(lambda: self.create_entities(node_coords, tri_conn), number=1000)
+    print(f"CREATE ENTITIES: Average per run: {elapsed/1000:.10f} seconds")
+
+def time_assign_varying_number_references(self, new_nodes, new_triangles, tri_conn):
+    elapsed = timeit.timeit(lambda: self.assign_varying_number_references(new_nodes, new_triangles, tri_conn), number=1000)
+    print(f"ASSIGN VARYING NUMBER REFERENCES: Average per run: {elapsed/1000:.10f} seconds")
+
+
+    
+
+def cv_creation_function(nodes : list[Node], fill_solver : FillSolver):
     # for every nodes:
-    CVs : list[CV] = []
-    for node in nodes:
-        CVs.append(CV(node))
-    CVs = np.array(CVs)
+    n_nodes = len(nodes)
+    CVs : list[CV] = [None]*n_nodes
+    for i in range(n_nodes):
+        CVs[i] = CV(nodes[i])
     # reference support CVs
     for cv in CVs:
         connected_nodes = cv.node.node_ids
-        cv.support_CVs = CVs[connected_nodes]
-        cv.GetCVLines()
-        cv.CheckFluxNormalOrientations()
-        cv.precompute_flux_terms()    # this assignes cv.flux_terms, which is an array of variable size (len = n support triangles)
-        cv.support_triangle_ids = np.array([tri.idx for tri in cv.support_triangles]) #not needed anymore
+        cv.support_CVs = [CVs[i] for i in connected_nodes]
+        
         fill_solver.map_cv_id_to_support_triangle_ids[cv.idx] = np.array([tri.idx for tri in cv.support_triangles]) #TODO should this be in Mesh
-        fill_solver.map_cv_id_to_flux_terms[cv.idx] = cv.flux_terms
+        fill_solver.map_cv_id_to_flux_terms[cv.idx] = cv.flux_terms #TODO: this should be in solver calcs
+    return np.array(CVs)
+
+
+def time_create_cvs(nodes, fill_solver):
+    elapsed = timeit.timeit(lambda: cv_creation_function(nodes, fill_solver), number=100)
+    print(f"CREATE CoVols: Average per run: {elapsed/100:.10f} seconds")
+
+def create_control_volumes(nodes : list[Node], fill_solver : FillSolver):
+    # for every nodes:
+    # time_create_cvs(nodes, fill_solver)
+    CVs = cv_creation_function(nodes, fill_solver)
     return CVs

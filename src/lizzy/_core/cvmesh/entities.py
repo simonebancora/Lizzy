@@ -4,14 +4,33 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+
+
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from lizzy._core.cvmesh.entities import Node, Line, Triangle, CV
 import numpy as np
-from dataclasses import dataclass, field
+
 
 class Node:
     """Class representing a mesh node."""
-    def __init__(self, x: float, y: float, z: float):
+
+    __slots__ = (
+        "coords",
+        "idx",
+        "p",
+        "triangles",
+        "triangle_ids",
+        "lines",
+        "line_ids",
+        "nodes",
+        "node_ids"
+    )
+
+    def __init__(self, x: float, y: float, z: float, idx:int):
         self.coords = np.array([x, y, z])
-        self.idx : int = 0
+        self.idx : int = idx
         self.p : float = 0
         self.triangles : list[Triangle] = []
         self.triangle_ids : list[int] = []
@@ -21,9 +40,32 @@ class Node:
         self.node_ids : list[int] = []
     def __str__(self):
         return "Node ID: " + str(self.idx)
+    
+    def assign_triangle(self, triangle:Triangle):
+        self.triangles.append(triangle)
+        self.triangle_ids.append(triangle.idx)
+
 
 
 class Element2D:
+
+    __slots__ = (
+        "idx",
+        "material_tag",
+        "A",
+        "h",
+        "k",
+        "grad_N",
+        "porosity",
+        "nodes",
+        "node_ids",
+        "nodes_coords",
+        "lines",
+        "line_ids",
+        "centroid",
+        "v"
+    )
+
     def __init__(self):
         self.idx : int = 0
         self.material_tag : str = ""
@@ -35,11 +77,10 @@ class Element2D:
         self.nodes : tuple[Node] = ()
         self.node_ids : list[int] = []
         self.nodes_coords : np.ndarray = None
-        self.lines : list[Line] = []
+        self.lines : tuple[Line] = []
         self.line_ids : list[int] = []
         self.centroid = np.zeros(3)
         self.v : np.ndarray = np.zeros((3,1))
-
 
 class Triangle(Element2D):
     """Class representing a triangular element.
@@ -49,8 +90,13 @@ class Triangle(Element2D):
     dNdxi = np.array([[-1, -1],
                         [1, 0],
                         [0, 1]])
-    def __init__(self, node_1:Node, node_2:Node, node_3:Node):
+    def __init__(self, node_1:Node, node_2:Node, node_3:Node, line_1:Line, line_2:Line, line_3:Line, n:int):
         super().__init__()
+        self.idx = n
+        self.nodes = (node_1, node_2, node_3)
+        self.node_ids = (node_1.idx, node_2.idx, node_3.idx)
+        self.lines = (line_1, line_2, line_3)
+        self.line_ids = (line_1.idx, line_2.idx, line_3.idx)
         x = np.array((node_1.coords, node_2.coords, node_3.coords))
         J = np.array([
             [x[1,0]-x[0,0], x[2,0]-x[0,0]],
@@ -65,7 +111,6 @@ class Triangle(Element2D):
         v = x[0,:] - x[2,:]
         n = np.cross(u, v)
         self.n = n / np.linalg.norm(n)
-        self.nodes = (node_1, node_2, node_3)
         self.grad_N = (Triangle.dNdxi @ dxidX).T
         self.A = 0.5 * detJ
         self.centroid = x.mean(0)
@@ -139,29 +184,25 @@ class Tetrahedron(Element3D):
 class Line:
     """Class representing a line between two nodes in the mesh.
     """
-    def __init__(self, node_1:Node, node_2:Node):
+
+    __slots__ = (
+        "idx",
+        "nodes",
+        "triangles",
+        "triangle_ids",
+        "midpoint"
+    )
+    def __init__(self, node_1:Node, node_2:Node, n):
         self.nodes = (node_1, node_2)
-        self.idx : int = 0
-        self.midpoint : np.ndarray = self.ComputeMidPoint()
-        self.n : np.ndarray = self.ComputeNormal()
+        self.idx : int = n
         self.triangles = []
         self.triangle_ids = []
+        self.midpoint : np.ndarray = self._compute_midpoint()
 
-    def ComputeMidPoint(self):
+    def _compute_midpoint(self):
         x1 = self.nodes[0].coords
         x2 = self.nodes[1].coords
         return np.array((x1, x2)).mean(0)
-
-    #TODO: this is wrong in 3D but the line normal is not being used at the moment
-    def ComputeNormal(self):
-        x1 = self.nodes[0].coords
-        x2 = self.nodes[1].coords
-        DX = x1 - x2
-        l = np.linalg.norm(DX)
-        nx = DX[1]/l
-        ny = -DX[0]/l
-        nz = 0
-        return np.array((nx, ny, nz))
 
 
 class CV:
@@ -176,12 +217,14 @@ class CV:
         self.support_CVs : list[CV] = []
         self.support_lines : list[Line] = []
         self.support_nodes : list[Node] = []
+        self.support_node_ids = None
         self.support_triangles : list[Triangle] = node.triangles
         self.support_triangle_ids = None
         self.edges = []
-        self.flux_terms = []
-        self.cv_lines = []
+        self.cv_lines = self._create_cv_lines()
         self.A, self.vol = self._calculate_area_and_volume()
+        self._check_flux_normals()
+        self.flux_terms = self._precompute_flux_terms() # this assignes cv.flux_terms, which is an array of variable size (len = n support triangles)
     
 
     # The CV has this structure:
@@ -189,8 +232,8 @@ class CV:
     #   cv_lines (of each support triangle) = [ [line1, line2], [line1, lined], [line1, line2], ... ]
     #   each line has normal, length
     
-    def GetCVLines(self):
-        self.cv_lines = []
+    def _create_cv_lines(self):
+        cv_lines = []
         for tri in self.support_triangles:
             elem_side_lines = []
             for line in tri.lines:
@@ -205,41 +248,19 @@ class CV:
             x2 = elem_side_lines[1].midpoint
             centroid = tri.centroid
             cv_lines_tri = [CVLine(x1, centroid, tri.n), CVLine(centroid, x2, tri.n)]
-            self.cv_lines.append(cv_lines_tri)
+            cv_lines.append(cv_lines_tri)
+        return cv_lines
 
-    def precompute_flux_terms(self):
+    def _precompute_flux_terms(self):
+        flux_terms = []
         for i, tri in enumerate(self.support_triangles):
             line1 = self.cv_lines[i][0]  # PSEUDO CODE ALL TO CHECK AND RE-WRITE
             line2 = self.cv_lines[i][1]
             n1 = line1.n
             n2 = line2.n
             flux_term = (-n1 * line1.l + -n2 * line2.l) * tri.h
-            self.flux_terms.append(flux_term)
-        self.flux_terms = np.array(self.flux_terms)
-
-
-
-    # @staticmethod
-    # def polygon_area(points):
-    #     """
-    #     Calculate the area of an irregular polygon using the Shoelace formula.
-
-    #     points: A list of (x, y) tuples representing the vertices of the polygon.
-    #                    The vertices should be provided in order (clockwise or counterclockwise).
-    #     return: The area of the polygon.
-    #     """
-    #     n = len(points)
-    #     if n < 3:
-    #         raise ValueError("A polygon must have at least 3 points.")
-
-    #     # Compute the Shoelace formula
-    #     area = 0
-    #     for i in range(n):
-    #         x1, y1 = points[i]
-    #         x2, y2 = points[(i + 1) % n]  # Next vertex (wrap around)
-    #         area += x1 * y2 - y1 * x2
-
-    #     return abs(area) / 2
+            flux_terms.append(flux_term)
+        return np.array(flux_terms)
 
     def _polygon_area_3d(self, points):
         """
@@ -272,8 +293,6 @@ class CV:
         area = 0.5 * abs(np.dot(normal, cross_sum))
         return area
 
-
-
     # TODO: check if this is correct :
     def _calculate_area_and_volume(self) -> tuple[float, float]:
         area = 0
@@ -295,7 +314,7 @@ class CV:
             vol += slice_vol
         return area, vol
 
-    def CheckFluxNormalOrientations(self):
+    def _check_flux_normals(self):
         # by convention, normals are oriented outwards from the CV. This function checks and enforces that
         for i, tri in enumerate(self.support_triangles):
             for line in self.cv_lines[i]:
@@ -307,20 +326,20 @@ class CV:
                 if dist_outer < dist_inner:
                     line.n = -line.n
 
-
 class CVLine:
     def __init__(self, p1, p2, tri_normal):
         self.p1 = p1
         self.p2 = p2
-        self.l = 0
-        self.n = None
         self.tri_normal = tri_normal
-        self.ComputeLengthAndNormal()
+        self.l = self._compute_length()
+        self.n = self._compute_normal()
     
-    def ComputeLengthAndNormal(self):
-        DX = self.p1 - self.p2
+    def _compute_length(self):
+        d = self.p1 - self.p2
         self.midpoint = 0.5*(self.p1 + self.p2)
-        self.l = np.linalg.norm(DX)
-        n = np.cross(self.tri_normal, DX)
-        self.n = n / np.linalg.norm(n)
-
+        return np.linalg.norm(d)
+    
+    def _compute_normal(self):
+        d = self.p1 - self.p2
+        n = np.cross(self.tri_normal, d)
+        return n / np.linalg.norm(n)

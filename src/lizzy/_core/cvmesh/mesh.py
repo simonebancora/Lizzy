@@ -13,8 +13,9 @@ if TYPE_CHECKING:
     from lizzy._core.cvmesh.entities import Node, Line, Triangle, CV
 
 import numpy as np
-from .construction import CreateNodes, CreateLines, CreateTriangles, CreateControlVolumes
+from .construction import create_control_volumes, MeshBuilder
 from .collections import nodes, lines, elements
+
 
 class Mesh:
     r"""
@@ -31,56 +32,20 @@ class Mesh:
     def __init__(self, mesh_reader:Reader):
         self.mesh_data = mesh_reader.mesh_data
         self.nodes : list[Node] = nodes([])
+        self.lines : list[Line] = lines([])
         self.triangles : list[Triangle] = elements([])
         self.tetras = elements([])
-        self.lines : list[Line] = lines([])
         self.CVs :list[CV] = []
         self.boundaries = mesh_reader.mesh_data['physical_nodes']
         self.preprocessed = False
 
         # Init methods:
-        self.PopulateFromMeshData(self.mesh_data)
-        self.CrossReferenceEntities()
-
-        ################## ALL THIS BLOCK TO BE REMOVED
-        # create mesh of CVs for visualisation only
-        cv_mesh_nodes = []
-        cv_mesh_conn = []
-        nodes_counter = 0
-        for cv in self.CVs:
-            for two_lines_tri in cv.cv_lines:
-                for line in two_lines_tri:
-                    line_conn = []
-                    p1 = line.p1
-                    p2 = line.p2
-                    cv_mesh_nodes.append(p1)
-                    line_conn.append(nodes_counter)
-                    nodes_counter += 1
-                    cv_mesh_nodes.append(p2)
-                    line_conn.append(nodes_counter)
-                    nodes_counter += 1
-                    cv_mesh_conn.append(line_conn)
-
-        self.cv_mesh_nodes = cv_mesh_nodes
-        self.cv_mesh_conn = cv_mesh_conn
-
-    ################## ALL THIS BLOCK TO BE REMOVED
-
-    def PopulateFromMeshData(self, mesh_data):
-        """
-        Takes mesh data dictionary and initialises all mesh attributes: nodes, lines, triangles.
-
-        Parameters
-        ----------
-        mesh_data : dict
-            Dictionary of all mesh data read from mesh file
-        """
-        self.nodes = CreateNodes(mesh_data)
-        self.triangles = CreateTriangles(mesh_data, self.nodes)
-        self.lines = CreateLines(mesh_data, self.triangles)
+        self.mb = MeshBuilder()
+        self.nodes, self.lines, self.triangles = self.mb.build_mesh(self.mesh_data)
 
     def preprocess(self, material_manager: MaterialManager, fill_solver: FillSolver):
         """ Pre-processes the mesh before simulation. Assigns material properties to elements, creates control volumes (CVs), and prepares data structures for simulation."""
+        self.CVs = create_control_volumes(self.nodes, fill_solver)
         materials = material_manager.assigned_materials
         rosettes = material_manager.assigned_rosettes
         for tri in self.triangles:
@@ -97,7 +62,6 @@ class Mesh:
                 tri.h = materials[tri.material_tag].thickness
             except KeyError:
                 exit(f"Mesh contains unassigned material tag: {tri.material_tag}")
-        self.CVs = CreateControlVolumes(self.nodes, fill_solver)
         # create a hashmap for CV id: [ids of supporting elements]
         print("Mesh pre-processing completed\n")
 
@@ -110,28 +74,6 @@ class Mesh:
 
 
         self.preprocessed = True
-
-    def CrossReferenceEntities(self):
-        """
-        Creates hierarchical connections between all objects that constitute the mesh: Nodes, Lines, Elements.
-        The purpose is to make any given object accessible from any other given object, to which it would be linked as an attribute.
-        Once this method is called on a mesh, all references should be created.
-
-        Example
-        --------
-        Given a mesh which has been cross referenced, fetch the nodes of the fourth element:
-
-        >>> nodes = mesh.elements[3].nodes
-        """
-
-        # go through nodes and cross reference connected nodes, to help fetch support CVs
-        for node in self.nodes:
-            connected_nodes_ids = []
-            for tri in node.triangles:
-                connected_nodes_ids.append(tri.node_ids)
-            connected_nodes_ids = np.unique(connected_nodes_ids).tolist()
-            connected_nodes_ids.remove(node.idx)
-            node.node_ids = connected_nodes_ids
 
     def empty_cvs(self):
         for cv in self.CVs:

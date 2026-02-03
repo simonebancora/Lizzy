@@ -68,21 +68,21 @@ class Reader:
         The path to the mesh file.
 
     """
-    def __init__(self, mesh_path:str):
+    def __init__(self, ):
         self.mesh_data:dict = {} # A dict containing all the mesh info from the gmsh file
-        self.mesh_path = Path(mesh_path)
-        self.case_name = self.__read_case_name()
-        self.__read_mesh_file()
+        self.case_name:str = None
     
-    def __read_mesh_file(self):
-        print(f"Reading mesh file: {self.mesh_path}")
+    def read_mesh_file(self, mesh_path:str):
+        mesh_path = Path(mesh_path)
+        self.case_name = self.__read_case_name(mesh_path)
+        print(f"Reading mesh file: {mesh_path}")
         _format = self._detect_format()
         match _format:
             case Format.MSH:
-                self.mesh_data = self._read_gmsh_file()
+                self.mesh_data = self._read_gmsh_file(mesh_path)
 
-    def __read_case_name(self):
-        case_name = self.mesh_path.stem
+    def __read_case_name(self, mesh_path:Path):
+        case_name = mesh_path.stem
         return case_name
 
     def _detect_format(self):
@@ -90,14 +90,14 @@ class Reader:
         NOT IMPLEMENTED"""
         return Format.MSH
 
-    def _read_gmsh_file(self) -> dict:
+    def _read_gmsh_file(self, mesh_path:Path) -> dict:
         """
         Reads a mesh file in .msh format (ASCII 4). Initialises all mesh attributes.
         """
         try:
-            mesh_file = meshio.read(self.mesh_path, file_format="gmsh")
+            mesh_file = meshio.read(mesh_path, file_format="gmsh")
         except meshio._exceptions.ReadError:
-            raise FileNotFoundError(f"Mesh file not found: {self.mesh_path}")
+            raise FileNotFoundError(f"Mesh file not found: {mesh_path}")
         all_nodes_coords : np.ndarray = mesh_file.points
         physical_domain_names = []
         physical_line_names = []
