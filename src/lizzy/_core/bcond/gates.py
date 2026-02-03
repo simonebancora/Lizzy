@@ -68,8 +68,4 @@ class Inlet():
     
 
 
-@dataclass()
-class SolverBCs:
-    dirichlet_idx = np.array([], dtype=int)
-    dirichlet_vals  = np.array([], dtype=float)
-    p0_idx = np.array([], dtype=int)
+

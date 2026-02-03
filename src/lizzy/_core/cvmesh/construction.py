@@ -15,6 +15,16 @@ from lizzy._core.cvmesh.entities import Node, Line, Triangle, CV
 
 import timeit
 
+class MeshView:
+
+    def __init__(self):
+        self.n_nodes:int=0
+        self.n_lines:int=0
+        self.n_triangles:int=0
+        self.node_idx_to_node_idxs: list[np.ndarray] = []
+        self.node_idx_to_tri_idxs: list[np.ndarray] = []
+        self.node_idx_to_flux_ndarray: list[np.ndarray] = []
+
 class MeshBuilder():
     def __init__(self):
         self.n_nodes = 0
@@ -22,6 +32,7 @@ class MeshBuilder():
         self.n_lines = 0
         self.node_idx_to_node_idxs = None
         self.node_idx_to_line_idxs = None
+        self.node_idx_to_tri_idxs_buffer = None
         self.node_idx_to_tri_idxs = None
 
         self.line_idx_to_node_idxs = None
@@ -32,13 +43,12 @@ class MeshBuilder():
         self.triangle_idx_to_triangle_idxs = None
         self.triangle_idx_to_line_idxs = None
 
+        self.node_idx_to_tri_idxs_for_fill_solver = None
+        self.node_idx_to_flux_ndarray_for_fill_solver = None
+
     
-    def create_cross_referencing_maps(self, tri_conn):
-        n_nodes = self.n_nodes
-        n_triangles = self.n_triangles
-        n_lines = self.n_lines
+    def create_cross_referencing_maps(self, n_nodes, n_lines, n_triangles, tri_conn):
         capacity_tris_per_node = 8 # initial buffer size
-        capacity_nodes_per_node = 8 # initial buffer size
         node_idx_to_tri_idxs_buffer = np.full((n_nodes, capacity_tris_per_node), -1, dtype=np.int32)
         tri_idxs_local_pointer = np.zeros(n_nodes, dtype=np.uint8)
         triangle_idx_to_line_idxs = np.empty((n_triangles, 3), dtype=np.int32)
@@ -72,15 +82,12 @@ class MeshBuilder():
                 tri_idxs_local_pointer[node_id] +=1    
          
         # store
-        self.node_idx_to_tri_idxs = node_idx_to_tri_idxs_buffer
+        self.node_idx_to_tri_idxs_buffer = node_idx_to_tri_idxs_buffer
         self.line_idx_to_node_idxs = line_idx_to_node_idxs
         self.triangle_idx_to_node_idxs = tri_conn
         self.triangle_idx_to_line_idxs = triangle_idx_to_line_idxs
 
-    def create_entities(self, node_coords, tri_conn):
-        n_nodes = self.n_nodes
-        n_triangles = self.n_triangles
-        n_lines = self.n_lines
+    def create_entities(self, n_nodes, n_triangles, n_lines, node_coords, tri_conn):
         # preallocate lists
         new_nodes = nodes([None]*n_nodes)
         new_lines = lines([None]*n_lines)
@@ -120,10 +127,14 @@ class MeshBuilder():
 
 
     def assign_varying_number_references(self, nodes:list[Node], triangles, tri_conn):
+        node_idx_to_node_idxs = [None]*len(nodes)
+        node_idx_to_tri_idxs = [None]*len(nodes)
+        
         for i in range(len(nodes)):
             # assign triangles to nodes (varying number)
-            tri_ids_buffer = self.node_idx_to_tri_idxs[i]
+            tri_ids_buffer = self.node_idx_to_tri_idxs_buffer[i]
             tri_ids = tri_ids_buffer[tri_ids_buffer >= 0]
+            node_idx_to_tri_idxs[i] = np.array(tri_ids)
             nodes[i].triangle_ids = tri_ids
             triangle_objs = [triangles[idx] for idx in tri_ids]
             nodes[i].triangles = triangle_objs
@@ -132,23 +143,63 @@ class MeshBuilder():
             connected_node_idxs = list(set(connected_node_idxs)-{i})
             nodes[i].node_ids = connected_node_idxs
             nodes[i].nodes = [nodes[idx] for idx in connected_node_idxs]
+            node_idx_to_node_idxs[i] = np.array(connected_node_idxs)
+        self.node_idx_to_node_idxs = node_idx_to_node_idxs
+        self.node_idx_to_tri_idxs = node_idx_to_tri_idxs
+        return node_idx_to_node_idxs, node_idx_to_tri_idxs
 
             
     def build_mesh(self, mesh_data):
+        mesh_view = MeshView()
         tri_conn:np.ndarray = mesh_data['nodes_conn']
         node_coords:np.ndarray = mesh_data['all_nodes_coords']
-        self.n_triangles = tri_conn.shape[0]
-        self.n_nodes = node_coords.shape[0]
-        self.n_lines = self.n_triangles*3
+        n_nodes = node_coords.shape[0]
+        n_triangles = tri_conn.shape[0]
+        n_lines = n_triangles*3
+        mesh_view.n_nodes = n_nodes
+        mesh_view.n_lines = n_lines
+        mesh_view.n_triangles = n_triangles
         # time_create_cross_referencing(self, tri_conn)
-        self.create_cross_referencing_maps(tri_conn)
+        self.create_cross_referencing_maps(n_nodes, n_lines, n_triangles, tri_conn)
         # time_create_entities(self, node_coords, tri_conn)
-        new_nodes, new_lines, new_triangles = self.create_entities(node_coords, tri_conn)
+        new_nodes, new_lines, new_triangles = self.create_entities(n_nodes, n_triangles, n_lines, node_coords, tri_conn)
         # time_assign_varying_number_references(self, new_nodes, new_triangles, tri_conn)
-        self.assign_varying_number_references(new_nodes, new_triangles, tri_conn)
+        node_idx_to_node_idxs, node_idx_to_tri_idxs = self.assign_varying_number_references(new_nodes, new_triangles, tri_conn)
+        mesh_view.node_idx_to_node_idxs = node_idx_to_node_idxs
+        mesh_view.node_idx_to_tri_idxs = node_idx_to_tri_idxs
+        cvs, node_idx_to_flux_ndarray = self.create_control_volumes(new_nodes)
+        mesh_view.node_idx_to_flux_ndarray = node_idx_to_flux_ndarray
 
         self.assign_materials_to_elements(mesh_data, new_triangles)
-        return new_nodes, new_lines, new_triangles
+        return new_nodes, new_lines, new_triangles, cvs, mesh_view
+
+    def cv_creation_function(self, nodes : list[Node], fill_solver : FillSolver):
+        # for every nodes:
+        n_nodes = len(nodes)
+        node_idx_to_flux_ndarray = [None]*n_nodes
+        CVs : list[CV] = [None]*n_nodes
+        for i in range(n_nodes):
+            CVs[i] = CV(nodes[i])
+            node_idx_to_flux_ndarray[i] = CVs[i].compute_flux_terms()
+        # reference support CVs
+        for cv in CVs:
+            connected_nodes = cv.node.node_ids
+            cv.support_CVs = [CVs[i] for i in connected_nodes]
+        if fill_solver != None:                                              
+            fill_solver.map_cv_id_to_support_triangle_ids = self.node_idx_to_tri_idxs                                   #TODO should this be in Mesh            # this is node_idx_to_tri_idxs, but in dict [int, array] format
+            fill_solver.map_cv_id_to_flux_terms = node_idx_to_flux_ndarray                              #TODO: this should be in solver calcs   # this is node_idx_to_flux_terms, but in dict [int, array(n_tri_idxs, 3)] format. all unique
+        return np.array(CVs), node_idx_to_flux_ndarray
+
+
+    def time_create_cvs(self, nodes, fill_solver):
+        elapsed = timeit.timeit(lambda: self.cv_creation_function(nodes, fill_solver), number=100)
+        print(f"CREATE CoVols: Average per run: {elapsed/100:.10f} seconds")
+
+    def create_control_volumes(self, nodes : list[Node], fill_solver : FillSolver=None):
+        # for every nodes:
+        # time_create_cvs(nodes, fill_solver)
+        CVs = self.cv_creation_function(nodes, fill_solver)
+        return CVs
 
 
 def time_create_cross_referencing(self, tri_conn):
@@ -166,28 +217,3 @@ def time_assign_varying_number_references(self, new_nodes, new_triangles, tri_co
 
     
 
-def cv_creation_function(nodes : list[Node], fill_solver : FillSolver):
-    # for every nodes:
-    n_nodes = len(nodes)
-    CVs : list[CV] = [None]*n_nodes
-    for i in range(n_nodes):
-        CVs[i] = CV(nodes[i])
-    # reference support CVs
-    for cv in CVs:
-        connected_nodes = cv.node.node_ids
-        cv.support_CVs = [CVs[i] for i in connected_nodes]
-        
-        fill_solver.map_cv_id_to_support_triangle_ids[cv.idx] = np.array([tri.idx for tri in cv.support_triangles]) #TODO should this be in Mesh
-        fill_solver.map_cv_id_to_flux_terms[cv.idx] = cv.flux_terms #TODO: this should be in solver calcs
-    return np.array(CVs)
-
-
-def time_create_cvs(nodes, fill_solver):
-    elapsed = timeit.timeit(lambda: cv_creation_function(nodes, fill_solver), number=100)
-    print(f"CREATE CoVols: Average per run: {elapsed/100:.10f} seconds")
-
-def create_control_volumes(nodes : list[Node], fill_solver : FillSolver):
-    # for every nodes:
-    # time_create_cvs(nodes, fill_solver)
-    CVs = cv_creation_function(nodes, fill_solver)
-    return CVs

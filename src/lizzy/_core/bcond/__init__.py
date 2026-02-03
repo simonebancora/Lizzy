@@ -6,4 +6,3 @@
 
 from .manager import BCManager
 from .gates import Inlet
-from .gates import SolverBCs

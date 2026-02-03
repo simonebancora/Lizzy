@@ -224,7 +224,6 @@ class CV:
         self.cv_lines = self._create_cv_lines()
         self.A, self.vol = self._calculate_area_and_volume()
         self._check_flux_normals()
-        self.flux_terms = self._precompute_flux_terms() # this assignes cv.flux_terms, which is an array of variable size (len = n support triangles)
     
 
     # The CV has this structure:
@@ -251,16 +250,18 @@ class CV:
             cv_lines.append(cv_lines_tri)
         return cv_lines
 
-    def _precompute_flux_terms(self):
-        flux_terms = []
-        for i, tri in enumerate(self.support_triangles):
+    def compute_flux_terms(self): # this computes flux_terms, which is an array of variable size (len = n support triangles)
+        n_support_triangles = len(self.support_triangles)
+        flux_terms = np.empty((n_support_triangles, 3))
+        for i in range(n_support_triangles):
+            tri = self.support_triangles[i]
             line1 = self.cv_lines[i][0]  # PSEUDO CODE ALL TO CHECK AND RE-WRITE
             line2 = self.cv_lines[i][1]
             n1 = line1.n
             n2 = line2.n
             flux_term = (-n1 * line1.l + -n2 * line2.l) * tri.h
-            flux_terms.append(flux_term)
-        return np.array(flux_terms)
+            flux_terms[i] = flux_term
+        return flux_terms
 
     def _polygon_area_3d(self, points):
         """

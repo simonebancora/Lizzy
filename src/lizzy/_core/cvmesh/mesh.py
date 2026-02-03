@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from lizzy._core.cvmesh.entities import Node, Line, Triangle, CV
 
 import numpy as np
-from .construction import create_control_volumes, MeshBuilder
+from .construction import MeshBuilder, MeshView
 from .collections import nodes, lines, elements
 
 
@@ -30,6 +30,7 @@ class Mesh:
 
     """
     def __init__(self, mesh_reader:Reader):
+        self.mesh_view:MeshView = None
         self.mesh_data = mesh_reader.mesh_data
         self.nodes : list[Node] = nodes([])
         self.lines : list[Line] = lines([])
@@ -41,11 +42,11 @@ class Mesh:
 
         # Init methods:
         self.mb = MeshBuilder()
-        self.nodes, self.lines, self.triangles = self.mb.build_mesh(self.mesh_data)
+        self.nodes, self.lines, self.triangles, self.CVs, self.mesh_view = self.mb.build_mesh(self.mesh_data)
 
-    def preprocess(self, material_manager: MaterialManager, fill_solver: FillSolver):
+    def preprocess(self, material_manager: MaterialManager):
         """ Pre-processes the mesh before simulation. Assigns material properties to elements, creates control volumes (CVs), and prepares data structures for simulation."""
-        self.CVs = create_control_volumes(self.nodes, fill_solver)
+        # self.CVs = self.mb.create_control_volumes(self.nodes, fill_solver)
         materials = material_manager.assigned_materials
         rosettes = material_manager.assigned_rosettes
         for tri in self.triangles:

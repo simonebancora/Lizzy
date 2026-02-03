@@ -12,44 +12,34 @@ if TYPE_CHECKING:
     from lizzy._core.sensors import SensorManager
     from lizzy._core.bcond import BCManager
     from lizzy._core.cvmesh import Mesh
-    from lizzy._core.materials import MaterialManager
 
 import sys
 import numpy as np
 import time
 from lizzy._core.solver import *
+# from lizzy._core.bcond import SolverBCs
 from .timestep_manager import TimeStepManager
 from .vsolvers import VelocitySolver
 from .fillsolver import FillSolver
 from .psolvers import PressureSolver, SolverType
-from .preprocessor import Preprocessor
 
 
-class SolverBCs:
-    __slots__ = ("dirichlet_idx", "dirichlet_vals", "p0_idx")
-
-    def __init__(self):
-        self.dirichlet_idx = np.empty(0, dtype=np.uint32)
-        self.dirichlet_vals = np.empty(0, dtype=np.float64)
-        self.p0_idx = np.empty(0, dtype=np.uint32)
+# from scipy.sparse import lil_matrix
+# import matplotlib.pyplot as plt
 
 class Solver:
-    def __init__(self, mesh:Mesh, bc_manager, simulation_parameters, material_manager:MaterialManager, sensor_manager:SensorManager, 
+    def __init__(self, mesh, bc_manager, simulation_parameters, material_manager, sensor_manager:SensorManager, 
                  solver_type=SolverType.ITERATIVE_PETSC, solver_tol=1e-8, solver_max_iter=1000, 
                  solver_verbose=False, use_masked_solver=True, **solver_kwargs):
-        
-        # create / assign all core components
         self.mesh : Mesh = mesh
-        self.fill_solver = FillSolver()
-        self.material_manager = material_manager
-        self.simulation_parameters = simulation_parameters
-        self.vsolver = VelocitySolver(self.mesh.triangles)
-        self.preproc = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, simulation_parameters)
-
         self.bc_manager : BCManager = bc_manager 
-        self.time_step_manager = TimeStepManager(mesh.mesh_view.n_nodes, mesh.mesh_view.n_triangles)
+        self.simulation_parameters = simulation_parameters
+        self.material_manager = material_manager
+        self.time_step_manager = TimeStepManager(mesh.nodes.N, mesh.triangles.N)
         self._sensor_manager = sensor_manager
         self.bcs = SolverBCs()
+        self.vsolver = None
+        self.fill_solver = None
         self.solver_type = solver_type
         if solver_type == SolverType.ITERATIVE_PETSC:
             try:
@@ -64,7 +54,7 @@ class Solver:
         self.solver_verbose = solver_verbose
         self.use_masked_solver = use_masked_solver
         self.solver_kwargs = solver_kwargs
-        self.N_nodes = mesh.mesh_view.n_nodes
+        self.N_nodes = mesh.nodes.N
         self.K_sing = None
         self.f_orig = None
         self.K_sol = None
@@ -77,40 +67,42 @@ class Solver:
         self.step_completed = False
         self.k_local_all = np.empty((self.mesh.triangles.N, 6))
         self.f_local_all = np.zeros((self.mesh.triangles.N, 3))
-        self.solver_vars = {"fill_factor_array" : np.zeros(self.N_nodes, dtype=float),
+        self.solver_vars = {"fill_factor_array" : np.empty(self.N_nodes),
                             "filled_node_ids" : np.empty(self.N_nodes, dtype=int),
                             "free_surface_array" : np.empty(self.N_nodes),
-                            "cv_volumes_array" : np.empty(self.N_nodes),
-                            "dirichlet_idx" : np.empty(0, dtype=np.uint32),
-                            "dirichlet_vals" : np.empty(0, dtype=np.float64),
-                            "p0_idx" : np.empty(0, dtype=np.uint32)}
+                            "cv_volumes_array" : np.empty(self.N_nodes),}
         # self.cv_adj_matrix = lil_matrix((self.N_nodes, self.N_nodes), dtype=int)
-        self.cv_support_cvs_array = self.mesh.mesh_view.node_idx_to_node_idxs # TODO do cleaner
-
-        self.perform_precalcs()
-        
+        self.cv_support_cvs_array = {}
+        self.perform_fe_precalcs()
         # self.compute_k_local()
         # when a solver is instantiated, all simulation variables are initialised
         self.initialise_new_solution()
-    
 
-    def perform_precalcs(self):
-        self.K_sing, self.f_orig = self.preproc.run_preproc_sequence() # TODO: reorder nodes here to reduce bandwidth - then reorder the whole mesh and objects
-        self.vectorize_solver_vars()
-        self.initialise_sensor_manager() # could move into preprocessor as this runs only once
-    
-    def initialise_sensor_manager(self):
-        # assign sensors
-        self._sensor_manager.initialise(self.mesh)
+    def perform_fe_precalcs(self):
+        if not self.mesh.preprocessed:
+            self.mesh.preprocess(self.material_manager)
+            self.fill_solver = FillSolver()
+            self.fill_solver.map_cv_id_to_support_triangle_ids = self.mesh.mesh_view.node_idx_to_tri_idxs
+            self.fill_solver.map_cv_id_to_flux_terms = self.mesh.mesh_view.node_idx_to_flux_ndarray
+        if not self.simulation_parameters.has_been_assigned:
+            print(f"Warning: Simulation parameters were not assigned. Running with default values: mu={self.simulation_parameters.mu}, wo_delta_time={self.simulation_parameters.wo_delta_time}")
+        # assemble FE global matrix (singular) - use sparse for better performance
+        self.K_sing, self.f_orig = fe.Assembly(self.mesh, self.simulation_parameters.mu, sparse=True)
+        # TODO: reorder nodes here to reduce bandwidth - then reorder the whole mesh and objects
 
-    def vectorize_solver_vars(self):
+        self.vsolver = VelocitySolver(self.mesh.triangles)
         # precalculate vectorised version of all variables
-        # TODO this part can go faster
+        fill_factor_list = []
         cv_volumes_list = []
         for cv in self.mesh.CVs:
+            fill_factor_list.append(cv.fill)
             cv_volumes_list.append(cv.vol)
-        self.solver_vars["cv_volumes_array"] = np.array(cv_volumes_list, dtype=float)
+            self.cv_support_cvs_array[cv.idx] = np.array([support_cv.idx for support_cv in cv.support_CVs])
         
+        self.solver_vars["fill_factor_array"] = np.array(fill_factor_list, dtype=float)
+        self.solver_vars["cv_volumes_array"] = np.array(cv_volumes_list, dtype=float)
+        # assign sensors
+        self._sensor_manager.initialise(self.mesh)
 
     def update_dirichlet_bcs(self):
         dirichlet_idx = []
@@ -133,11 +125,13 @@ class Solver:
             print("No inlets are currently open. At least one inlet must be open at all times to allow resin to flow into the part.")
             sys.exit(1)
 
-    def get_empty_nodes_idx(self, fill_factor):
+    def update_empty_nodes_idx(self):
         """
         Complementary to "update_dirichlet_bcs()", this updates the indices of all nodes with a fill factor < 1.0. These will be uses to assign an internal condition p=0.
         """
-        return np.where(fill_factor < 1.0)[0]
+        # empty_node_ids = [cv.idx for cv in self.mesh.CVs if cv.fill < 1]  # nodes with fill factor < 1
+        empty_node_ids = np.where(self.solver_vars["fill_factor_array"] < 1.0)[0]
+        self.bcs.p0_idx = np.array(empty_node_ids)
 
     def fill_initial_cvs(self):
         """
@@ -148,7 +142,11 @@ class Solver:
         # for cv in initial_cvs:
         #     cv.fill = 1.0
 
-
+    def update_n_empty_cvs(self):
+        """
+        Must be called AFTER calling "update_empty_nodes_idx()"
+        """
+        self.n_empty_cvs = len(self.bcs.p0_idx)
     
     def generate_initial_time_step(self):
         time_0 = 0
@@ -179,10 +177,10 @@ class Solver:
         self.bc_manager.reset_inlets()
         self.update_dirichlet_bcs()
         self.fill_initial_cvs()
-        p0_idxs = self.get_empty_nodes_idx(self.solver_vars["fill_factor_array"])
-        self.n_empty_cvs = len(p0_idxs)
-        self.bcs.p0_idx = p0_idxs
+        self.update_empty_nodes_idx()
+        self.update_n_empty_cvs()
         # self.K_sol, self.f_sol = PressureSolver.apply_starting_bcs(self.K_sing, self.f_orig, self.bcs)
+        self.new_step_dofs = []
         self.solver_vars["filled_node_ids"] = np.where(self.solver_vars["fill_factor_array"] >= 1)[0]
         active_cvs_ids, self.solver_vars["free_surface_array"] = self.fill_solver.find_free_surface_cvs(
             self.solver_vars["fill_factor_array"], self.cv_support_cvs_array)
@@ -222,11 +220,37 @@ class Solver:
             # print("\nSensor triggered")
         return write_out
 
+    def compute_k_local(self):
+        for i, tri in enumerate(self.mesh.triangles):
+            mu = self.simulation_parameters.mu
+            k_el = tri.grad_N.T @ tri.k @ tri.grad_N * tri.A * tri.h / mu
+            self.k_local_all[i, 0] = k_el[0,0]
+            self.k_local_all[i, 1] = k_el[1,1]
+            self.k_local_all[i, 2] = k_el[2,2]
+            self.k_local_all[i, 3] = k_el[0,1]
+            self.k_local_all[i, 4] = k_el[0,2]
+            self.k_local_all[i, 5] = k_el[1,2]
+
+    def update_and_collect_solver_input(self):
+        dirichlet_idx_full = np.concatenate((self.bcs.dirichlet_idx, self.bcs.p0_idx), axis=None)
+        dirichlet_vals_full = np.concatenate((self.bcs.dirichlet_vals, np.zeros((1, len(self.bcs.p0_idx)))), axis=None)
+
+        mask_nodes = self.solver_vars["free_surface_array"].copy()
+        mask_nodes[self.solver_vars["filled_node_ids"]] = 1
+
+        elem_connectivity = self.mesh.mesh_data["nodes_conn"]
+        filled_node_ids = self.solver_vars["filled_node_ids"]
+
+        node_is_filled = np.zeros(self.mesh.nodes.N, dtype=bool)
+        node_is_filled[filled_node_ids] = True
+
+        elem_filled_status = node_is_filled[elem_connectivity] # shape (T, 3)
+        mask_elements = np.any(elem_filled_status, axis=1).astype(int)
+        return self.k_local_all, self.f_local_all, dirichlet_idx_full, dirichlet_vals_full, mask_nodes, mask_elements, self.new_step_dofs, elem_connectivity
+
+
     def solve_time_step(self):
         # Use masked solver (optimized) or traditional solver
-        fill_factor = self.solver_vars["fill_factor_array"]
-        free_surface = self.solver_vars["free_surface_array"]
-        cv_volumes = self.solver_vars["cv_volumes_array"]
         if self.use_masked_solver:
             p = PressureSolver.solve_with_mask(
                 self.K_sing, self.f_orig, self.bcs, 
@@ -243,25 +267,30 @@ class Solver:
         # v_nodal_array = self.vsolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
         v_nodal_array = np.zeros((self.N_nodes, 3))
 
-        active_cvs_ids, free_surface = self.fill_solver.find_free_surface_cvs(fill_factor, self.cv_support_cvs_array)
-        dt = self.fill_solver.calculate_time_step(active_cvs_ids, fill_factor, cv_volumes, v_array)
+        active_cvs_ids, self.solver_vars["free_surface_array"] = self.fill_solver.find_free_surface_cvs(self.solver_vars["fill_factor_array"], self.cv_support_cvs_array)
+        dt = self.fill_solver.calculate_time_step(active_cvs_ids, self.solver_vars["fill_factor_array"], self.solver_vars["cv_volumes_array"], v_array)
         dt, write_out = self.handle_wo_criterion(dt)
 
-        fill_factor = self.fill_solver.fill_current_time_step(active_cvs_ids, fill_factor, cv_volumes, dt, self.simulation_parameters.fill_tolerance)
+        self.solver_vars["fill_factor_array"] = self.fill_solver.fill_current_time_step(active_cvs_ids, self.solver_vars["fill_factor_array"], self.solver_vars["cv_volumes_array"], dt, self.simulation_parameters.fill_tolerance)
+
+        # find the newly filled cv ids as difference from the previous step
+        current_filled_node_ids = np.where(self.solver_vars["fill_factor_array"] >= 1)[0]
+        self.new_step_dofs = [id for id in current_filled_node_ids if id not in self.solver_vars["filled_node_ids"]]
+        self.solver_vars["filled_node_ids"] = current_filled_node_ids
 
         # Update the filling time
         self.current_time += dt
-
+        # save time step results
         if self.simulation_parameters.end_step_when_sensor_triggered:
-            write_out = self.handle_wo_by_sensor_triggered(write_out, fill_factor)
-        self.time_step_manager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, fill_factor, free_surface, write_out)
+            write_out = self.handle_wo_by_sensor_triggered(write_out, self.solver_vars["fill_factor_array"])
+        self.time_step_manager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, self.solver_vars["fill_factor_array"], self.solver_vars["free_surface_array"], write_out)
         if write_out:
             # update sensors
-            self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
-        # update the empty nodes idxs and count for next step
-        p0_idxs = self.get_empty_nodes_idx(fill_factor)
-        self.n_empty_cvs = len(p0_idxs)
-        self.bcs.p0_idx = p0_idxs
+            self._sensor_manager.probe_current_solution(p, v_nodal_array, self.solver_vars["fill_factor_array"], self.current_time)
+        # update the empty nodes for next step
+        self.update_empty_nodes_idx()
+        # Print number of empty cvs
+        self.update_n_empty_cvs()
 
     def solve(self, log="on") -> dict:
         solve_time_start = time.time()
@@ -301,10 +330,3 @@ class Solver:
         # print("\nSTEP SOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
         return solution
     
-
-
-#was after `fill_current_time_step`
-# find the newly filled cv ids as difference from the previous step
-# current_filled_node_ids = np.where(self.solver_vars["fill_factor_array"] >= 1)[0]
-# self.new_step_dofs = [id for id in current_filled_node_ids if id not in self.solver_vars["filled_node_ids"]]
-# self.solver_vars["filled_node_ids"] = current_filled_node_ids
