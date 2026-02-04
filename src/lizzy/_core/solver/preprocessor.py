@@ -66,21 +66,28 @@ class Preprocessor:
                 tri.h = materials[tri.material_tag].thickness
             except KeyError:
                 exit(f"Mesh contains unassigned material tag: {tri.material_tag}")
-        # Recalculate CV volumes now that porosity and thickness are assigned
-        for cv in self.mesh.CVs:
-            cv.recalculate_volume()
-        print("Materials assigned to elements\n")
     
     # 4. assemble global stiffness matrix (singular)
     def assemble_global_stiffnes_matrix(self):
         K_sing, f_orig = fe.Assembly(self.mesh, self.simulation_parameters.mu, sparse=True)
         return K_sing, f_orig
+
+    def setup_cvs(self):
+        cvs = self.mesh.CVs
+        n_cvs = len(cvs)
+        node_idx_to_flux_ndarray: list[np.ndarray] = [None]*n_cvs
+        for i in range(n_cvs):
+            cvs[i].calculate_area_and_volume()
+            node_idx_to_flux_ndarray[i] = cvs[i].compute_flux_terms()
+        self.mesh.mesh_view.node_idx_to_flux_ndarray = node_idx_to_flux_ndarray
     
 
     def run_preproc_sequence(self):
-        self.assign_fill_solver_maps()
+        print("Preprocessing...")
         self.simparams_default_check()
         self.assign_materials_to_elements()
+        self.setup_cvs()
+        self.assign_fill_solver_maps()
         K_sing, f_orig = self.assemble_global_stiffnes_matrix()
         self.vsolver.precalculate_darcy_operator(self.mesh.triangles)
         return K_sing, f_orig

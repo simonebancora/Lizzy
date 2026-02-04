@@ -228,7 +228,6 @@ class CV:
         self.support_triangle_ids = None
         self.edges = []
         self.cv_lines = self._create_cv_lines()
-        self.A, self.vol = self._calculate_area_and_volume()
         self._check_flux_normals()
     
 
@@ -301,7 +300,7 @@ class CV:
         return area
 
     # TODO: check if this is correct :
-    def _calculate_area_and_volume(self) -> tuple[float, float]:
+    def calculate_area_and_volume(self) -> tuple[float, float]:
         area = 0
         vol = 0
         for tri in self.support_triangles:
@@ -319,11 +318,9 @@ class CV:
             slice_vol = slice_area*tri.h*tri.porosity
             area += slice_area
             vol += slice_vol
-        return area, vol
+        self.A = area
+        self.vol = vol
 
-    def recalculate_volume(self):
-        """Recalculate the CV volume after material properties (porosity, thickness) have been assigned to elements."""
-        self.A, self.vol = self._calculate_area_and_volume()
 
     def _check_flux_normals(self):
         # by convention, normals are oriented outwards from the CV. This function checks and enforces that

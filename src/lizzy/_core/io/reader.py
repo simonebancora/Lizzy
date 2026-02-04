@@ -13,36 +13,6 @@ import textwrap
 
 import numpy as np
 
-# Extract lines: they will be REPEATED
-def extract_lines(nodes_conn):
-    """
-    Extract lines connectivity from a nodes connectivity table.
-
-    Parameters
-    ----------
-    nodes_conn: list
-        The nodes connectivity table of the mesh
-
-    Returns
-    -------
-    lines_conn : list
-        The lines connectivity table
-    """
-    lines_conn = []
-    n_geom = len(nodes_conn[0])
-    for e in nodes_conn:
-        candidate_lines_conns = []
-        for i in range(n_geom-1):
-            candidate_lines_conns.append([e[i], e[i+1]])
-        candidate_lines_conns.append([e[i+1], e[0]])
-        for line_conn in candidate_lines_conns:
-            line_test_1 = [line_conn[0], line_conn[1]]
-            line_test_2 = [line_conn[1], line_conn[0]]
-            # if normals give problems, might be necessary to not get repeated lines
-            if line_test_1 not in lines_conn and line_test_2 not in lines_conn:
-                lines_conn.append(line_conn)
-    return lines_conn
-
 
 def extract_unique_nodes(node_ids_list):
     """
@@ -97,6 +67,8 @@ class Reader:
             mesh_file = meshio.read(mesh_path, file_format="gmsh")
         except meshio._exceptions.ReadError:
             raise FileNotFoundError(f"Mesh file not found: {mesh_path}")
+        
+        # TODO: this block until return is very slow
         all_nodes_coords : np.ndarray = mesh_file.points
         physical_domain_names = []
         physical_line_names = []
@@ -119,12 +91,10 @@ class Reader:
         # get node ids for nodes in the physical lines
         for key in physical_lines:
             physical_nodes_ids[key] = extract_unique_nodes(mesh_file.cells_dict["line"][physical_lines[key]])
-        lines_conn = extract_lines(nodes_conn)
 
         mesh_data = {
             'all_nodes_coords'      : all_nodes_coords,
             'nodes_conn'            : nodes_conn,
-            'lines_conn'            : lines_conn,
             'physical_lines_conn'   : physical_lines_conn,
             'physical_domains'      : physical_domains,
             'physical_lines'        : physical_lines,

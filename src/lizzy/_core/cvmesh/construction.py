@@ -48,7 +48,6 @@ class MeshBuilder():
         self.triangle_idx_to_line_idxs = None
 
         self.node_idx_to_tri_idxs_for_fill_solver = None
-        self.node_idx_to_flux_ndarray_for_fill_solver = None
 
     
     def create_cross_referencing_maps(self, n_nodes, n_lines, n_triangles, tri_conn):
@@ -128,7 +127,7 @@ class MeshBuilder():
         
         return new_nodes, new_lines, new_triangles, new_boundary_lines
 
-    def assign_materials_to_elements(self, mesh_data, triangles:list[Triangle]):
+    def assign_material_tags_to_elements(self, mesh_data, triangles:list[Triangle]):
         # assign material_tag tag. key is a string (name of physical group)
         for key in mesh_data['physical_domains']:
             for i in mesh_data['physical_domains'][key]:
@@ -160,6 +159,7 @@ class MeshBuilder():
 
             
     def build_mesh(self, mesh_data):
+        print("Creating Mesh...")
         mesh_view = MeshView()
         tri_conn:np.ndarray = mesh_data['nodes_conn']
         node_coords:np.ndarray = mesh_data['all_nodes_coords']
@@ -182,39 +182,24 @@ class MeshBuilder():
         mesh_view.phys_boundary_name_to_node_idxs = mesh_data['physical_nodes']
         mesh_view.phys_boundary_name_to_boundary_line_idxs = phys_boundary_name_to_boundary_line_idxs
         mesh_view.boundary_line_idx_to_node_idxs = physical_lines_conn
-        cvs, node_idx_to_flux_ndarray = self.create_control_volumes(new_nodes)
-        mesh_view.node_idx_to_flux_ndarray = node_idx_to_flux_ndarray
+        cvs = self.create_control_volumes(new_nodes)
 
-        self.assign_materials_to_elements(mesh_data, new_triangles)
+        self.assign_material_tags_to_elements(mesh_data, new_triangles)
         return new_nodes, new_lines, new_boundary_lines, new_triangles, cvs, mesh_view
 
-    def cv_creation_function(self, nodes : list[Node], fill_solver : FillSolver):
+
+    def create_control_volumes(self, nodes : list[Node]):
         # for every nodes:
         n_nodes = len(nodes)
-        node_idx_to_flux_ndarray = [None]*n_nodes
         CVs : list[CV] = [None]*n_nodes
         for i in range(n_nodes):
             CVs[i] = CV(nodes[i])
-            node_idx_to_flux_ndarray[i] = CVs[i].compute_flux_terms()
+            # node_idx_to_flux_ndarray[i] = CVs[i].compute_flux_terms()
         # reference support CVs
         for cv in CVs:
             connected_nodes = cv.node.node_ids
             cv.support_CVs = [CVs[i] for i in connected_nodes]
-        if fill_solver != None:                                              
-            fill_solver.map_cv_id_to_support_triangle_ids = self.node_idx_to_tri_idxs                                   #TODO should this be in Mesh            # this is node_idx_to_tri_idxs, but in dict [int, array] format
-            fill_solver.map_cv_id_to_flux_terms = node_idx_to_flux_ndarray                              #TODO: this should be in solver calcs   # this is node_idx_to_flux_terms, but in dict [int, array(n_tri_idxs, 3)] format. all unique
-        return np.array(CVs), node_idx_to_flux_ndarray
-
-
-    def time_create_cvs(self, nodes, fill_solver):
-        elapsed = timeit.timeit(lambda: self.cv_creation_function(nodes, fill_solver), number=100)
-        print(f"CREATE CoVols: Average per run: {elapsed/100:.10f} seconds")
-
-    def create_control_volumes(self, nodes : list[Node], fill_solver : FillSolver=None):
-        # for every nodes:
-        # time_create_cvs(nodes, fill_solver)
-        CVs = self.cv_creation_function(nodes, fill_solver)
-        return CVs
+        return np.array(CVs)
 
 
 def time_create_cross_referencing(self, tri_conn):
