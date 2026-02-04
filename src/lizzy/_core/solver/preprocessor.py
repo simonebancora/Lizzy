@@ -66,7 +66,9 @@ class Preprocessor:
                 tri.h = materials[tri.material_tag].thickness
             except KeyError:
                 exit(f"Mesh contains unassigned material tag: {tri.material_tag}")
-        # create a hashmap for CV id: [ids of supporting elements]
+        # Recalculate CV volumes now that porosity and thickness are assigned
+        for cv in self.mesh.CVs:
+            cv.recalculate_volume()
         print("Materials assigned to elements\n")
     
     # 4. assemble global stiffness matrix (singular)

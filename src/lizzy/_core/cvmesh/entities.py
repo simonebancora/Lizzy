@@ -315,6 +315,10 @@ class CV:
             vol += slice_vol
         return area, vol
 
+    def recalculate_volume(self):
+        """Recalculate the CV volume after material properties (porosity, thickness) have been assigned to elements."""
+        self.A, self.vol = self._calculate_area_and_volume()
+
     def _check_flux_normals(self):
         # by convention, normals are oriented outwards from the CV. This function checks and enforces that
         for i, tri in enumerate(self.support_triangles):
