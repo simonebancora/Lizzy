@@ -236,7 +236,7 @@ def solve_pressure_petsc(k: np.ndarray, f: np.ndarray, tol: float = 1e-8, max_it
     ksp.solve(b, x)
     
     if verbose:
-        print(f"PETSc solver converged in {ksp.getIterationNumber()} iterations "
+        print(f"\nPETSc solver converged in {ksp.getIterationNumber()} iterations "
               f"to a tolerance of {ksp.getResidualNorm():.2e}")
     
     # Convert solution back to numpy array

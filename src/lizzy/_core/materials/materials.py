@@ -12,24 +12,35 @@ class PorousMaterial:
 
     Parameters
     ----------
-    k1: float
-        Principal permeability in local direction e1.
-    k2: float
-        Principal permeability in local direction e2.
-    k3: float
-        Principal permeability in local direction e3.
+    name: str
+        Name/label of the material.
+    k_vals: tuple[float, float, float]
+        Permeability values in principal directions.
     porosity: float
         Porosity of the material (between 0 and 1).
     thickness: float
         Thickness of the material in the out-of-plane direction.
-    name: str
-        Name/label of the material.
     """
-    def __init__(self, k1:float, k2:float, k3:float,  porosity:float, thickness:float, name:str = "unnamed_material"):
-        self.k_diag = np.array([[k1, 0, 0],[0, k2, 0],[0, 0, k3]])
+    def __init__(self, name:str, k_vals : tuple[float, float, float], porosity:float, thickness:float):
+        self.is_isotropic = np.allclose([k_vals[0], k_vals[1], k_vals[2]], k_vals[0], atol=1e-14, rtol=0)
+        self.k_princ = np.diag(k_vals)
         self.porosity = porosity
         self.thickness = thickness
         self.name = name
-        self.is_isotropic = np.allclose([k1, k2, k3], k1, atol=1e-14, rtol=0)
         self.assigned = False
 
+
+class Resin:
+    __slots__ = ("name", "mu")
+    """Resin defined by dynamic viscosity (constant).
+
+    Parameters
+    ----------
+    name: str
+        Name of the resin.
+    mu: float
+        Dynamic viscosity of the resin [Pa.s]
+    """
+    def __init__(self, name:str, mu:float):
+        self.name = name
+        self.mu = mu

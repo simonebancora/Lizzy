@@ -171,9 +171,3 @@ Lizzy will save the following fields: "FillFactor", "FreeSurface", "Pressure", "
        :width: 60%
        :align: center
 
-
-References
-----------
-
-.. bibliography:: ../refs.bib
-   :style: unsrt

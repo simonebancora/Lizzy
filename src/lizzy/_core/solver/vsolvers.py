@@ -12,7 +12,7 @@ class VelocitySolver:
     def __init__(self, triangles):
         self.darcy_operator = any
         self.nodes_conn = any
-        self.precalculate_darcy_operator(triangles)
+        # self.precalculate_darcy_operator(triangles)
 
     def precalculate_darcy_operator(self, triangles):
         """precalculate vectorised coefficient darcy_operator of shape function gradients for velocity: v = darcy_operator * p"""

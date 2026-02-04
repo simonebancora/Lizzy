@@ -8,21 +8,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy._core.sensors import Sensor
-    from lizzy._core.materials import PorousMaterial, Rosette
+    from lizzy._core.materials import PorousMaterial, Rosette, Resin
     from lizzy._core.bcond.gates import Inlet
     from lizzy.datatypes import Solution
+
 
 from typing import Dict, Literal
 from types import MappingProxyType
 from lizzy._core.io import Reader, Writer
 from lizzy._core.cvmesh import Mesh
-from lizzy._core.bcond import BCManager
+from lizzy._core.bcond import GatesManager
 from lizzy._core.solver import Solver, SolverType
 from lizzy._core.sensors import SensorManager
 from lizzy._core.datatypes import SimulationParameters
 from lizzy._core.materials import MaterialManager
 from lizzy.utils.splash_logo import print_logo
-
+from lizzy.utils.decorators import State, preinit_only, postinit_only
 
 class LizzyModel:
     """
@@ -30,18 +31,28 @@ class LizzyModel:
     """
     def __init__(self):
         print_logo()
-        self._model_name : str = None
-        self._reader : Reader = None
-        self._writer : Writer = None
-        self._mesh : Mesh = None
-        self._solver : Solver = None
+        self._model_name:str = None
+        self._reader:Reader = None
+        self._writer:Writer = None
+        self._simulation_parameters:SimulationParameters = None
+        self._material_manager:MaterialManager = None
+        self._gates_manager:GatesManager = None
+        self._sensor_manager:SensorManager = None
+        self._mesh:Mesh = None
+        self._solver:Solver = None
         self._renderer : any = None
         self._latest_solution: Solution = None
+        self._lightweight:bool = False
+        self._state:State = State.PRE_INIT
+        self._create_components()
+
+    def _create_components(self):
+        self._reader = Reader()
+        self._writer = Writer()
         self._simulation_parameters = SimulationParameters()
         self._material_manager = MaterialManager()
-        self._bc_manager = BCManager()
+        self._gates_manager = GatesManager()
         self._sensor_manager = SensorManager()
-        self._lightweight = False
 
     @property
     def lightweight(self):
@@ -86,14 +97,14 @@ class LizzyModel:
         return self._solver.current_time
     
     @property
-    def latest_solution(self) -> dict:
+    def latest_solution(self) -> Solution:
         """The most recent solution from the model (read-only). This value is None is the model is run in `lightweight` mode.
         """
         return self._latest_solution
     
     @property
-    def bc_manager(self) -> BCManager:
-        return self._bc_manager
+    def gates_manager(self) -> GatesManager:
+        return self._gates_manager
     
     @property
     def simulation_parameters(self) -> SimulationParameters:
@@ -123,6 +134,7 @@ class LizzyModel:
         """
         return self.current_time
 
+    @postinit_only
     def get_latest_solution(self) -> Dict:
         """
         Returns
@@ -132,21 +144,25 @@ class LizzyModel:
         """
         return self.latest_solution
 
-
+    @preinit_only
     def assign_simulation_parameters(self, **kwargs):
         r"""
         Assigns new values to one or more simulation parameters using keyword arguments.
 
         Parameters
         ----------
-        **kwargs : dict
+        **kwargs
             Keyword arguments corresponding to parameter names and their new values.
-            Valid parameters are:
+            Valid keywords are:
         
-            - ``mu``: viscosity [Pa s]
-            - ``wo_delta_time``: interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
-            - ``fill_tolerance``: tolerance on the fill factor to consider a CV as filled. Default: 0.01
-            - ``end_step_when_sensor_triggered``: if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
+            mu: float, optional
+                Viscosity [Pa s]. Default: 0.1
+            wo_delta_time: float, optional
+                Interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
+            fill_tolerance: float, optional
+                Tolerance on the fill factor to consider a CV as filled. Default: 0.01
+            end_step_when_sensor_triggered: bool, optional
+                If True, ends current solution step and creates a write-out when a sensor changes state. Default: False
         
         Examples
         --------
@@ -160,6 +176,7 @@ class LizzyModel:
         """
         self._simulation_parameters.assign(**kwargs)
 
+    @preinit_only
     def read_mesh_file(self, mesh_file_path:str):
         r"""
         Reads a mesh file and initialises the mesh. Currently only .MSH format is supported (Version 4 ASCII).
@@ -169,10 +186,10 @@ class LizzyModel:
         mesh_file_path : str
             Path to the mesh file from the current working folder.
         """
-        self._reader = Reader(mesh_file_path)
+        self._reader.read_mesh_file(mesh_file_path)
         self._model_name = self._reader.case_name
         self._mesh = Mesh(self._reader)
-        self._writer = Writer(self._mesh)
+        
     
     def print_mesh_info(self) -> None:
         """Prints some information about the mesh.
@@ -182,11 +199,14 @@ class LizzyModel:
             return
         self._reader.print_mesh_info()
 
-    def create_material(self, k1: float, k2: float, k3: float, porosity: float, thickness: float, name:str= None) -> PorousMaterial:
+    @preinit_only
+    def create_material(self, name : str, k_vals : tuple[float, float, float], porosity: float, thickness: float) -> PorousMaterial:
         """Create a new material that can then be selected and used in the model.
 
         Parameters
         ----------
+        name : str
+            Unique name of the new material.
         k1 : float
             Permeability in the first principal direction.
         k2 : float
@@ -197,17 +217,35 @@ class LizzyModel:
             Volumetric porosity of the material (porosity = 1 - fibre volume fraction).
         thickness : float
             Thickness of the material [mm].
-        name : str, optional
-            Label assigned to the material. Necessary to select the material during assignment. If none assigned, a default 'Material_{N}'name is given, where N is an incremental number of existing materials.
-
+        
         Returns
         -------
         :class:`~lizzy.core.materials.PorousMaterial`
-            Instance of the created material.
+            Reference to the created material.
         """
-        new_material = self._material_manager.create_material(k1, k2, k3, porosity, thickness, name)
+        new_material = self._material_manager.create_material(name, k_vals, porosity, thickness)
         return new_material
+    
+    @preinit_only
+    def create_resin(self, name : str, viscosity : float) -> Resin:
+        """Create a new resin that can then be selected and used in the model.
 
+        Parameters
+        ----------
+        name : str
+            Unique name of the resin.
+        viscosity : float
+            Dynamic viscosity of the resin [Pa.s]
+        
+        Returns
+        -------
+        :class:`~lizzy.core.materials.Resin`
+            Reference to the created resin.
+        """
+        new_resin = self._material_manager.create_resin(name, viscosity)
+        return new_resin
+    
+    @preinit_only
     def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
         """Assign an existing material to a labeled mesh region.
 
@@ -222,44 +260,56 @@ class LizzyModel:
         """
         self._material_manager.assign_material(material_selector, mesh_tag, rosette)
 
-    def create_rosette(self, p1:tuple[float, float, float], p0:tuple[float, float, float]=(0.0,0.0,0.0), name:str=None) -> Rosette:
+    @preinit_only
+    def assign_resin(self, resin_selector):
+        """Assign an existing resin to the model.
+
+        Parameters
+        ----------
+        material_selector : str
+            Name of the resin to assign. Must correspond to an existing resin created with `LizzyModel.create_resin`.
+        """
+        self._material_manager.assign_resin(resin_selector)
+
+    @preinit_only
+    def create_rosette(self, name:str, u:tuple[float, float, float]) -> Rosette:
         """Create a new rosette that can then be selected and used in the model.
 
         Parameters
         ----------
-        p1 : tuple[float, float, float]
+        name : str
+            Name unique name of the new rosette.
+        u : tuple[float, float, float]
             The first point defining the first axis of the rosette (k1 direction).
-        p0 : tuple[float, float, float]
-            The second point defining the first axis of the rosette (k1 direction). Default is (0,0,0).
-        name : str, optional
-            Label assigned to the rosette. Necessary to select the rosette during assignment. If none assigned, a default 'Rosette_{N}'name is given, where N is an incremental number of existing rosettes.
 
         Returns
         -------
         :class:`~lizzy.core.materials.Rosette`
-            Instance of the created rosette.
+            Reference to the created rosette.
         """
-        new_rosette = self._material_manager.create_rosette(p1, p0, name)
+        new_rosette = self._material_manager.create_rosette(name, u)
         return new_rosette
 
-    def create_inlet(self, initial_pressure_value:float, name:str = None) -> Inlet:
+    @preinit_only
+    def create_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
         """Creates a new inlet and add it to model existing inlets.
 
         Parameters
         ----------
+        name : str
+            Name of the inlet.
         initial_pressure_value : float
             Initial pressure value at the inlet.
-        name : str, optional
-            Label assigned to the inlet. Will be used to select the inlet in future operations. If none assigned, a default 'Inlet_{N}'name is given, where N is an incremental number of existing inlets.
 
         Returns
         -------
         :class:`~lizzy.core.bcond.Inlet`
             The created inlet object.
         """
-        new_inlet = self._bc_manager.create_inlet(initial_pressure_value, name)
+        new_inlet = self._gates_manager.create_inlet(name, initial_pressure_value)
         return new_inlet
 
+    @preinit_only
     def assign_inlet(self, inlet_selector:Inlet | str, boundary_tag:str):
         """Selects an inlet from existing ones and assigns it to the indicated mesh boundary.
 
@@ -270,7 +320,7 @@ class LizzyModel:
         boundary_tag : str
             An existing mesh boundary tag where to assign the inlet.
         """
-        self._bc_manager.assign_inlet(inlet_selector, boundary_tag)
+        self._gates_manager.assign_inlet(inlet_selector, boundary_tag)
     
     def fetch_inlet_by_name(self, inlet_name: str) -> Inlet:
         """Fetches an inlet from existing ones in the model.
@@ -285,9 +335,10 @@ class LizzyModel:
         :class:`~lizzy.gates.Inlet`
             The fetched inlet object.
         """
-        selected_inlet = self._bc_manager._fetch_inlet(inlet_name)
+        selected_inlet = self._gates_manager._fetch_inlet(inlet_name)
         return selected_inlet
     
+
     def change_inlet_pressure(self, inlet_selector:Inlet | str, pressure_value:float, mode: Literal["set", "delta"] = "set"):
         """Changes the pressure value at the selected inlet to a new value, according to the selected mode.
 
@@ -307,7 +358,7 @@ class LizzyModel:
         KeyError
             If the `mode` is not one of the allowed values.
         """
-        self._bc_manager.change_inlet_pressure(inlet_selector, pressure_value, mode)
+        self._gates_manager.change_inlet_pressure(inlet_selector, pressure_value, mode)
 
     def open_inlet(self, inlet_selector:Inlet | str):
         """Sets the selected inlet state to `open`. When open, the inlet applies its p_value as a Dirichlet boundary condition. An inlet can be opened at any time during the simulation.
@@ -317,7 +368,7 @@ class LizzyModel:
         inlet_selector : Inlet | str
             Either the inlet object reference, or the name of an existing inlet.
         """
-        self._bc_manager.open_inlet(inlet_selector)
+        self._gates_manager.open_inlet(inlet_selector)
 
     def close_inlet(self, inlet_selector:Inlet | str):
         """Sets the selected inlet state to `closed`. When closed, the inlet acts as a Neumann natural boundary condition (no flux). An inlet can be closed at any time during the simulation. The stored p_value is preserved when the inlet is closed.
@@ -327,9 +378,10 @@ class LizzyModel:
         inlet_selector : Inlet | str
             Either the inlet object reference, or the name of an existing inlet.
         """
-        self._bc_manager.close_inlet(inlet_selector)
+        self._gates_manager.close_inlet(inlet_selector)
 
     #TODO: get coords arg as tuple or np array, then ids as int or string
+    @preinit_only
     def create_sensor(self, x:float, y:float, z:float):
         """Create a virtual sensor at the specified position and add it to the model.
 
@@ -343,6 +395,7 @@ class LizzyModel:
             The z coordinate of the sensor
         """
         self._sensor_manager.add_sensor(x, y, z)
+
 
     def print_sensor_readings(self):
         """Prints to the console the current values of :attr:`~lizzy.sensors.Sensor.time`, :attr:`~lizzy.sensors.Sensor.pressure`, :attr:`~lizzy.sensors.Sensor.fill_factor` and :attr:`~lizzy.sensors.Sensor.velocity` of each sensor.
@@ -358,7 +411,8 @@ class LizzyModel:
         """
         return self._sensor_manager.get_sensor_by_id(idx)
 
-    def initialise_solver(self, solver_type:SolverType = SolverType.DIRECT_SPARSE, 
+
+    def initialise_solver(self, solver_type:SolverType = SolverType.ITERATIVE_PETSC, 
                          solver_tol:float = 1e-8, solver_max_iter:int = 1000, 
                          solver_verbose:bool = False, use_masked_solver:bool = True,
                          **solver_kwargs):
@@ -369,7 +423,7 @@ class LizzyModel:
         ----------
         solver_type : SolverType
             Type of linear solver (DIRECT_DENSE, DIRECT_SPARSE, ITERATIVE_PETSC).
-            Default is DIRECT_SPARSE which is more efficient for sparse matrices.
+            Default is ITERATIVE_PETSC and will revert to DIRECT_SPARSE is PETSc is not installed.
         solver_tol : float
             Convergence tolerance for iterative solvers
         solver_max_iter : int
@@ -378,16 +432,20 @@ class LizzyModel:
             Print solver convergence information
         use_masked_solver : bool
             Use optimized masked solver (only solves for free DOFs). 
-            Default is True for better performance (10-400x speedup in early timesteps).
+            Default is True for better performance.
         **solver_kwargs
             Additional solver-specific keyword arguments
         """
-        self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, 
+        
+        self._solver = Solver(self._mesh, self._gates_manager, self._simulation_parameters, 
                             self._material_manager, self._sensor_manager, solver_type, 
                             solver_tol, solver_max_iter, solver_verbose, use_masked_solver,
                             **solver_kwargs)
+        
+        self._state = State.POST_INIT
 
-    def solve(self, log="on") -> dict:
+    @postinit_only
+    def solve(self, log="on") -> Solution:
         """Advance the filling simulation from the current time until the part is filled.
 
         Parameters
@@ -397,13 +455,14 @@ class LizzyModel:
 
         Returns
         -------
-        solution : dict
-            A dictionary containing the solution.
+        solution : :class:`~lizzy.datatypes.Solution`
+            A Solution object storing the solution fields up to the time step reached
         """
         self._latest_solution = self._solver.solve(log=log)
         return self._latest_solution
 
-    def solve_time_interval(self, time_interval:float, log="off") -> dict:
+    @postinit_only
+    def solve_time_interval(self, time_interval:float, log="off") -> Solution:
         """Advance the filling simulation from the current time for the specified time interval.
 
         Parameters
@@ -415,18 +474,20 @@ class LizzyModel:
 
         Returns
         -------
-        solution : dict
-            A dictionary containing the solution up to the time step reached.
+        solution : :class:`~lizzy.datatypes.Solution`
+            A Solution object storing the solution fields up to the time step reached.
         """
         self._latest_solution = self._solver.solve_time_interval(time_interval, log=log, lightweight=self._lightweight)
         return self._latest_solution
     
+    @postinit_only
     def initialise_new_solution(self):
         """
         Initialises a new solution, resetting all simulation variables. The part will be emptied and initial boundary conditions restored. This method can be called to reset a simulation and run a new one, without resetting the model.
         """
         self._solver.initialise_new_solution()
     
+    @postinit_only
     def save_results(self, solution: Solution = None, result_name:str = None, **kwargs):
         """Save the results contained in the solution dictionary into an XDMF file.
 
@@ -441,6 +502,7 @@ class LizzyModel:
             solution = self._latest_solution
         if result_name == None:
             result_name = self._model_name + '_RES'
+        self._writer.assign_mesh(self._mesh)
         self._writer.save_results(solution, result_name, **kwargs)
 
     def get_node_by_id(self, node_id:int):

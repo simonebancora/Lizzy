@@ -15,23 +15,12 @@ from lizzy._core.datatypes import Solution
 
 
 class Writer:
-    """
-    Handles writing results to output files.
-
-    Attributes
-    ----------
-    mesh : lizzy.Mesh
-        The Mesh object used in the simulation.
-    """
-    def __init__(self, mesh):
-        """Class constructor
-
-        Parameters
-        ----------
-        mesh : lizzy.Mesh
-            The Mesh object of the simulation
-        """
-        self.mesh = mesh
+    """Handles writing results to output files."""
+    def __init__(self):
+        self._mesh = None
+    
+    def assign_mesh(self, mesh):
+        self._mesh = mesh
 
     def save_results(self, solution:Solution, result_name:str, **kwargs):
         """Save the results contained in the solution dictionary into an XDMF file.
@@ -49,16 +38,16 @@ class Writer:
         if os.path.isdir(destination_path):
             shutil.rmtree(destination_path)
         os.makedirs(destination_path, exist_ok=True)
-        points = self.mesh.nodes.XYZ  # Node coordinates, assumed to be (N, 3)
-        cells = self.mesh.triangles.nodes_conn_table  # Triangle connectivity (M, 3)
+        points = self._mesh.nodes.XYZ  # Node coordinates, assumed to be (N, 3)
+        cells = self._mesh.triangles.nodes_conn_table  # Triangle connectivity (M, 3)
         cells_list = []
         for i in range(len(cells)) :
             cells_list.append(cells[i])
 
         if save_cv_mesh:
             mesh_cv = meshio.Mesh(
-                points=self.mesh.cv_mesh_nodes,
-                cells=[("line", self.mesh.cv_mesh_conn)],  # Triangle connectivity
+                points=self._mesh.cv_mesh_nodes,
+                cells=[("line", self._mesh.cv_mesh_conn)],  # Triangle connectivity
             )
             mesh_cv.write(destination_path / f"{result_name}_CV.vtk")
 
@@ -66,7 +55,7 @@ class Writer:
             filename = f"{result_name}.xdmf"
             with meshio.xdmf.TimeSeriesWriter(filename) as writer:
                 writer.write_points_cells(points, [("triangle", cells_list)])
-                for i in range(solution.time_steps_in_solution):
+                for i in range(solution.n_time_states):
                     time = solution.time[i]
                     point_data = {  "Pressure" : solution.p[i],
                                     "FillFactor" : solution.fill_factor[i],

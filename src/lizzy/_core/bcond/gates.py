@@ -4,21 +4,17 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass
-import numpy as np
-
-
 class Inlet():
     """A class representing an inlet boundary condition.
 
     Parameters
     ----------
+    name : str
+        Name of the inlet.
     p_value : float
         Initial pressure value at the inlet [Pa].
-    name : str, optional
-        Label assigned to the inlet. Will be used to select the inlet in future operations. If none assigned, a default 'unnamed_inlet' name is given.
     """
-    def __init__(self, p_value:float, name:str = "unnamed_inlet"):
+    def __init__(self, name:str, p_value:float):
         super().__init__()
         self.p_value = p_value
         self._p0 = p_value
@@ -68,8 +64,4 @@ class Inlet():
     
 
 
-@dataclass()
-class SolverBCs:
-    dirichlet_idx = np.array([], dtype=int)
-    dirichlet_vals  = np.array([], dtype=float)
-    p0_idx = np.array([], dtype=int)
+

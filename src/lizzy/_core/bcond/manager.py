@@ -1,12 +1,18 @@
+#  Copyright 2025-2026 Simone Bancora, Paris Mulye
+#
+#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 from .gates import Inlet
 from typing import Literal
 
-class BCManager:
+class GatesManager:
     """Manager for all boundary condition operations.
     """
     def __init__(self):
+        self._created_inlets : dict[str, Inlet] = {}
         self._assigned_inlets : dict[str, Inlet] = {}
-        self._existing_inlets : dict[str, Inlet] = {}
     
     @property
     def assigned_inlets(self) -> dict[str, Inlet]:
@@ -18,28 +24,11 @@ class BCManager:
     def existing_inlets(self) -> dict[str, Inlet]:
         """Dictionary of inlets that exist in the model (read-only).
         """
-        return self._existing_inlets
+        return self._created_inlets
 
-    def create_inlet(self, initial_pressure_value:float, name:str = None) -> Inlet:
-        """Creates a new inlet and add it to the :attr:`~lizzy.bcond.bcond.BCManager.existing_inlets` dictionary.
-
-        Parameters
-        ----------
-        initial_pressure_value : float
-            Initial pressure value at the inlet.
-        name : str, optional
-            Label assigned to the inlet. Will be used to select the inlet in future operations. If none assigned, a default 'Inlet_{N}'name is given, where N is an incremental number of existing inlets.
-
-        Returns
-        -------
-        :class:`~lizzy.bcond.bcond.Inlet`
-            The created inlet object.
-        """
-        if name is None:
-            inlet_count = len(self._existing_inlets)
-            name = f"Inlet_{inlet_count}"
-        new_inlet = Inlet(initial_pressure_value, name)
-        self._existing_inlets[name] = new_inlet
+    def create_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
+        new_inlet = Inlet(name, initial_pressure_value)
+        self._created_inlets[name] = new_inlet
         return new_inlet
 
     def _fetch_inlet(self, inlet_selector:Inlet | str) -> Inlet:
@@ -47,7 +36,7 @@ class BCManager:
             return inlet_selector
         else:
             try:
-                selected_inlet = self._existing_inlets[inlet_selector]
+                selected_inlet = self._created_inlets[inlet_selector]
             except KeyError:
                 raise KeyError(f"Inlet '{inlet_selector}' is not found in existing inlets. Check the name, or create the inlet first using `LizzyModel.create_inlet`.")
             return selected_inlet

@@ -1,3 +1,3 @@
 from .manager import MaterialManager
 from .rosette import Rosette
-from .materials import PorousMaterial
+from .materials import PorousMaterial, Resin
