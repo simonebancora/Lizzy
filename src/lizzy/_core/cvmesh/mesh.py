@@ -7,7 +7,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from lizzy._core.solver import FillSolver
     from lizzy._core.io import Reader
     from lizzy._core.materials import MaterialManager, Rosette, PorousMaterial
     from lizzy._core.cvmesh.entities import Node, Line, Triangle, CV
@@ -37,44 +36,10 @@ class Mesh:
         self.triangles : list[Triangle] = elements([])
         self.tetras = elements([])
         self.CVs :list[CV] = []
-        self.boundaries = mesh_reader.mesh_data['physical_nodes']
-        self.preprocessed = False
 
         # Init methods:
         self.mb = MeshBuilder()
         self.nodes, self.lines, self.triangles, self.CVs, self.mesh_view = self.mb.build_mesh(self.mesh_data)
-
-    def preprocess(self, material_manager: MaterialManager):
-        """ Pre-processes the mesh before simulation. Assigns material properties to elements, creates control volumes (CVs), and prepares data structures for simulation."""
-        # self.CVs = self.mb.create_control_volumes(self.nodes, fill_solver)
-        materials = material_manager.assigned_materials
-        rosettes = material_manager.assigned_rosettes
-        for tri in self.triangles:
-            try:
-                material : PorousMaterial = materials[tri.material_tag]
-                if material.is_isotropic:
-                    tri.k = material.k_princ
-                else:
-                    rosette : Rosette = rosettes[tri.material_tag]
-                    u, v, w = rosette.project_along_normal(tri.n)
-                    R = np.array([u, v, w]).T
-                    tri.k = R @ material.k_princ @ R.T
-                tri.porosity = materials[tri.material_tag].porosity
-                tri.h = materials[tri.material_tag].thickness
-            except KeyError:
-                exit(f"Mesh contains unassigned material tag: {tri.material_tag}")
-        # create a hashmap for CV id: [ids of supporting elements]
-        print("Mesh pre-processing completed\n")
-
-
-
-        #TODO: for numba:
-        self.triangle_id_lists = [np.array(n.triangle_ids, dtype=np.int32) for n in self.nodes]
-
-
-
-
-        self.preprocessed = True
 
     def empty_cvs(self):
         for cv in self.CVs:

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from lizzy._core.cvmesh import mesh
 if TYPE_CHECKING:
     from lizzy._core.sensors import SensorManager
-    from lizzy._core.bcond import BCManager
+    from lizzy._core.bcond import GatesManager
     from lizzy._core.cvmesh import Mesh
     from lizzy._core.materials import MaterialManager
 
@@ -34,7 +34,7 @@ class SolverBCs:
         self.p0_idx = np.empty(0, dtype=np.uint32)
 
 class Solver:
-    def __init__(self, mesh:Mesh, bc_manager, simulation_parameters, material_manager:MaterialManager, sensor_manager:SensorManager, 
+    def __init__(self, mesh:Mesh, gates_manager, simulation_parameters, material_manager:MaterialManager, sensor_manager:SensorManager, 
                  solver_type=SolverType.ITERATIVE_PETSC, solver_tol=1e-8, solver_max_iter=1000, 
                  solver_verbose=False, use_masked_solver=True, **solver_kwargs):
         
@@ -46,7 +46,7 @@ class Solver:
         self.vsolver = VelocitySolver(self.mesh.triangles)
         self.preproc = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, simulation_parameters)
 
-        self.bc_manager : BCManager = bc_manager 
+        self.gates_manager : GatesManager = gates_manager 
         self.time_step_manager = TimeStepManager(mesh.mesh_view.n_nodes, mesh.mesh_view.n_triangles)
         self._sensor_manager = sensor_manager
         self.bcs = SolverBCs()
@@ -113,12 +113,12 @@ class Solver:
         # TODO this is more "update inlet dirichlet bcs" since it only applies pressure (doesn't add empty 0 pressure). It can be faster, but it doesn't run often (only at beginning of time intervals) so it's not critical
         dirichlet_idx = []
         dirichlet_vals = []
-        for tag, inlet in self.bc_manager._assigned_inlets.items():
+        for boundary_name, inlet in self.gates_manager._assigned_inlets.items():
             try:
-                inlet_idx = self.mesh.boundaries[tag]
+                inlet_idx = self.mesh.mesh_view.phys_boundary_name_to_node_idxs[boundary_name]
             except KeyError:
                 print("\nFatal error: The application has terminated.")
-                print(f"Mesh does not contain physical tag: {tag}")
+                print(f"Mesh does not contain physical tag: {boundary_name}")
                 sys.exit(1)
             if inlet.is_open:
                 dirichlet_idx.append(inlet_idx)
@@ -174,7 +174,7 @@ class Solver:
         self.solver_vars["fill_factor_array"] = np.zeros(self.N_nodes)
         self.bcs = SolverBCs()
         self.mesh.empty_cvs()
-        self.bc_manager.reset_inlets()
+        self.gates_manager.reset_inlets()
         self.update_dirichlet_bcs()
         self.fill_initial_cvs()
         p0_idxs = self.get_empty_nodes_idx(self.solver_vars["fill_factor_array"])

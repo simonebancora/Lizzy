@@ -17,7 +17,7 @@ from typing import Dict, Literal
 from types import MappingProxyType
 from lizzy._core.io import Reader, Writer
 from lizzy._core.cvmesh import Mesh
-from lizzy._core.bcond import BCManager
+from lizzy._core.bcond import GatesManager
 from lizzy._core.solver import Solver, SolverType
 from lizzy._core.sensors import SensorManager
 from lizzy._core.datatypes import SimulationParameters
@@ -36,7 +36,7 @@ class LizzyModel:
         self._writer:Writer = None
         self._simulation_parameters:SimulationParameters = None
         self._material_manager:MaterialManager = None
-        self._bc_manager:BCManager = None
+        self._gates_manager:GatesManager = None
         self._sensor_manager:SensorManager = None
         self._mesh:Mesh = None
         self._solver:Solver = None
@@ -51,7 +51,7 @@ class LizzyModel:
         self._writer = Writer()
         self._simulation_parameters = SimulationParameters()
         self._material_manager = MaterialManager()
-        self._bc_manager = BCManager()
+        self._gates_manager = GatesManager()
         self._sensor_manager = SensorManager()
 
     @property
@@ -103,8 +103,8 @@ class LizzyModel:
         return self._latest_solution
     
     @property
-    def bc_manager(self) -> BCManager:
-        return self._bc_manager
+    def gates_manager(self) -> GatesManager:
+        return self._gates_manager
     
     @property
     def simulation_parameters(self) -> SimulationParameters:
@@ -275,7 +275,7 @@ class LizzyModel:
         :class:`~lizzy.core.bcond.Inlet`
             The created inlet object.
         """
-        new_inlet = self._bc_manager.create_inlet(name, initial_pressure_value)
+        new_inlet = self._gates_manager.create_inlet(name, initial_pressure_value)
         return new_inlet
 
     @preinit_only
@@ -289,7 +289,7 @@ class LizzyModel:
         boundary_tag : str
             An existing mesh boundary tag where to assign the inlet.
         """
-        self._bc_manager.assign_inlet(inlet_selector, boundary_tag)
+        self._gates_manager.assign_inlet(inlet_selector, boundary_tag)
     
     def fetch_inlet_by_name(self, inlet_name: str) -> Inlet:
         """Fetches an inlet from existing ones in the model.
@@ -304,7 +304,7 @@ class LizzyModel:
         :class:`~lizzy.gates.Inlet`
             The fetched inlet object.
         """
-        selected_inlet = self._bc_manager._fetch_inlet(inlet_name)
+        selected_inlet = self._gates_manager._fetch_inlet(inlet_name)
         return selected_inlet
     
 
@@ -327,7 +327,7 @@ class LizzyModel:
         KeyError
             If the `mode` is not one of the allowed values.
         """
-        self._bc_manager.change_inlet_pressure(inlet_selector, pressure_value, mode)
+        self._gates_manager.change_inlet_pressure(inlet_selector, pressure_value, mode)
 
     def open_inlet(self, inlet_selector:Inlet | str):
         """Sets the selected inlet state to `open`. When open, the inlet applies its p_value as a Dirichlet boundary condition. An inlet can be opened at any time during the simulation.
@@ -337,7 +337,7 @@ class LizzyModel:
         inlet_selector : Inlet | str
             Either the inlet object reference, or the name of an existing inlet.
         """
-        self._bc_manager.open_inlet(inlet_selector)
+        self._gates_manager.open_inlet(inlet_selector)
 
     def close_inlet(self, inlet_selector:Inlet | str):
         """Sets the selected inlet state to `closed`. When closed, the inlet acts as a Neumann natural boundary condition (no flux). An inlet can be closed at any time during the simulation. The stored p_value is preserved when the inlet is closed.
@@ -347,7 +347,7 @@ class LizzyModel:
         inlet_selector : Inlet | str
             Either the inlet object reference, or the name of an existing inlet.
         """
-        self._bc_manager.close_inlet(inlet_selector)
+        self._gates_manager.close_inlet(inlet_selector)
 
     #TODO: get coords arg as tuple or np array, then ids as int or string
     @preinit_only
@@ -406,7 +406,7 @@ class LizzyModel:
             Additional solver-specific keyword arguments
         """
         self._mesh = Mesh(self._reader)
-        self._solver = Solver(self._mesh, self._bc_manager, self._simulation_parameters, 
+        self._solver = Solver(self._mesh, self._gates_manager, self._simulation_parameters, 
                             self._material_manager, self._sensor_manager, solver_type, 
                             solver_tol, solver_max_iter, solver_verbose, use_masked_solver,
                             **solver_kwargs)

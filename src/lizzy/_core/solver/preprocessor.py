@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from lizzy._core.cvmesh import mesh
 if TYPE_CHECKING:
     from lizzy._core.sensors import SensorManager
-    from lizzy._core.bcond import BCManager
+    from lizzy._core.bcond import GatesManager
     from lizzy._core.cvmesh import Mesh
     from lizzy._core.materials import MaterialManager, Rosette, PorousMaterial
     from lizzy._core.datatypes import SimulationParameters

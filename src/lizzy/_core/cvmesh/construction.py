@@ -25,6 +25,8 @@ class MeshView:
         self.node_idx_to_tri_idxs: list[np.ndarray] = []
         self.node_idx_to_flux_ndarray: list[np.ndarray] = []
 
+        self.phys_boundary_name_to_node_idxs:dict = {}
+
 class MeshBuilder():
     def __init__(self):
         self.n_nodes = 0
@@ -167,6 +169,7 @@ class MeshBuilder():
         node_idx_to_node_idxs, node_idx_to_tri_idxs = self.assign_varying_number_references(new_nodes, new_triangles, tri_conn)
         mesh_view.node_idx_to_node_idxs = node_idx_to_node_idxs
         mesh_view.node_idx_to_tri_idxs = node_idx_to_tri_idxs
+        mesh_view.phys_boundary_name_to_node_idxs = mesh_data['physical_nodes']
         cvs, node_idx_to_flux_ndarray = self.create_control_volumes(new_nodes)
         mesh_view.node_idx_to_flux_ndarray = node_idx_to_flux_ndarray
 
