@@ -25,10 +25,13 @@ model.read_mesh_file("../meshes/Rect1M_R1.msh")
 
 # Set simulation parameters
 model.assign_simulation_parameters(
-    mu=0.1,              # Resin viscosity [Pa.s]
     wo_delta_time=100,   # Initial time step guess [s]
     fill_tolerance=0.00  # Fill fraction tolerance for CV to be considered full
 )
+
+# Create and assign resin
+model.create_resin("resin", 0.1) # Resin viscosity 0.1 [Pa.s]
+model.assign_resin("resin")
 
 # Create and assign material
 model.create_material(

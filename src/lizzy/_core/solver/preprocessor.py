@@ -38,17 +38,17 @@ class Preprocessor:
 
     # SEQUENCE:
 
-    # 1. assign data to fill solver
-    def assign_fill_solver_maps(self):
-        self.fill_solver.map_cv_id_to_support_triangle_ids = self.mesh.mesh_view.node_idx_to_tri_idxs
-        self.fill_solver.map_cv_id_to_flux_terms = self.mesh.mesh_view.node_idx_to_flux_ndarray
+
     
-    # 2. check default simulation parameters
-    def simparams_default_check(self):
+    # 1. check things were assigned
+    def assignment_checks(self):
         if not self.simulation_parameters.has_been_assigned:
-            print(f"Warning: Simulation parameters were not assigned. Running with default values: mu={self.simulation_parameters.mu}, wo_delta_time={self.simulation_parameters.wo_delta_time}")
+            print(f"Warning: Simulation parameters were not assigned. Running with default values: wo_delta_time={self.simulation_parameters.wo_delta_time}")
+        if self.material_manager._assigned_resin == None:
+            print(f"ERROR: No resin assigned to the model. Create a resin using `LizzyModel.create_resin` and assign it using `LizzyModel.assign_resin`")
+            sys.exit(1)
     
-    # 3. assign materials to elements
+    # 2. assign materials to elements
     def assign_materials_to_elements(self):
         materials = self.material_manager.assigned_materials
         rosettes = self.material_manager.assigned_rosettes
@@ -66,12 +66,8 @@ class Preprocessor:
                 tri.h = materials[tri.material_tag].thickness
             except KeyError:
                 exit(f"Mesh contains unassigned material tag: {tri.material_tag}")
-    
-    # 4. assemble global stiffness matrix (singular)
-    def assemble_global_stiffnes_matrix(self):
-        K_sing, f_orig = fe.Assembly(self.mesh, self.simulation_parameters.mu, sparse=True)
-        return K_sing, f_orig
 
+    # 3. setup control volumes
     def setup_cvs(self):
         cvs = self.mesh.CVs
         n_cvs = len(cvs)
@@ -80,11 +76,21 @@ class Preprocessor:
             cvs[i].calculate_area_and_volume()
             node_idx_to_flux_ndarray[i] = cvs[i].compute_flux_terms()
         self.mesh.mesh_view.node_idx_to_flux_ndarray = node_idx_to_flux_ndarray
+
+    # 4. assign data to fill solver
+    def assign_fill_solver_maps(self):
+        self.fill_solver.map_cv_id_to_support_triangle_ids = self.mesh.mesh_view.node_idx_to_tri_idxs
+        self.fill_solver.map_cv_id_to_flux_terms = self.mesh.mesh_view.node_idx_to_flux_ndarray
     
+    # 5. assemble global stiffness matrix (singular)
+    def assemble_global_stiffnes_matrix(self):
+        mu = self.material_manager.assigned_resin.mu
+        K_sing, f_orig = fe.Assembly(self.mesh, mu, sparse=True)
+        return K_sing, f_orig
 
     def run_preproc_sequence(self):
         print("Preprocessing...")
-        self.simparams_default_check()
+        self.assignment_checks()
         self.assign_materials_to_elements()
         self.setup_cvs()
         self.assign_fill_solver_maps()

@@ -237,7 +237,7 @@ class Solver:
                                     max_iter=self.solver_max_iter, verbose=self.solver_verbose, 
                                     **self.solver_kwargs)
 
-        v_array = self.vsolver.calculate_elem_velocities(p, self.simulation_parameters.mu)
+        v_array = self.vsolver.calculate_elem_velocities(p, self.material_manager.assigned_resin.mu)
         # v_nodal_array = self.vsolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
         v_nodal_array = np.zeros((self.N_nodes, 3))
 

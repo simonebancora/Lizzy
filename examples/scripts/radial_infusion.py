@@ -2,16 +2,19 @@ import lizzy as liz
 
 model = liz.LizzyModel()
 model.read_mesh_file("../meshes/Radial.msh")
-model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
+model.assign_simulation_parameters(wo_delta_time=500)
 
-rosette = model.create_rosette((1,1,0))
-model.create_material(1E-10, 1E-11, 1E-10, 0.5, 1.0, "aniso_material")
-model.assign_material("aniso_material", 'domain', rosette)
+model.create_resin("resin", 0.1)
+model.assign_resin("resin")
 
-model.create_inlet(1E+05, "inner_inlet")
+rosette = model.create_rosette("rosette", (1,1,0))
+model.create_material("aniso_material", (1E-10, 1E-10, 1E-10), 0.5, 1.0)
+model.assign_material("aniso_material", 'domain', "rosette")
+
+model.create_inlet("inner_inlet", 1E+05)
 model.assign_inlet("inner_inlet", "inner_rim")
 
 model.initialise_solver()
-solution = model.solve()
+model.solve()
 
-model.save_results(solution, "Anisotropic_Radial")
+model.save_results()

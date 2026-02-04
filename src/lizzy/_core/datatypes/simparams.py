@@ -12,8 +12,6 @@ class SimulationParameters:
 
     Attributes
     ----------
-    mu : float
-        Viscosity [Pa s]
     wo_delta_time : float
         Interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
     fill_tolerance : float
@@ -23,7 +21,6 @@ class SimulationParameters:
 
     
     """
-    mu: float = 0.1
     wo_delta_time: float = -1
     fill_tolerance: float = 0.01
     has_been_assigned : bool = False
@@ -36,7 +33,6 @@ class SimulationParameters:
         """Prints the currently assigned simulation parameters to the console."""
         params = textwrap.dedent(rf"""
         Currently assigned simulation parameters:
-        - "mu": {self.mu} [Pa s],
         - "wo_delta_time": {self.wo_delta_time} [s],
         - "fill_tolerance": {self.fill_tolerance},
         - "end_step_when_sensor_triggered": {self.end_step_when_sensor_triggered}
@@ -54,7 +50,6 @@ class SimulationParameters:
             Keyword arguments corresponding to parameter names and their new values.
             Each key must be a valid attribute of the `SimulationParameters` class, otherwise, an `AttributeError` is raised. Valid parameters are:
         
-            - ``mu``: viscosity [Pa s]
             - ``wo_delta_time``: interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
             - ``fill_tolerance``: tolerance on the fill factor to consider a CV as filled. Default: 0.01
             - ``end_step_when_sensor_triggered``: if True, ends current solution step and creates a write-out when a sensor changes state. Default: False

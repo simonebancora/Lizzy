@@ -1,1 +1,1 @@
-from lizzy._core.materials import PorousMaterial, Rosette
+from lizzy._core.materials import PorousMaterial, Rosette, Resin

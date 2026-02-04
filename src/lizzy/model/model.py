@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy._core.sensors import Sensor
-    from lizzy._core.materials import PorousMaterial, Rosette
+    from lizzy._core.materials import PorousMaterial, Rosette, Resin
     from lizzy._core.bcond.gates import Inlet
     from lizzy.datatypes import Solution
 
@@ -188,6 +188,7 @@ class LizzyModel:
         """
         self._reader.read_mesh_file(mesh_file_path)
         self._model_name = self._reader.case_name
+        self._mesh = Mesh(self._reader)
         
     
     def print_mesh_info(self) -> None:
@@ -220,11 +221,30 @@ class LizzyModel:
         Returns
         -------
         :class:`~lizzy.core.materials.PorousMaterial`
-            Instance of the created material.
+            Reference to the created material.
         """
         new_material = self._material_manager.create_material(name, k_vals, porosity, thickness)
         return new_material
+    
+    @preinit_only
+    def create_resin(self, name : str, viscosity : float) -> Resin:
+        """Create a new resin that can then be selected and used in the model.
 
+        Parameters
+        ----------
+        name : str
+            Unique name of the resin.
+        viscosity : float
+            Dynamic viscosity of the resin [Pa.s]
+        
+        Returns
+        -------
+        :class:`~lizzy.core.materials.Resin`
+            Reference to the created resin.
+        """
+        new_resin = self._material_manager.create_resin(name, viscosity)
+        return new_resin
+    
     @preinit_only
     def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
         """Assign an existing material to a labeled mesh region.
@@ -241,6 +261,17 @@ class LizzyModel:
         self._material_manager.assign_material(material_selector, mesh_tag, rosette)
 
     @preinit_only
+    def assign_resin(self, resin_selector):
+        """Assign an existing resin to the model.
+
+        Parameters
+        ----------
+        material_selector : str
+            Name of the resin to assign. Must correspond to an existing resin created with `LizzyModel.create_resin`.
+        """
+        self._material_manager.assign_resin(resin_selector)
+
+    @preinit_only
     def create_rosette(self, name:str, u:tuple[float, float, float]) -> Rosette:
         """Create a new rosette that can then be selected and used in the model.
 
@@ -254,7 +285,7 @@ class LizzyModel:
         Returns
         -------
         :class:`~lizzy.core.materials.Rosette`
-            Instance of the created rosette.
+            Reference to the created rosette.
         """
         new_rosette = self._material_manager.create_rosette(name, u)
         return new_rosette
@@ -405,7 +436,7 @@ class LizzyModel:
         **solver_kwargs
             Additional solver-specific keyword arguments
         """
-        self._mesh = Mesh(self._reader)
+        
         self._solver = Solver(self._mesh, self._gates_manager, self._simulation_parameters, 
                             self._material_manager, self._sensor_manager, solver_type, 
                             solver_tol, solver_max_iter, solver_verbose, use_masked_solver,

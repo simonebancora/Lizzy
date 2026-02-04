@@ -28,3 +28,19 @@ class PorousMaterial:
         self.thickness = thickness
         self.name = name
         self.assigned = False
+
+
+class Resin:
+    __slots__ = ("name", "mu")
+    """Resin defined by dynamic viscosity (constant).
+
+    Parameters
+    ----------
+    name: str
+        Name of the resin.
+    mu: float
+        Dynamic viscosity of the resin [Pa.s]
+    """
+    def __init__(self, name:str, mu:float):
+        self.name = name
+        self.mu = mu

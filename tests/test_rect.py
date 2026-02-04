@@ -12,7 +12,9 @@ tol_err = 0.01
 def model():
     model = liz.LizzyModel()
     model.read_mesh_file("tests/test_meshes/Rect_1M_R1.msh")
-    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100, fill_tolerance=0.00)
+    model.assign_simulation_parameters(wo_delta_time=100, fill_tolerance=0.00)
+    model.create_resin("resin", 0.1)
+    model.assign_resin("resin")
     model.create_material("test_material", (1E-10, 1E-10, 1E-10), 0.5, 1.0)
     model.assign_material("test_material", 'domain')
     return model

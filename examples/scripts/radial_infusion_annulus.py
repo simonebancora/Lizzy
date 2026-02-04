@@ -4,7 +4,10 @@ from lizzy import SolverType
 model = liz.LizzyModel()
 
 model.read_mesh_file("../meshes/quarter_annulus.msh")
-model.assign_simulation_parameters(mu=0.1, wo_delta_time=100, fill_tolerance=0.00)
+model.assign_simulation_parameters(wo_delta_time=100, fill_tolerance=0.00)
+
+model.create_resin("resin", 0.1)
+model.assign_resin("resin")
 
 model.create_material("domain_material", (1E-10, 1E-10, 1E-10), 0.6, 1.0)
 model.assign_material("domain_material", 'domain')
@@ -12,10 +15,10 @@ model.assign_material("domain_material", 'domain')
 model.create_inlet("inner_radius", 100000)
 model.assign_inlet("inner_radius", "inlet")
 
-model.initialise_solver(SolverType.ITERATIVE_PETSC)
-solution = model.solve()
+model.initialise_solver()
+model.solve()
 
-model.save_results(solution, "quarter_annulus")
+model.save_results()
 
 # Lee, Y. M., et al. "Analysis of flow in the RTM Process." SAE transactions (1989): 65-75.
 # Eq. (A-4) : 
