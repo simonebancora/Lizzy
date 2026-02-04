@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy._core.io import Reader
     from lizzy._core.materials import MaterialManager, Rosette, PorousMaterial
-    from lizzy._core.cvmesh.entities import Node, Line, Triangle, CV
+    from lizzy._core.cvmesh.entities import Node, Line, BoundaryLine, Triangle, CV
 
 import numpy as np
 from .construction import MeshBuilder, MeshView
@@ -33,13 +33,14 @@ class Mesh:
         self.mesh_data = mesh_reader.mesh_data
         self.nodes : list[Node] = nodes([])
         self.lines : list[Line] = lines([])
+        self.boundary_lines : list[BoundaryLine] = lines([])
         self.triangles : list[Triangle] = elements([])
         self.tetras = elements([])
         self.CVs :list[CV] = []
 
         # Init methods:
         self.mb = MeshBuilder()
-        self.nodes, self.lines, self.triangles, self.CVs, self.mesh_view = self.mb.build_mesh(self.mesh_data)
+        self.nodes, self.lines, self.boundary_lines, self.triangles, self.CVs, self.mesh_view = self.mb.build_mesh(self.mesh_data)
 
     def empty_cvs(self):
         for cv in self.CVs:

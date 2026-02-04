@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 import numpy as np
 from .collections import nodes, lines, elements
-from lizzy._core.cvmesh.entities import Node, Line, Triangle, CV
+from lizzy._core.cvmesh.entities import Node, Line, BoundaryLine, Triangle, CV
 
 import timeit
 
@@ -24,8 +24,10 @@ class MeshView:
         self.node_idx_to_node_idxs: list[np.ndarray] = []
         self.node_idx_to_tri_idxs: list[np.ndarray] = []
         self.node_idx_to_flux_ndarray: list[np.ndarray] = []
+        self.phys_boundary_name_to_node_idxs:dict = {} #for dirichlet mostly
+        self.phys_boundary_name_to_boundary_line_idxs:dict = {}
+        self.boundary_line_idx_to_node_idxs: np.ndarray = None
 
-        self.phys_boundary_name_to_node_idxs:dict = {}
 
 class MeshBuilder():
     def __init__(self):
@@ -89,10 +91,11 @@ class MeshBuilder():
         self.triangle_idx_to_node_idxs = tri_conn
         self.triangle_idx_to_line_idxs = triangle_idx_to_line_idxs
 
-    def create_entities(self, n_nodes, n_triangles, n_lines, node_coords, tri_conn):
+    def create_entities(self, n_nodes, n_triangles, n_lines, node_coords, tri_conn, physical_lines_conn):
         # preallocate lists
         new_nodes = nodes([None]*n_nodes)
         new_lines = lines([None]*n_lines)
+        new_boundary_lines = lines([None]*len(physical_lines_conn))
         new_triangles = elements([None]*n_triangles)
         # create nodes
         for i in range(n_nodes):
@@ -105,6 +108,11 @@ class MeshBuilder():
             local_node_objs = [new_nodes[idx] for idx in local_conn]
             new_lines[i] = Line(*local_node_objs, i)
         new_lines.N = len(new_lines)
+        # create boundary lines:
+        for i in range(len(physical_lines_conn)):
+            local_conn = physical_lines_conn[i]
+            local_node_objs = [new_nodes[idx] for idx in local_conn]
+            new_boundary_lines[i] = BoundaryLine(*local_node_objs, i)
         # create triangles
         for i in range(n_triangles):
             local_nodes_conn = self.triangle_idx_to_node_idxs[i]
@@ -118,7 +126,7 @@ class MeshBuilder():
 
         
         
-        return new_nodes, new_lines, new_triangles
+        return new_nodes, new_lines, new_triangles, new_boundary_lines
 
     def assign_materials_to_elements(self, mesh_data, triangles:list[Triangle]):
         # assign material_tag tag. key is a string (name of physical group)
@@ -164,17 +172,21 @@ class MeshBuilder():
         # time_create_cross_referencing(self, tri_conn)
         self.create_cross_referencing_maps(n_nodes, n_lines, n_triangles, tri_conn)
         # time_create_entities(self, node_coords, tri_conn)
-        new_nodes, new_lines, new_triangles = self.create_entities(n_nodes, n_triangles, n_lines, node_coords, tri_conn)
+        physical_lines_conn = mesh_data["physical_lines_conn"]
+        phys_boundary_name_to_boundary_line_idxs = mesh_data["physical_lines"]
+        new_nodes, new_lines, new_triangles, new_boundary_lines = self.create_entities(n_nodes, n_triangles, n_lines, node_coords, tri_conn, physical_lines_conn)
         # time_assign_varying_number_references(self, new_nodes, new_triangles, tri_conn)
         node_idx_to_node_idxs, node_idx_to_tri_idxs = self.assign_varying_number_references(new_nodes, new_triangles, tri_conn)
         mesh_view.node_idx_to_node_idxs = node_idx_to_node_idxs
         mesh_view.node_idx_to_tri_idxs = node_idx_to_tri_idxs
         mesh_view.phys_boundary_name_to_node_idxs = mesh_data['physical_nodes']
+        mesh_view.phys_boundary_name_to_boundary_line_idxs = phys_boundary_name_to_boundary_line_idxs
+        mesh_view.boundary_line_idx_to_node_idxs = physical_lines_conn
         cvs, node_idx_to_flux_ndarray = self.create_control_volumes(new_nodes)
         mesh_view.node_idx_to_flux_ndarray = node_idx_to_flux_ndarray
 
         self.assign_materials_to_elements(mesh_data, new_triangles)
-        return new_nodes, new_lines, new_triangles, cvs, mesh_view
+        return new_nodes, new_lines, new_boundary_lines, new_triangles, cvs, mesh_view
 
     def cv_creation_function(self, nodes : list[Node], fill_solver : FillSolver):
         # for every nodes:

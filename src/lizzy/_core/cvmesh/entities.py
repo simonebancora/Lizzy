@@ -204,6 +204,12 @@ class Line:
         x2 = self.nodes[1].coords
         return np.array((x1, x2)).mean(0)
 
+class BoundaryLine(Line):
+    __slots__ = ("length")
+    def __init__(self, node_1:Node, node_2:Node, n):
+        super().__init__(node_1, node_2, n)
+        self.length = np.linalg.norm(self.nodes[0].coords - self.nodes[1].coords)
+
 
 class CV:
     """Class representing a control volume in the mesh.
