@@ -4,7 +4,7 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from .gates import Inlet
+from .gates import Inlet, PressureInlet
 from typing import Literal
 
 class GatesManager:
@@ -27,7 +27,7 @@ class GatesManager:
         return self._created_inlets
 
     def create_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
-        new_inlet = Inlet(name, initial_pressure_value)
+        new_inlet = PressureInlet(name, initial_pressure_value)
         self._created_inlets[name] = new_inlet
         return new_inlet
 

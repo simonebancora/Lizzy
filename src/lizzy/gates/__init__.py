@@ -1,1 +1,1 @@
-from lizzy._core.bcond.gates import Inlet
+from lizzy._core.bcond.gates import PressureInlet

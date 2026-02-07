@@ -9,12 +9,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy._core.sensors import Sensor
     from lizzy._core.materials import PorousMaterial, Rosette, Resin
-    from lizzy._core.bcond.gates import Inlet
+    from lizzy._core.bcond.gates import Inlet, PressureInlet
     from lizzy.datatypes import Solution
 
 
 from typing import Dict, Literal
 from types import MappingProxyType
+
 from lizzy._core.io import Reader, Writer
 from lizzy._core.cvmesh import Mesh
 from lizzy._core.bcond import GatesManager
@@ -24,6 +25,7 @@ from lizzy._core.datatypes import SimulationParameters
 from lizzy._core.materials import MaterialManager
 from lizzy.utils.splash_logo import print_logo
 from lizzy.utils.decorators import State, preinit_only, postinit_only
+
 
 class LizzyModel:
     """

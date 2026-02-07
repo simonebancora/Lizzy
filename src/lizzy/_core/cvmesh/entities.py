@@ -188,15 +188,11 @@ class Line:
     __slots__ = (
         "idx",
         "nodes",
-        "triangles",
-        "triangle_ids",
         "midpoint"
     )
-    def __init__(self, node_1:Node, node_2:Node, n):
+    def __init__(self, node_1:Node, node_2:Node, idx:int):
         self.nodes = (node_1, node_2)
-        self.idx : int = n
-        self.triangles = []
-        self.triangle_ids = []
+        self.idx : int = idx
         self.midpoint : np.ndarray = self._compute_midpoint()
 
     def _compute_midpoint(self):
@@ -205,10 +201,11 @@ class Line:
         return np.array((x1, x2)).mean(0)
 
 class BoundaryLine(Line):
-    __slots__ = ("length")
-    def __init__(self, node_1:Node, node_2:Node, n):
-        super().__init__(node_1, node_2, n)
+    __slots__ = ("length", "tri_idx")
+    def __init__(self, node_1:Node, node_2:Node, idx:int, tri_idx:int):
+        super().__init__(node_1, node_2, idx)
         self.length = np.linalg.norm(self.nodes[0].coords - self.nodes[1].coords)
+        self.tri_idx = tri_idx
 
 
 class CV:
