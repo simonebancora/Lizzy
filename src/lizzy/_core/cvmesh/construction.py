@@ -16,7 +16,6 @@ from lizzy._core.cvmesh.entities import Node, Line, BoundaryLine, Triangle, CV
 import timeit
 
 class MeshView:
-
     def __init__(self):
         self.n_nodes:int=0
         self.n_lines:int=0
@@ -31,7 +30,7 @@ class MeshView:
         self.boundary_line_idx_to_tri_idx:np.ndarray = None
 
 
-class MeshBuilder():
+class MeshBuilder:
     def __init__(self):
         self.n_nodes = 0
         self.n_triangles = 0
@@ -138,11 +137,6 @@ class MeshBuilder():
             new_triangles[i] = Triangle(*local_node_objs, *local_line_objs, i)
         new_triangles.nodes_conn_table = tri_conn
         new_triangles.N = len(new_triangles)
-
-        # assign triangle thicknesses to 
-
-
-        
         
         return new_nodes, new_lines, new_triangles, new_boundary_lines
 
