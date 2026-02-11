@@ -4,7 +4,7 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from .gates import Inlet, PressureInlet
+from .gates import Inlet, PressureInlet, FlowRateInlet
 from typing import Literal
 
 class GatesManager:
@@ -26,8 +26,13 @@ class GatesManager:
         """
         return self._created_inlets
 
-    def create_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
+    def create_pressure_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
         new_inlet = PressureInlet(name, initial_pressure_value)
+        self._created_inlets[name] = new_inlet
+        return new_inlet
+    
+    def create_flowrate_inlet(self, name:str, initial_flowrate_value:float) -> Inlet:
+        new_inlet = FlowRateInlet(name, initial_flowrate_value)
         self._created_inlets[name] = new_inlet
         return new_inlet
 
@@ -38,7 +43,7 @@ class GatesManager:
             try:
                 selected_inlet = self._created_inlets[inlet_selector]
             except KeyError:
-                raise KeyError(f"Inlet '{inlet_selector}' is not found in existing inlets. Check the name, or create the inlet first using `LizzyModel.create_inlet`.")
+                raise KeyError(f"Inlet '{inlet_selector}' is not found in existing inlets. Check the name, or create the inlet first.")
             return selected_inlet
 
     def assign_inlet(self, inlet_selector:Inlet | str, boundary_tag:str):

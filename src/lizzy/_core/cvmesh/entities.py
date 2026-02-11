@@ -188,7 +188,8 @@ class Line:
     __slots__ = (
         "idx",
         "nodes",
-        "midpoint"
+        "midpoint",
+        "n"
     )
     def __init__(self, node_1:Node, node_2:Node, idx:int):
         self.nodes = (node_1, node_2)
@@ -202,10 +203,17 @@ class Line:
 
 class BoundaryLine(Line):
     __slots__ = ("length", "tri_idx")
-    def __init__(self, node_1:Node, node_2:Node, idx:int, tri_idx:int):
+    def __init__(self, node_1:Node, node_2:Node, idx:int, tri_obj:Triangle):
         super().__init__(node_1, node_2, idx)
         self.length = np.linalg.norm(self.nodes[0].coords - self.nodes[1].coords)
-        self.tri_idx = tri_idx
+        self.tri_idx = tri_obj.idx
+        self.n = np.cross(np.array([node_1.coords - node_2.coords]), tri_obj.n)
+        test_point_outer = self.midpoint + self.n
+        dist_outer = np.linalg.norm(test_point_outer - tri_obj.centroid)
+        test_point_inner = self.midpoint - self.n
+        dist_inner = np.linalg.norm(test_point_inner - tri_obj.centroid)
+        if dist_outer < dist_inner:
+            self.n = -self.n
 
 
 class CV:

@@ -11,7 +11,7 @@ rosette = model.create_rosette("rosette", (1,1,0))
 model.create_material("aniso_material", (1E-10, 1E-10, 1E-10), 0.5, 1.0)
 model.assign_material("aniso_material", 'domain', "rosette")
 
-model.create_inlet("inner_inlet", 1E+05)
+model.create_pressure_inlet("inner_inlet", 1E+05)
 model.assign_inlet("inner_inlet", "inner_rim")
 
 model.initialise_solver()

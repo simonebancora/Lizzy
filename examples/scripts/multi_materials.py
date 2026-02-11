@@ -13,7 +13,7 @@ model.create_material("low_perm_material", (1E-13, 1E-13, 1E-13), 0.5, 1.0, )
 model.assign_material("high_perm_material", 'background')
 model.assign_material("low_perm_material", 'triforce')
 
-model.create_inlet("inner_inlet", 1E+05)
+model.create_pressure_inlet("inner_inlet", 1E+05)
 model.assign_inlet("inner_inlet", "inner_rim")
 
 model.initialise_solver()

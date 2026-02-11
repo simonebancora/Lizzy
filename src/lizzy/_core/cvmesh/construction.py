@@ -122,19 +122,18 @@ class MeshBuilder:
             local_node_objs = [new_nodes[idx] for idx in local_conn]
             new_lines[i] = Line(*local_node_objs, i)
         new_lines.N = len(new_lines)
-        # create boundary lines:
-        for i in range(len(physical_lines_conn)):
-            local_conn = physical_lines_conn[i]
-            local_node_objs = [new_nodes[idx] for idx in local_conn]
-            new_boundary_lines[i] = BoundaryLine(*local_node_objs, i, boundary_line_idx_to_tri_idx[i])
         # create triangles
         for i in range(n_triangles):
             local_nodes_conn = self.triangle_idx_to_node_idxs[i]
             local_node_objs = [new_nodes[idx] for idx in local_nodes_conn]
             local_lines_conn = self.triangle_idx_to_line_idxs[i]
             local_line_objs = [new_lines[idx] for idx in local_lines_conn]
-
             new_triangles[i] = Triangle(*local_node_objs, *local_line_objs, i)
+        # create boundary lines:
+        for i in range(len(physical_lines_conn)):
+            local_conn = physical_lines_conn[i]
+            local_node_objs = [new_nodes[idx] for idx in local_conn]
+            new_boundary_lines[i] = BoundaryLine(*local_node_objs, i, new_triangles[boundary_line_idx_to_tri_idx[i]])
         new_triangles.nodes_conn_table = tri_conn
         new_triangles.N = len(new_triangles)
         

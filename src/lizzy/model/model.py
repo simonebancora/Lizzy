@@ -293,7 +293,7 @@ class LizzyModel:
         return new_rosette
 
     @preinit_only
-    def create_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
+    def create_pressure_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
         """Creates a new inlet and add it to model existing inlets.
 
         Parameters
@@ -308,7 +308,13 @@ class LizzyModel:
         :class:`~lizzy.core.bcond.Inlet`
             The created inlet object.
         """
-        new_inlet = self._gates_manager.create_inlet(name, initial_pressure_value)
+        new_inlet = self._gates_manager.create_pressure_inlet(name, initial_pressure_value)
+        return new_inlet
+    
+    @preinit_only
+    def create_flowrate_inlet(self, name:str, initial_flowrate_value:float) -> Inlet:
+        # TODO: doc
+        new_inlet = self._gates_manager.create_flowrate_inlet(name, initial_flowrate_value)
         return new_inlet
 
     @preinit_only

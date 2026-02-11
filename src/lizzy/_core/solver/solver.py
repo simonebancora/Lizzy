@@ -117,10 +117,11 @@ class Solver:
         # TODO this is more "update inlet dirichlet bcs" since it only applies pressure (doesn't add empty 0 pressure). It can be faster, but it doesn't run often (only at beginning of time intervals) so it's not critical
         dirichlet_idxs = []
         dirichlet_vals = []
-        neumann_idxs = []
-        neumann_vals = []
+        neumann_idxs_pairs = []
+        neumann_vals_per_idx_pair = []
         dict_boundary_name_to_inlet_obj = self.gates_manager._assigned_inlets
         phys_boundary_names_set = self.mesh.mesh_view.phys_boundary_names_set
+        viscosity = self.material_manager.assigned_resin.mu
         for boundary_name, inlet in dict_boundary_name_to_inlet_obj.items():
             if boundary_name not in phys_boundary_names_set:
                 print("\nFatal error: The application has terminated.")
@@ -136,12 +137,18 @@ class Solver:
                 case InletType.FLOW_RATE:
                     boundary_line_idxs = self.mesh.mesh_view.phys_boundary_name_to_boundary_line_idxs[boundary_name]
                     boundary_line_objs = [self.mesh.boundary_lines[i] for i in boundary_line_idxs]
+                    tri_objs = [self.mesh.triangles[line.idx] for line in boundary_line_objs]
+                    boundary_line_thicknesses = np.array([tri.h for tri in tri_objs])
                     boundary_line_lengths = np.array([line.length for line in boundary_line_objs])
-                    node_pairs_idxs = self.mesh.mesh_view.boundary_line_idx_to_node_idxs[boundary_line_idxs] # gives 2 node idxs. At this point, node_pair_idxs (n_lines, 2) and line_lengths (n_lines, ) are in the same order
-                    neumann_vals_pairs = np.repeat(boundary_line_lengths/2, 2) * inlet.q_value # TODO temporary dummy value for flow rate. Need calc are flux
-                    neumann_vals_pairs = neumann_vals_pairs.reshape(len(node_pairs_idxs), 2) # at this point we have: node pairs, val pairs (dummy) where we need to modify rhs f vector
-                    print("Flow rate not implemented")
-                    sys.exit(1) 
+                    boundary_flux_areas = boundary_line_thicknesses * boundary_line_lengths
+                    total_area = np.sum(boundary_flux_areas)
+                    node_pairs_idxs = self.mesh.mesh_view.boundary_line_idx_to_node_idxs[boundary_line_idxs] # gives 2 node idxs. At this point, node_pair_idxs (n_lines, 2) and line_lengths (n_lines, ) are in the same order - shape: (n_neumann_lines, 2)
+                    neumann_vals_pairs = np.repeat(boundary_flux_areas/2, 2) * (inlet.q_value/total_area) # TODO temporary dummy value for flow rate. Need calc area flux
+                    neumann_vals_pairs = neumann_vals_pairs.reshape(len(node_pairs_idxs), 2) # at this point we have: node pairs, val pairs (dummy) where we need to modify rhs f vector - shape: (n_neumann_lines, 2)
+                    if inlet.is_open:
+                        neumann_idxs_pairs.append(node_pairs_idxs)
+                        neumann_vals_per_idx_pair.append(neumann_vals_pairs)
+                    print("WARNING: Flow rate BC not fully implemented. Results may be incorrect.")
                 case _:
                     pass
         # TODO: do this following assertion a little better...
@@ -149,9 +156,9 @@ class Solver:
             if len(dirichlet_idxs) > 0:
                 self.bcs.dirichlet_idx = np.concatenate(dirichlet_idxs)
                 self.bcs.dirichlet_vals = np.concatenate(dirichlet_vals)
-            if len(neumann_idxs) > 0:
-                self.bcs.neumann_idx = np.concatenate(neumann_idxs)
-                self.bcs.neumann_vals = np.concatenate(neumann_vals)
+            if len(neumann_idxs_pairs) > 0:
+                self.bcs.neumann_idx = np.concatenate(neumann_idxs_pairs).flatten()
+                self.bcs.neumann_vals = np.concatenate(neumann_vals_per_idx_pair).flatten()
         except ValueError:
             print("\nFatal error: The application has terminated.")
             print("No inlets are currently open. At least one inlet must be open at all times to allow resin to flow into the part.")
@@ -170,6 +177,7 @@ class Solver:
         """
         # initial_cvs = self.mesh.CVs[self.bcs.dirichlet_idx]
         self.solver_vars["fill_factor_array"][self.bcs.dirichlet_idx] = 1
+        self.solver_vars["fill_factor_array"][self.bcs.neumann_idx] = 1
         # for cv in initial_cvs:
         #     cv.fill = 1.0
 
@@ -252,9 +260,15 @@ class Solver:
         fill_factor = self.solver_vars["fill_factor_array"]
         free_surface = self.solver_vars["free_surface_array"]
         cv_volumes = self.solver_vars["cv_volumes_array"]
+
+        neumann_idxs = self.bcs.neumann_idx
+        neumann_vals = self.bcs.neumann_vals
+        f_neumann = self.f_orig.copy()
+        for i in range(len(neumann_idxs)):
+            f_neumann[neumann_idxs[i]] += neumann_vals[i]
         if self.use_masked_solver:
             p = PressureSolver.solve_with_mask(
-                self.K_sing, self.f_orig, self.bcs, 
+                self.K_sing, f_neumann, self.bcs, 
                 self.solver_type, tol=self.solver_tol,
                 max_iter=self.solver_max_iter, verbose=self.solver_verbose,
                 **self.solver_kwargs)
