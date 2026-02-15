@@ -43,7 +43,7 @@ model.create_material(
 model.assign_material("glass_fiber", "domain")
 
 # Create inlet with prescribed pressure
-model.create_inlet("left_inlet", 1e5)  # 1 bar
+model.create_pressure_inlet("left_inlet", 1e5)  # 1 bar
 model.assign_inlet("left_inlet", "left_edge")
 
 # =============================================================================

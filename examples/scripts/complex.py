@@ -16,7 +16,7 @@ model.assign_material("material_iso", 'Lshape')
 model.assign_material("material_aniso", 'ramp', rosette_ramp)
 model.assign_material("material_racetrack", 'racetrack')
 
-model.create_inlet("inlet_left", 100000)
+model.create_pressure_inlet("inlet_left", 100000)
 model.assign_inlet("inlet_left", "inlet")
 
 model.initialise_solver()

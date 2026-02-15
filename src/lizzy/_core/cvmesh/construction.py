@@ -16,7 +16,6 @@ from lizzy._core.cvmesh.entities import Node, Line, BoundaryLine, Triangle, CV
 import timeit
 
 class MeshView:
-
     def __init__(self):
         self.n_nodes:int=0
         self.n_lines:int=0
@@ -24,12 +23,14 @@ class MeshView:
         self.node_idx_to_node_idxs: list[np.ndarray] = []
         self.node_idx_to_tri_idxs: list[np.ndarray] = []
         self.node_idx_to_flux_ndarray: list[np.ndarray] = []
+        self.phys_boundary_names_set:set[str] = set()
         self.phys_boundary_name_to_node_idxs:dict = {} #for dirichlet mostly
         self.phys_boundary_name_to_boundary_line_idxs:dict = {}
         self.boundary_line_idx_to_node_idxs: np.ndarray = None
+        self.boundary_line_idx_to_tri_idx:np.ndarray = None
 
 
-class MeshBuilder():
+class MeshBuilder:
     def __init__(self):
         self.n_nodes = 0
         self.n_triangles = 0
@@ -50,12 +51,13 @@ class MeshBuilder():
         self.node_idx_to_tri_idxs_for_fill_solver = None
 
     
-    def create_cross_referencing_maps(self, n_nodes, n_lines, n_triangles, tri_conn):
+    def create_cross_referencing_maps(self, n_nodes, n_lines, n_triangles, tri_conn, physical_lines_conn):
         capacity_tris_per_node = 8 # initial buffer size
         node_idx_to_tri_idxs_buffer = np.full((n_nodes, capacity_tris_per_node), -1, dtype=np.int32)
         tri_idxs_local_pointer = np.zeros(n_nodes, dtype=np.uint8)
-        triangle_idx_to_line_idxs = np.empty((n_triangles, 3), dtype=np.int32)
-        line_idx_to_node_idxs = np.empty((n_lines, 2), dtype=np.int32)
+        triangle_idx_to_line_idxs = np.empty((n_triangles, 3), dtype=np.uint32)
+        line_idx_to_node_idxs = np.empty((n_lines, 2), dtype=np.uint32)
+        boundary_line_idx_to_tri_idx = np.full(len(physical_lines_conn), -1, dtype=np.int32)
 
         line_nodes_from_conn_selectors = [[0,1],[1,2],[2,0]]
         for tri_id in range(n_triangles):
@@ -82,7 +84,16 @@ class MeshBuilder():
                 # write the triangle id in the buffer (which is initially 5 tris per node)
                 node_idx_to_tri_idxs_buffer[node_id, tri_idxs_local_pointer[node_id]] = tri_id
                 # move local pointer
-                tri_idxs_local_pointer[node_id] +=1    
+                tri_idxs_local_pointer[node_id] +=1
+            
+            # populate "boundary_line_idx_to_tri_idx"
+            tri_node_ids_set = set(local_conn)
+            for i in range(len(physical_lines_conn)):
+                line_ids_set = set(physical_lines_conn[i])
+                if line_ids_set.issubset(tri_node_ids_set):
+                    boundary_line_idx_to_tri_idx[i] = tri_id
+                    break
+        
          
         # store
         self.node_idx_to_tri_idxs_buffer = node_idx_to_tri_idxs_buffer
@@ -90,7 +101,11 @@ class MeshBuilder():
         self.triangle_idx_to_node_idxs = tri_conn
         self.triangle_idx_to_line_idxs = triangle_idx_to_line_idxs
 
-    def create_entities(self, n_nodes, n_triangles, n_lines, node_coords, tri_conn, physical_lines_conn):
+        # check that all boundary lines have been assigned a valid tri idx (none negative)
+        assert np.all(boundary_line_idx_to_tri_idx >= 0) # TODO: add some logging here 
+        return boundary_line_idx_to_tri_idx
+
+    def create_entities(self, n_nodes, n_triangles, n_lines, node_coords, tri_conn, physical_lines_conn, boundary_line_idx_to_tri_idx):
         # preallocate lists
         new_nodes = nodes([None]*n_nodes)
         new_lines = lines([None]*n_lines)
@@ -107,23 +122,20 @@ class MeshBuilder():
             local_node_objs = [new_nodes[idx] for idx in local_conn]
             new_lines[i] = Line(*local_node_objs, i)
         new_lines.N = len(new_lines)
-        # create boundary lines:
-        for i in range(len(physical_lines_conn)):
-            local_conn = physical_lines_conn[i]
-            local_node_objs = [new_nodes[idx] for idx in local_conn]
-            new_boundary_lines[i] = BoundaryLine(*local_node_objs, i)
         # create triangles
         for i in range(n_triangles):
             local_nodes_conn = self.triangle_idx_to_node_idxs[i]
             local_node_objs = [new_nodes[idx] for idx in local_nodes_conn]
             local_lines_conn = self.triangle_idx_to_line_idxs[i]
             local_line_objs = [new_lines[idx] for idx in local_lines_conn]
-
             new_triangles[i] = Triangle(*local_node_objs, *local_line_objs, i)
+        # create boundary lines:
+        for i in range(len(physical_lines_conn)):
+            local_conn = physical_lines_conn[i]
+            local_node_objs = [new_nodes[idx] for idx in local_conn]
+            new_boundary_lines[i] = BoundaryLine(*local_node_objs, i, new_triangles[boundary_line_idx_to_tri_idx[i]])
         new_triangles.nodes_conn_table = tri_conn
         new_triangles.N = len(new_triangles)
-
-        
         
         return new_nodes, new_lines, new_triangles, new_boundary_lines
 
@@ -135,7 +147,7 @@ class MeshBuilder():
 
 
 
-    def assign_varying_number_references(self, nodes:list[Node], triangles, tri_conn):
+    def assign_varying_number_references(self, nodes:list[Node], triangles):
         node_idx_to_node_idxs = [None]*len(nodes)
         node_idx_to_tri_idxs = [None]*len(nodes)
         
@@ -169,22 +181,23 @@ class MeshBuilder():
         mesh_view.n_nodes = n_nodes
         mesh_view.n_lines = n_lines
         mesh_view.n_triangles = n_triangles
-        # time_create_cross_referencing(self, tri_conn)
-        self.create_cross_referencing_maps(n_nodes, n_lines, n_triangles, tri_conn)
-        # time_create_entities(self, node_coords, tri_conn)
         physical_lines_conn = mesh_data["physical_lines_conn"]
-        phys_boundary_name_to_boundary_line_idxs = mesh_data["physical_lines"]
-        new_nodes, new_lines, new_triangles, new_boundary_lines = self.create_entities(n_nodes, n_triangles, n_lines, node_coords, tri_conn, physical_lines_conn)
-        # time_assign_varying_number_references(self, new_nodes, new_triangles, tri_conn)
-        node_idx_to_node_idxs, node_idx_to_tri_idxs = self.assign_varying_number_references(new_nodes, new_triangles, tri_conn)
-        mesh_view.node_idx_to_node_idxs = node_idx_to_node_idxs
-        mesh_view.node_idx_to_tri_idxs = node_idx_to_tri_idxs
+        boundary_line_idx_to_tri_idx = self.create_cross_referencing_maps(n_nodes, n_lines, n_triangles, tri_conn, physical_lines_conn)
+        phys_boundary_name_to_boundary_line_idxs:dict = mesh_data["physical_lines"]
+        mesh_view.phys_boundary_names_set = set(phys_boundary_name_to_boundary_line_idxs.keys())
         mesh_view.phys_boundary_name_to_node_idxs = mesh_data['physical_nodes']
         mesh_view.phys_boundary_name_to_boundary_line_idxs = phys_boundary_name_to_boundary_line_idxs
         mesh_view.boundary_line_idx_to_node_idxs = physical_lines_conn
+        new_nodes, new_lines, new_triangles, new_boundary_lines = self.create_entities(n_nodes, n_triangles, n_lines, node_coords, tri_conn, physical_lines_conn, boundary_line_idx_to_tri_idx)
+        node_idx_to_node_idxs, node_idx_to_tri_idxs = self.assign_varying_number_references(new_nodes, new_triangles)
+        mesh_view.node_idx_to_node_idxs = node_idx_to_node_idxs
+        mesh_view.node_idx_to_tri_idxs = node_idx_to_tri_idxs
+        mesh_view.boundary_line_idx_to_tri_idx = boundary_line_idx_to_tri_idx
         cvs = self.create_control_volumes(new_nodes)
 
         self.assign_material_tags_to_elements(mesh_data, new_triangles)
+
+
         return new_nodes, new_lines, new_boundary_lines, new_triangles, cvs, mesh_view
 
 
@@ -200,19 +213,6 @@ class MeshBuilder():
             connected_nodes = cv.node.node_ids
             cv.support_CVs = [CVs[i] for i in connected_nodes]
         return np.array(CVs)
-
-
-def time_create_cross_referencing(self, tri_conn):
-    elapsed = timeit.timeit(lambda: self.create_cross_referencing_maps(tri_conn), number=1000)
-    print(f"CREATE CROSS REFERENCING: Average per run: {elapsed/1000:.10f} seconds")
-
-def time_create_entities(self, node_coords, tri_conn):
-    elapsed = timeit.timeit(lambda: self.create_entities(node_coords, tri_conn), number=1000)
-    print(f"CREATE ENTITIES: Average per run: {elapsed/1000:.10f} seconds")
-
-def time_assign_varying_number_references(self, new_nodes, new_triangles, tri_conn):
-    elapsed = timeit.timeit(lambda: self.assign_varying_number_references(new_nodes, new_triangles, tri_conn), number=1000)
-    print(f"ASSIGN VARYING NUMBER REFERENCES: Average per run: {elapsed/1000:.10f} seconds")
 
 
     

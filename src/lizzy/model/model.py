@@ -9,12 +9,13 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy._core.sensors import Sensor
     from lizzy._core.materials import PorousMaterial, Rosette, Resin
-    from lizzy._core.bcond.gates import Inlet
+    from lizzy._core.bcond.gates import Inlet, Vent
     from lizzy.datatypes import Solution
 
 
 from typing import Dict, Literal
 from types import MappingProxyType
+
 from lizzy._core.io import Reader, Writer
 from lizzy._core.cvmesh import Mesh
 from lizzy._core.bcond import GatesManager
@@ -24,6 +25,7 @@ from lizzy._core.datatypes import SimulationParameters
 from lizzy._core.materials import MaterialManager
 from lizzy.utils.splash_logo import print_logo
 from lizzy.utils.decorators import State, preinit_only, postinit_only
+
 
 class LizzyModel:
     """
@@ -291,7 +293,7 @@ class LizzyModel:
         return new_rosette
 
     @preinit_only
-    def create_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
+    def create_pressure_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
         """Creates a new inlet and add it to model existing inlets.
 
         Parameters
@@ -306,10 +308,17 @@ class LizzyModel:
         :class:`~lizzy.core.bcond.Inlet`
             The created inlet object.
         """
-        new_inlet = self._gates_manager.create_inlet(name, initial_pressure_value)
+        new_inlet = self._gates_manager.create_pressure_inlet(name, initial_pressure_value)
+        return new_inlet
+    
+    @preinit_only
+    def create_flowrate_inlet(self, name:str, initial_flowrate_value:float) -> Inlet:
+        # TODO: doc
+        new_inlet = self._gates_manager.create_flowrate_inlet(name, initial_flowrate_value)
         return new_inlet
 
     @preinit_only
+    # TODO: doc
     def assign_inlet(self, inlet_selector:Inlet | str, boundary_tag:str):
         """Selects an inlet from existing ones and assigns it to the indicated mesh boundary.
 
@@ -321,6 +330,16 @@ class LizzyModel:
             An existing mesh boundary tag where to assign the inlet.
         """
         self._gates_manager.assign_inlet(inlet_selector, boundary_tag)
+    
+    @preinit_only
+    def create_vent(self, name:str, vacuum_pressure:float=0.0) -> Vent:
+        # TODO: doc
+        new_vent = self._gates_manager.create_vent(name, vacuum_pressure)
+        return new_vent
+    
+    def assign_vent(self, vent_selector:Vent | str, boundary_tag:str):
+        # TODO: doc
+        self._gates_manager.assign_vent(vent_selector, boundary_tag)
     
     def fetch_inlet_by_name(self, inlet_name: str) -> Inlet:
         """Fetches an inlet from existing ones in the model.

@@ -17,7 +17,8 @@ class MaterialManager:
         self._assigned_materials : dict[str, PorousMaterial] = {}
         self._assigned_rosettes : dict[str, Rosette] = {}
         self._created_resins: dict[str, Resin] = {}
-        self._assigned_resin: Resin = None
+        self._assigned_resin: Resin = Resin("default_resin", 0.1)
+        self._resin_was_assigned = False
     
     @property
     def assigned_materials(self) -> dict[str, PorousMaterial]:
@@ -102,3 +103,4 @@ class MaterialManager:
     def assign_resin(self, resin_selector:str):
         selected_resin : Resin = self._fetch_resin(resin_selector)
         self._assigned_resin = selected_resin
+        self._resin_was_assigned = True

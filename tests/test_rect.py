@@ -21,7 +21,7 @@ def model():
 
 def test_fill_1bar(model: liz.LizzyModel):
     analytical_solution = 2500
-    model.create_inlet("inlet_left", 1E+05)
+    model.create_pressure_inlet("inlet_left", 1E+05)
     model.assign_inlet("inlet_left", "left_edge")
     model.initialise_solver()
     solution = model.solve()
@@ -30,7 +30,7 @@ def test_fill_1bar(model: liz.LizzyModel):
 
 def test_fill_01bar(model: liz.LizzyModel):
     analytical_solution = 25000
-    model.create_inlet("inlet_left", 1E+04)
+    model.create_pressure_inlet("inlet_left", 1E+04)
     model.assign_inlet("inlet_left", "left_edge")
     model.initialise_solver()
     solution = model.solve()

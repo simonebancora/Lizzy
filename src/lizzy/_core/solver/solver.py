@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from lizzy._core.cvmesh import Mesh
     from lizzy._core.materials import MaterialManager
 
+
 import sys
 import numpy as np
 import time
@@ -23,15 +24,19 @@ from .vsolvers import VelocitySolver
 from .fillsolver import FillSolver
 from .psolvers import PressureSolver, SolverType
 from .preprocessor import Preprocessor
+from lizzy._core.bcond.gates import InletType
 
 
 class SolverBCs:
-    __slots__ = ("dirichlet_idx", "dirichlet_vals", "p0_idx")
+    __slots__ = ("dirichlet_idx", "dirichlet_vals", "neumann_idx", "neumann_vals", "p0_idx", "p0_val")
 
     def __init__(self):
         self.dirichlet_idx = np.empty(0, dtype=np.uint32)
         self.dirichlet_vals = np.empty(0, dtype=np.float64)
+        self.neumann_idx = np.empty(0, dtype=np.uint32)
+        self.neumann_vals = np.empty(0, dtype=np.float64)
         self.p0_idx = np.empty(0, dtype=np.uint32)
+        self.p0_val = 0.0
 
 class Solver:
     def __init__(self, mesh:Mesh, gates_manager, simulation_parameters, material_manager:MaterialManager, sensor_manager:SensorManager, 
@@ -44,7 +49,7 @@ class Solver:
         self.material_manager = material_manager
         self.simulation_parameters = simulation_parameters
         self.vsolver = VelocitySolver(self.mesh.triangles)
-        self.preproc = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, simulation_parameters)
+        self.preproc = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, gates_manager, simulation_parameters)
 
         self.gates_manager : GatesManager = gates_manager 
         self.time_step_manager = TimeStepManager(mesh.mesh_view.n_nodes, mesh.mesh_view.n_triangles)
@@ -109,40 +114,78 @@ class Solver:
         self.solver_vars["cv_volumes_array"] = np.array(cv_volumes_list, dtype=float)
         
 
-    def update_dirichlet_bcs(self):
+    def update_bcs(self):
         # TODO this is more "update inlet dirichlet bcs" since it only applies pressure (doesn't add empty 0 pressure). It can be faster, but it doesn't run often (only at beginning of time intervals) so it's not critical
-        dirichlet_idx = []
+        dirichlet_idxs = []
         dirichlet_vals = []
-        for boundary_name, inlet in self.gates_manager._assigned_inlets.items():
-            try:
-                inlet_idx = self.mesh.mesh_view.phys_boundary_name_to_node_idxs[boundary_name]
-            except KeyError:
+        neumann_idxs_pairs = []
+        neumann_vals_per_idx_pair = []
+        dict_boundary_name_to_inlet_obj = self.gates_manager._assigned_inlets
+        phys_boundary_names_set = self.mesh.mesh_view.phys_boundary_names_set
+        viscosity = self.material_manager.assigned_resin.mu
+        for boundary_name, inlet in dict_boundary_name_to_inlet_obj.items():
+            if boundary_name not in phys_boundary_names_set:
                 print("\nFatal error: The application has terminated.")
                 print(f"Mesh does not contain physical tag: {boundary_name}")
                 sys.exit(1)
-            if inlet.is_open:
-                dirichlet_idx.append(inlet_idx)
-                dirichlet_vals.append(np.full(len(inlet_idx), inlet.p_value, dtype=np.float64))
+            match inlet.type:
+                case InletType.PRESSURE:
+                    node_idxs = self.mesh.mesh_view.phys_boundary_name_to_node_idxs[boundary_name]
+                    if inlet.is_open:
+                        # TODO: BUG: we will have a problem here if 2 different boundary edges with bcs applied share a common node...
+                        dirichlet_idxs.append(node_idxs)
+                        dirichlet_vals.append(np.full(len(node_idxs), inlet.p_value, dtype=np.float64))
+                case InletType.FLOW_RATE:
+                    boundary_line_idxs = self.mesh.mesh_view.phys_boundary_name_to_boundary_line_idxs[boundary_name]
+                    boundary_line_objs = [self.mesh.boundary_lines[i] for i in boundary_line_idxs]
+                    tri_objs = [self.mesh.triangles[line.idx] for line in boundary_line_objs]
+                    boundary_line_thicknesses = np.array([tri.h for tri in tri_objs])
+                    boundary_line_lengths = np.array([line.length for line in boundary_line_objs])
+                    boundary_flux_areas = boundary_line_thicknesses * boundary_line_lengths
+                    total_area = np.sum(boundary_flux_areas)
+                    node_pairs_idxs = self.mesh.mesh_view.boundary_line_idx_to_node_idxs[boundary_line_idxs] # gives 2 node idxs. At this point, node_pair_idxs (n_lines, 2) and line_lengths (n_lines, ) are in the same order - shape: (n_neumann_lines, 2)
+                    neumann_vals_pairs = np.repeat(boundary_flux_areas/2, 2) * (inlet.q_value/total_area) # TODO temporary dummy value for flow rate. Need calc area flux
+                    neumann_vals_pairs = neumann_vals_pairs.reshape(len(node_pairs_idxs), 2) # at this point we have: node pairs, val pairs (dummy) where we need to modify rhs f vector - shape: (n_neumann_lines, 2)
+                    if inlet.is_open:
+                        neumann_idxs_pairs.append(node_pairs_idxs)
+                        neumann_vals_per_idx_pair.append(neumann_vals_pairs)
+                    print("WARNING: Flow rate BC not fully implemented. Results may be incorrect.")
+                case _:
+                    pass
+        # TODO: do this following assertion a little better...
         try:
-            self.bcs.dirichlet_idx = np.concatenate(dirichlet_idx)
-            self.bcs.dirichlet_vals = np.concatenate(dirichlet_vals)
+            if len(dirichlet_idxs) > 0:
+                self.bcs.dirichlet_idx = np.concatenate(dirichlet_idxs)
+                self.bcs.dirichlet_vals = np.concatenate(dirichlet_vals)
+            if len(neumann_idxs_pairs) > 0:
+                self.bcs.neumann_idx = np.concatenate(neumann_idxs_pairs).flatten()
+                self.bcs.neumann_vals = np.concatenate(neumann_vals_per_idx_pair).flatten()
         except ValueError:
             print("\nFatal error: The application has terminated.")
             print("No inlets are currently open. At least one inlet must be open at all times to allow resin to flow into the part.")
             sys.exit(1)
+        
+        # assign vacuum vent pressure if vent exists
+        if len(self.gates_manager._assigned_vents) > 0:
+            vent_obj = next(iter(self.gates_manager._assigned_vents.values()))
+            self.bcs.p0_val = vent_obj.vacuum_pressure
+        else:
+            self.bcs.p0_val = 0.0
 
     def get_empty_nodes_idx(self, fill_factor):
         """
-        Complementary to "update_dirichlet_bcs()", this updates the indices of all nodes with a fill factor < 1.0. These will be uses to assign an internal condition p=0.
+        Complementary to "update_bcs()", this updates the indices of all nodes with a fill factor < 1.0. These will be uses to assign an internal condition p=0.
         """
         return np.where(fill_factor < 1.0)[0]
 
+    # TODO:IMPORTANT this must be updated for neumann
     def fill_initial_cvs(self):
         """
-        Must be called AFTER calling "update_dirichlet_bcs()"
+        Must be called AFTER calling "update_bcs()"
         """
         # initial_cvs = self.mesh.CVs[self.bcs.dirichlet_idx]
         self.solver_vars["fill_factor_array"][self.bcs.dirichlet_idx] = 1
+        self.solver_vars["fill_factor_array"][self.bcs.neumann_idx] = 1
         # for cv in initial_cvs:
         #     cv.fill = 1.0
 
@@ -151,7 +194,7 @@ class Solver:
     def generate_initial_time_step(self):
         time_0 = 0
         dt_0 = 0
-        p_0 = np.zeros(self.mesh.nodes.N)
+        p_0 = np.full(self.mesh.nodes.N, self.bcs.p0_val, dtype=np.float64)
         fill_factor_0 = np.zeros(self.mesh.nodes.N)
         flow_front_0 = np.zeros(self.mesh.nodes.N)
         for idx, val in zip(self.bcs.dirichlet_idx, self.bcs.dirichlet_vals):
@@ -175,7 +218,7 @@ class Solver:
         self.bcs = SolverBCs()
         self.mesh.empty_cvs()
         self.gates_manager.reset_inlets()
-        self.update_dirichlet_bcs()
+        self.update_bcs()
         self.fill_initial_cvs()
         p0_idxs = self.get_empty_nodes_idx(self.solver_vars["fill_factor_array"])
         self.n_empty_cvs = len(p0_idxs)
@@ -225,12 +268,19 @@ class Solver:
         fill_factor = self.solver_vars["fill_factor_array"]
         free_surface = self.solver_vars["free_surface_array"]
         cv_volumes = self.solver_vars["cv_volumes_array"]
+
+        neumann_idxs = self.bcs.neumann_idx
+        neumann_vals = self.bcs.neumann_vals
+        f_neumann = self.f_orig.copy()
+        for i in range(len(neumann_idxs)):
+            f_neumann[neumann_idxs[i]] += neumann_vals[i]
         if self.use_masked_solver:
             p = PressureSolver.solve_with_mask(
-                self.K_sing, self.f_orig, self.bcs, 
+                self.K_sing, f_neumann, self.bcs, 
                 self.solver_type, tol=self.solver_tol,
                 max_iter=self.solver_max_iter, verbose=self.solver_verbose,
                 **self.solver_kwargs)
+        # TODO: remove non masked
         else:
             k, f = PressureSolver.apply_bcs(self.K_sing, self.f_orig, self.bcs)
             p = PressureSolver.solve(k, f, self.solver_type, tol=self.solver_tol, 
@@ -267,7 +317,7 @@ class Solver:
         self.step_end_time = np.inf  # reset step end time for full solve
         print("SOLVE STARTED for mesh with {} elements using {} solver".format(
             self.mesh.triangles.N, solver_mode))
-        self.update_dirichlet_bcs()
+        self.update_bcs()
         while self.n_empty_cvs > 0:
             self.solve_time_step()
             if log == "on":
@@ -285,7 +335,7 @@ class Solver:
         solve_time_start = time.time()
         # print("STEP SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
         while self.step_completed == False and self.n_empty_cvs > 0:
-            self.update_dirichlet_bcs()
+            self.update_bcs()
             self.solve_time_step()
             if log == "on":
                 print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs),

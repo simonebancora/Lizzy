@@ -27,19 +27,15 @@ from .psolvers import PressureSolver, SolverType
 
 
 class Preprocessor:
-    def __init__(self, mesh:Mesh, fill_solver:FillSolver, vsolver:VelocitySolver, material_manager:MaterialManager, simulation_parameters:SimulationParameters):
+    def __init__(self, mesh:Mesh, fill_solver:FillSolver, vsolver:VelocitySolver, material_manager:MaterialManager, gates_manager:GatesManager, simulation_parameters:SimulationParameters):
         self.mesh = mesh
         self.fill_solver = fill_solver
         self.vsolver = vsolver
         self.material_manager = material_manager
+        self.gates_manager = gates_manager
         self.simulation_parameters = simulation_parameters
 
-    # SOLVER has already instantiated fill solver, velocity solver (ONCE)
 
-    # SEQUENCE:
-
-
-    
     # 1. check things were assigned
     def assignment_checks(self):
         if not self.simulation_parameters.has_been_assigned:
@@ -47,7 +43,10 @@ class Preprocessor:
         if self.material_manager._assigned_resin == None:
             print(f"ERROR: No resin assigned to the model. Create a resin using `LizzyModel.create_resin` and assign it using `LizzyModel.assign_resin`")
             sys.exit(1)
-    
+        if self.material_manager._resin_was_assigned == False:
+            print("WARNING-MATERIAL MANAGER: No resin was assigned. Running simulation with default resin: viscosity value 0.1 Pa.s. Create a resin using `LizzyModel.create_resin` and assign it using `LizzyModel.assign_resin` to remove this warning.")
+        self.gates_manager.assert_unique_boundary_assignments()
+
     # 2. assign materials to elements
     def assign_materials_to_elements(self):
         materials = self.material_manager.assigned_materials

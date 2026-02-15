@@ -12,7 +12,7 @@ model.assign_resin("resin")
 model.create_material("domain_material", (1E-10, 1E-10, 1E-10), 0.6, 1.0)
 model.assign_material("domain_material", 'domain')
 
-model.create_inlet("inner_radius", 100000)
+model.create_pressure_inlet("inner_radius", 100000)
 model.assign_inlet("inner_radius", "inlet")
 
 model.initialise_solver()
