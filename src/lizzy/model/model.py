@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy._core.sensors import Sensor
     from lizzy._core.materials import PorousMaterial, Rosette, Resin
-    from lizzy._core.bcond.gates import Inlet, PressureInlet
+    from lizzy._core.bcond.gates import Inlet, Vent
     from lizzy.datatypes import Solution
 
 
@@ -318,6 +318,7 @@ class LizzyModel:
         return new_inlet
 
     @preinit_only
+    # TODO: doc
     def assign_inlet(self, inlet_selector:Inlet | str, boundary_tag:str):
         """Selects an inlet from existing ones and assigns it to the indicated mesh boundary.
 
@@ -329,6 +330,16 @@ class LizzyModel:
             An existing mesh boundary tag where to assign the inlet.
         """
         self._gates_manager.assign_inlet(inlet_selector, boundary_tag)
+    
+    @preinit_only
+    def create_vent(self, name:str, vacuum_pressure:float=0.0) -> Vent:
+        # TODO: doc
+        new_vent = self._gates_manager.create_vent(name, vacuum_pressure)
+        return new_vent
+    
+    def assign_vent(self, vent_selector:Vent | str, boundary_tag:str):
+        # TODO: doc
+        self._gates_manager.assign_vent(vent_selector, boundary_tag)
     
     def fetch_inlet_by_name(self, inlet_name: str) -> Inlet:
         """Fetches an inlet from existing ones in the model.

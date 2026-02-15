@@ -147,7 +147,7 @@ class MeshBuilder:
 
 
 
-    def assign_varying_number_references(self, nodes:list[Node], triangles, tri_conn):
+    def assign_varying_number_references(self, nodes:list[Node], triangles):
         node_idx_to_node_idxs = [None]*len(nodes)
         node_idx_to_tri_idxs = [None]*len(nodes)
         
@@ -181,18 +181,15 @@ class MeshBuilder:
         mesh_view.n_nodes = n_nodes
         mesh_view.n_lines = n_lines
         mesh_view.n_triangles = n_triangles
-        # time_create_cross_referencing(self, tri_conn)
         physical_lines_conn = mesh_data["physical_lines_conn"]
         boundary_line_idx_to_tri_idx = self.create_cross_referencing_maps(n_nodes, n_lines, n_triangles, tri_conn, physical_lines_conn)
-        # time_create_entities(self, node_coords, tri_conn)
         phys_boundary_name_to_boundary_line_idxs:dict = mesh_data["physical_lines"]
         mesh_view.phys_boundary_names_set = set(phys_boundary_name_to_boundary_line_idxs.keys())
         mesh_view.phys_boundary_name_to_node_idxs = mesh_data['physical_nodes']
         mesh_view.phys_boundary_name_to_boundary_line_idxs = phys_boundary_name_to_boundary_line_idxs
         mesh_view.boundary_line_idx_to_node_idxs = physical_lines_conn
         new_nodes, new_lines, new_triangles, new_boundary_lines = self.create_entities(n_nodes, n_triangles, n_lines, node_coords, tri_conn, physical_lines_conn, boundary_line_idx_to_tri_idx)
-        # time_assign_varying_number_references(self, new_nodes, new_triangles, tri_conn)
-        node_idx_to_node_idxs, node_idx_to_tri_idxs = self.assign_varying_number_references(new_nodes, new_triangles, tri_conn)
+        node_idx_to_node_idxs, node_idx_to_tri_idxs = self.assign_varying_number_references(new_nodes, new_triangles)
         mesh_view.node_idx_to_node_idxs = node_idx_to_node_idxs
         mesh_view.node_idx_to_tri_idxs = node_idx_to_tri_idxs
         mesh_view.boundary_line_idx_to_tri_idx = boundary_line_idx_to_tri_idx
@@ -216,19 +213,6 @@ class MeshBuilder:
             connected_nodes = cv.node.node_ids
             cv.support_CVs = [CVs[i] for i in connected_nodes]
         return np.array(CVs)
-
-
-def time_create_cross_referencing(self, tri_conn):
-    elapsed = timeit.timeit(lambda: self.create_cross_referencing_maps(tri_conn), number=1000)
-    print(f"CREATE CROSS REFERENCING: Average per run: {elapsed/1000:.10f} seconds")
-
-def time_create_entities(self, node_coords, tri_conn):
-    elapsed = timeit.timeit(lambda: self.create_entities(node_coords, tri_conn), number=1000)
-    print(f"CREATE ENTITIES: Average per run: {elapsed/1000:.10f} seconds")
-
-def time_assign_varying_number_references(self, new_nodes, new_triangles, tri_conn):
-    elapsed = timeit.timeit(lambda: self.assign_varying_number_references(new_nodes, new_triangles, tri_conn), number=1000)
-    print(f"ASSIGN VARYING NUMBER REFERENCES: Average per run: {elapsed/1000:.10f} seconds")
 
 
     

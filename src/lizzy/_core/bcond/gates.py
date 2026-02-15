@@ -113,7 +113,29 @@ class FlowRateInlet(Inlet):
         self._q_value = self._q0
 
 
-    
+class Vent:
+    def __init__(self, name:str, vacuum_pressure:float=0.0):
+        """A class respresenting a vent boundary. Vent vacuum pressure will be applied to all non-filled regions in the domain.
 
+        Parameters
+        ----------
+        name : str
+            Unique name of the vent.
+        """
+        self.name = name
+        self._assigned = False
+        self._vacuum_pressure = vacuum_pressure # Vacuum pressure value at the vent [Pa]
+
+    @property
+    def vacuum_pressure(self) -> float:
+        """Vacuum pressure value [Pa].
+        """
+        return self._vacuum_pressure
+    
+    @vacuum_pressure.setter
+    def vacuum_pressure(self, value: float):
+        if value < 0:
+            raise ValueError("vacuum_pressure must be non-negative")
+        self._vacuum_pressure = value
 
 

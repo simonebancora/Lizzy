@@ -28,7 +28,7 @@ from lizzy._core.bcond.gates import InletType
 
 
 class SolverBCs:
-    __slots__ = ("dirichlet_idx", "dirichlet_vals", "neumann_idx", "neumann_vals", "p0_idx")
+    __slots__ = ("dirichlet_idx", "dirichlet_vals", "neumann_idx", "neumann_vals", "p0_idx", "p0_val")
 
     def __init__(self):
         self.dirichlet_idx = np.empty(0, dtype=np.uint32)
@@ -36,6 +36,7 @@ class SolverBCs:
         self.neumann_idx = np.empty(0, dtype=np.uint32)
         self.neumann_vals = np.empty(0, dtype=np.float64)
         self.p0_idx = np.empty(0, dtype=np.uint32)
+        self.p0_val = 0.0
 
 class Solver:
     def __init__(self, mesh:Mesh, gates_manager, simulation_parameters, material_manager:MaterialManager, sensor_manager:SensorManager, 
@@ -48,7 +49,7 @@ class Solver:
         self.material_manager = material_manager
         self.simulation_parameters = simulation_parameters
         self.vsolver = VelocitySolver(self.mesh.triangles)
-        self.preproc = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, simulation_parameters)
+        self.preproc = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, gates_manager, simulation_parameters)
 
         self.gates_manager : GatesManager = gates_manager 
         self.time_step_manager = TimeStepManager(mesh.mesh_view.n_nodes, mesh.mesh_view.n_triangles)
@@ -163,6 +164,13 @@ class Solver:
             print("\nFatal error: The application has terminated.")
             print("No inlets are currently open. At least one inlet must be open at all times to allow resin to flow into the part.")
             sys.exit(1)
+        
+        # assign vacuum vent pressure if vent exists
+        if len(self.gates_manager._assigned_vents) > 0:
+            vent_obj = next(iter(self.gates_manager._assigned_vents.values()))
+            self.bcs.p0_val = vent_obj.vacuum_pressure
+        else:
+            self.bcs.p0_val = 0.0
 
     def get_empty_nodes_idx(self, fill_factor):
         """
@@ -186,7 +194,7 @@ class Solver:
     def generate_initial_time_step(self):
         time_0 = 0
         dt_0 = 0
-        p_0 = np.zeros(self.mesh.nodes.N)
+        p_0 = np.full(self.mesh.nodes.N, self.bcs.p0_val, dtype=np.float64)
         fill_factor_0 = np.zeros(self.mesh.nodes.N)
         flow_front_0 = np.zeros(self.mesh.nodes.N)
         for idx, val in zip(self.bcs.dirichlet_idx, self.bcs.dirichlet_vals):
@@ -272,6 +280,7 @@ class Solver:
                 self.solver_type, tol=self.solver_tol,
                 max_iter=self.solver_max_iter, verbose=self.solver_verbose,
                 **self.solver_kwargs)
+        # TODO: remove non masked
         else:
             k, f = PressureSolver.apply_bcs(self.K_sing, self.f_orig, self.bcs)
             p = PressureSolver.solve(k, f, self.solver_type, tol=self.solver_tol, 

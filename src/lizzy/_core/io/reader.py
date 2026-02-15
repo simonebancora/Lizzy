@@ -68,7 +68,6 @@ class Reader:
         except meshio._exceptions.ReadError:
             raise FileNotFoundError(f"Mesh file not found: {mesh_path}")
         
-        # TODO: this block until return is very slow
         all_nodes_coords : np.ndarray = mesh_file.points
         physical_domain_names = []
         physical_line_names = []

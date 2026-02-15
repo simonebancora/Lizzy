@@ -157,7 +157,7 @@ class PressureSolver:
         """
         # Combine all Dirichlet DOFs (inlet pressures + empty node p=0 conditions)
         dirichlet_idx = np.concatenate([bcs.dirichlet_idx, bcs.p0_idx])
-        dirichlet_vals = np.concatenate([bcs.dirichlet_vals, np.zeros(len(bcs.p0_idx))])
+        dirichlet_vals = np.concatenate([bcs.dirichlet_vals, np.full(len(bcs.p0_idx), bcs.p0_val)])
         
         # Identify free DOFs (unknowns to solve for)
         N = k_original.shape[0]
