@@ -6,14 +6,10 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from lizzy._core.solver.fillsolver import FillSolver
 
 import numpy as np
 from .collections import nodes, lines, elements
 from lizzy._core.cvmesh.entities import Node, Line, BoundaryLine, Triangle, CV
-
-import timeit
 
 class MeshView:
     def __init__(self):

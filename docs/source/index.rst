@@ -24,8 +24,6 @@ The name "Lizzy" was inspired by the character of Elizabeth Bennet, companion of
    user_guide/using_lizzy
    api_reference/api_reference_index
 
-
-
 .. raw:: html
 
    <div class="doc-cards">

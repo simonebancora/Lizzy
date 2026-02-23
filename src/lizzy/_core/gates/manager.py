@@ -104,24 +104,6 @@ class GatesManager:
     
     # TODO: functionality should be added to change the pressure over time, along different time interpolation options
     def change_inlet_pressure(self, inlet_selector:Inlet | str, pressure_value:float, mode: Literal["set", "delta"] = "set"):
-        """Changes the pressure value at the selected inlet to a new value, according to the selected mode.
-
-        Parameters
-        ----------
-        inlet_selector : Inlet | str
-            Either the inlet object to assign, or the name of an existing inlet.
-        pressure_value : float
-            The new pressure value to set at the inlet.
-        mode : {'set', 'delta'}, optional
-            How to apply the new pressure value:
-
-            - ``set`` (default): directly set the new pressure value.
-            - ``delta``: increment the existing pressure by the given value.
-        Raises
-        ------
-        KeyError
-            If the `mode` is not one of the allowed values.
-        """
         selected_inlet = self._fetch_inlet(inlet_selector)
         match mode:
             case "set":
@@ -132,33 +114,14 @@ class GatesManager:
                 raise KeyError
 
     def open_inlet(self, inlet_selector:Inlet | str):
-        """Sets the selected inlet state to `open`. When open, the inlet applies its p_value as a Dirichlet boundary condition.
-
-        Parameters
-        ----------
-        inlet_selector : Inlet | str
-            Either the inlet object to assign, or the name of an existing inlet.
-        """
         selected_inlet = self._fetch_inlet(inlet_selector)
         selected_inlet.set_open(True)
 
     def close_inlet(self, inlet_selector:Inlet | str):
-        """Sets the selected inlet state to `closed`. When closed, the inlet acts as a Neumann natural boundary condition (no flux).
-
-        Parameters
-        ----------
-        inlet_selector : Inlet | str
-            Either the inlet object to assign, or the name of an existing inlet.
-        
-        Note
-        ----
-        An inlet can be opened and closed at any time during the simulation to simulate valve operations. The stored p_value is preserved when the inlet is closed.
-        """
         selected_inlet = self._fetch_inlet(inlet_selector)
         selected_inlet.set_open(False)
     
     def reset_inlets(self):
-        """Calls the :meth:`~lizzy.bcond.bcond.Inlet.reset` method on all inlets currently present in the :attr:`~lizzy.bcond.bcond.BCManager.assigned_inlets` dictionary."""
         for tag, inlet in self._assigned_inlets.items():
             inlet.reset()
 
@@ -166,15 +129,6 @@ class GatesManager:
         """Checks that each boundary has at most one inlet or vent assigned, and raises an error if this is not the case.
         """
         boundary_names = list(self._assigned_inlets.keys()) + list(self._assigned_vents.keys())
-        print(boundary_names)
         if len(boundary_names) != len(set(boundary_names)):
             print("ERROR: Multiple inlets or vents assigned to the same boundary. Check the assigned inlets and vents for duplicate boundary tags.")
             sys.exit(1)
-
- 
-    # def remove_inlet(self, *inlets: Inlet):
-    #     for inlet in inlets:
-    #         try:
-    #             self.inlets.remove(inlet)
-    #         except ValueError:
-    #             print (f"Inlet '{inlet.physical_tag}' not assigned in BCManager.")

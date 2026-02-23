@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from lizzy._core.cvmesh import mesh
 if TYPE_CHECKING:
     from lizzy._core.sensors import SensorManager
-    from lizzy._core.bcond import GatesManager
+    from lizzy._core.gates import GatesManager
     from lizzy._core.cvmesh import Mesh
     from lizzy._core.materials import MaterialManager
 
@@ -24,7 +24,7 @@ from .vsolvers import VelocitySolver
 from .fillsolver import FillSolver
 from .psolvers import PressureSolver, SolverType
 from .preprocessor import Preprocessor
-from lizzy._core.bcond.gates import InletType
+from lizzy._core.gates.gates import InletType
 
 
 class SolverBCs:
@@ -41,7 +41,7 @@ class SolverBCs:
 class Solver:
     def __init__(self, mesh:Mesh, gates_manager, simulation_parameters, material_manager:MaterialManager, sensor_manager:SensorManager, 
                  solver_type=SolverType.ITERATIVE_PETSC, solver_tol=1e-8, solver_max_iter=1000, 
-                 solver_verbose=False, use_masked_solver=True, **solver_kwargs):
+                 solver_verbose=False, **solver_kwargs):
         
         # create / assign all core components
         self.mesh : Mesh = mesh
@@ -67,7 +67,6 @@ class Solver:
         self.solver_tol = solver_tol
         self.solver_max_iter = solver_max_iter
         self.solver_verbose = solver_verbose
-        self.use_masked_solver = use_masked_solver
         self.solver_kwargs = solver_kwargs
         self.N_nodes = mesh.mesh_view.n_nodes
         self.K_sing = None
@@ -264,7 +263,6 @@ class Solver:
         return write_out
 
     def solve_time_step(self):
-        # Use masked solver (optimized) or traditional solver
         fill_factor = self.solver_vars["fill_factor_array"]
         free_surface = self.solver_vars["free_surface_array"]
         cv_volumes = self.solver_vars["cv_volumes_array"]
@@ -274,18 +272,11 @@ class Solver:
         f_neumann = self.f_orig.copy()
         for i in range(len(neumann_idxs)):
             f_neumann[neumann_idxs[i]] += neumann_vals[i]
-        if self.use_masked_solver:
-            p = PressureSolver.solve_with_mask(
-                self.K_sing, f_neumann, self.bcs, 
-                self.solver_type, tol=self.solver_tol,
-                max_iter=self.solver_max_iter, verbose=self.solver_verbose,
-                **self.solver_kwargs)
-        # TODO: remove non masked
-        else:
-            k, f = PressureSolver.apply_bcs(self.K_sing, self.f_orig, self.bcs)
-            p = PressureSolver.solve(k, f, self.solver_type, tol=self.solver_tol, 
-                                    max_iter=self.solver_max_iter, verbose=self.solver_verbose, 
-                                    **self.solver_kwargs)
+        p = PressureSolver.solve_with_mask(
+            self.K_sing, f_neumann, self.bcs, 
+            self.solver_type, tol=self.solver_tol,
+            max_iter=self.solver_max_iter, verbose=self.solver_verbose,
+            **self.solver_kwargs)
 
         v_array = self.vsolver.calculate_elem_velocities(p, self.material_manager.assigned_resin.mu)
         # v_nodal_array = self.vsolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
@@ -313,10 +304,8 @@ class Solver:
 
     def solve(self, log="on") -> dict:
         solve_time_start = time.time()
-        solver_mode = "masked (optimized)" if self.use_masked_solver else "traditional"
         self.step_end_time = np.inf  # reset step end time for full solve
-        print("SOLVE STARTED for mesh with {} elements using {} solver".format(
-            self.mesh.triangles.N, solver_mode))
+        print("SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
         self.update_bcs()
         while self.n_empty_cvs > 0:
             self.solve_time_step()

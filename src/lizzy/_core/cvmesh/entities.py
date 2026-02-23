@@ -81,6 +81,7 @@ class Element2D:
         self.line_ids : list[int] = []
         self.centroid = np.zeros(3)
         self.v : np.ndarray = np.zeros((3,1))
+        self.material_assigned = False
 
 class Triangle(Element2D):
     """Class representing a triangular element.

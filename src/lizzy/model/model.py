@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy._core.sensors import Sensor
     from lizzy._core.materials import PorousMaterial, Rosette, Resin
-    from lizzy._core.bcond.gates import Inlet, Vent
+    from lizzy._core.gates.gates import Inlet, PressureInlet, FlowRateInlet, Vent
     from lizzy.datatypes import Solution
 
 
@@ -18,7 +18,7 @@ from types import MappingProxyType
 
 from lizzy._core.io import Reader, Writer
 from lizzy._core.cvmesh import Mesh
-from lizzy._core.bcond import GatesManager
+from lizzy._core.gates import GatesManager
 from lizzy._core.solver import Solver, SolverType
 from lizzy._core.sensors import SensorManager
 from lizzy._core.datatypes import SimulationParameters
@@ -51,6 +51,7 @@ class LizzyModel:
     def _create_components(self):
         self._reader = Reader()
         self._writer = Writer()
+        self._mesh = Mesh()
         self._simulation_parameters = SimulationParameters()
         self._material_manager = MaterialManager()
         self._gates_manager = GatesManager()
@@ -190,7 +191,7 @@ class LizzyModel:
         """
         self._reader.read_mesh_file(mesh_file_path)
         self._model_name = self._reader.case_name
-        self._mesh = Mesh(self._reader)
+        self._mesh.build_mesh(self._reader.mesh_data)
         
     
     def print_mesh_info(self) -> None:
@@ -260,7 +261,12 @@ class LizzyModel:
         rosette : Rosette, optional
             Orientation rosette to apply to the material. If none provided, a default rosette with k1 aligned with the global X axis is assigned.
         """
-        self._material_manager.assign_material(material_selector, mesh_tag, rosette)
+        material, rosette = self._material_manager.assign_material(material_selector, mesh_tag, rosette)
+        try:
+            element_idxs = self._reader.mesh_data["physical_domains"][mesh_tag]
+        except KeyError:
+            raise KeyError(f"Domain tag '{mesh_tag}' not found in mesh physical domains. Check the name, or assign the material to an existing mesh tag.")
+        self._mesh.update_elements_with_assigned_material(element_idxs, material, rosette)
 
     @preinit_only
     def assign_resin(self, resin_selector):
@@ -293,8 +299,8 @@ class LizzyModel:
         return new_rosette
 
     @preinit_only
-    def create_pressure_inlet(self, name:str, initial_pressure_value:float) -> Inlet:
-        """Creates a new inlet and add it to model existing inlets.
+    def create_pressure_inlet(self, name:str, initial_pressure_value:float) -> PressureInlet:
+        """Creates a new inlet where a pressure boundary condition is applied.
 
         Parameters
         ----------
@@ -305,22 +311,34 @@ class LizzyModel:
 
         Returns
         -------
-        :class:`~lizzy.core.bcond.Inlet`
-            The created inlet object.
+        :class:`~lizzy.gates.PressureInlet`
+            The created inlet.
         """
         new_inlet = self._gates_manager.create_pressure_inlet(name, initial_pressure_value)
         return new_inlet
     
     @preinit_only
-    def create_flowrate_inlet(self, name:str, initial_flowrate_value:float) -> Inlet:
-        # TODO: doc
+    def create_flowrate_inlet(self, name:str, initial_flowrate_value:float) -> FlowRateInlet:
+        """Creates a new inlet where a volumetric flow rate boundary condition is applied.
+
+        Parameters
+        ----------
+        name : str
+            Name of the inlet.
+        initial_flowrate_value : float
+            Initial volumetric flow rate value at the inlet.
+
+        Returns
+        -------
+        :class:`~lizzy.gates.FlowRateInlet`
+            The created inlet.
+        """
         new_inlet = self._gates_manager.create_flowrate_inlet(name, initial_flowrate_value)
         return new_inlet
 
     @preinit_only
-    # TODO: doc
     def assign_inlet(self, inlet_selector:Inlet | str, boundary_tag:str):
-        """Selects an inlet from existing ones and assigns it to the indicated mesh boundary.
+        """Selects an inlet from created ones and assigns it to the indicated mesh boundary.
 
         Parameters
         ----------
@@ -333,12 +351,34 @@ class LizzyModel:
     
     @preinit_only
     def create_vent(self, name:str, vacuum_pressure:float=0.0) -> Vent:
-        # TODO: doc
+        """Creates a new vent where a vacuum pressure boundary condition is applied.
+
+        Parameters
+        ----------
+        name : str
+            Name of the vent.
+        vacuum_pressure : float, optional
+            Vacuum pressure value at the vent (default is 0.0).
+
+        Returns
+        -------
+        :class:`~lizzy.gates.Vent`
+            The created vent.
+        """
         new_vent = self._gates_manager.create_vent(name, vacuum_pressure)
         return new_vent
     
+    @preinit_only
     def assign_vent(self, vent_selector:Vent | str, boundary_tag:str):
-        # TODO: doc
+        """Selects a vent from created ones and assigns it to the indicated mesh boundary.
+
+        Parameters
+        ----------
+        vent_selector : Vent | str
+            Either the vent object to assign, or the name of an existing vent.
+        boundary_tag : str
+            An existing mesh boundary tag where to assign the vent.
+        """
         self._gates_manager.assign_vent(vent_selector, boundary_tag)
     
     def fetch_inlet_by_name(self, inlet_name: str) -> Inlet:
@@ -415,16 +455,18 @@ class LizzyModel:
         """
         self._sensor_manager.add_sensor(x, y, z)
 
-
+    @postinit_only
     def print_sensor_readings(self):
         """Prints to the console the current values of :attr:`~lizzy.sensors.Sensor.time`, :attr:`~lizzy.sensors.Sensor.pressure`, :attr:`~lizzy.sensors.Sensor.fill_factor` and :attr:`~lizzy.sensors.Sensor.velocity` of each sensor.
         """
         self._sensor_manager.print_sensor_readings()
 
+    @postinit_only
     def get_sensor_trigger_states(self) -> list[bool]:
         """Returns a list of sensor trigger states: True if the sensor has been triggered, False otherwise."""
         return self._sensor_manager.sensor_trigger_states
     
+
     def get_sensor_by_id(self, idx)  -> Sensor:
         """Fetches a sensor by its index.
         """
@@ -433,7 +475,7 @@ class LizzyModel:
 
     def initialise_solver(self, solver_type:SolverType = SolverType.ITERATIVE_PETSC, 
                          solver_tol:float = 1e-8, solver_max_iter:int = 1000, 
-                         solver_verbose:bool = False, use_masked_solver:bool = True,
+                         solver_verbose:bool = False,
                          **solver_kwargs):
         """
         Initialize the solver for the filling simulation.
@@ -449,17 +491,13 @@ class LizzyModel:
             Maximum iterations for iterative solvers
         solver_verbose : bool
             Print solver convergence information
-        use_masked_solver : bool
-            Use optimized masked solver (only solves for free DOFs). 
-            Default is True for better performance.
         **solver_kwargs
             Additional solver-specific keyword arguments
         """
         
         self._solver = Solver(self._mesh, self._gates_manager, self._simulation_parameters, 
                             self._material_manager, self._sensor_manager, solver_type, 
-                            solver_tol, solver_max_iter, solver_verbose, use_masked_solver,
-                            **solver_kwargs)
+                            solver_tol, solver_max_iter, solver_verbose, **solver_kwargs)
         
         self._state = State.POST_INIT
 

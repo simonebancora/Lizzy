@@ -99,6 +99,9 @@ class MaterialManager:
         selected_material.assigned = True
         self._assigned_materials[mesh_tag] = selected_material
         self._assigned_rosettes[mesh_tag] = rosette
+        return selected_material, rosette
+    
+
     
     def assign_resin(self, resin_selector:str):
         selected_resin : Resin = self._fetch_resin(resin_selector)
