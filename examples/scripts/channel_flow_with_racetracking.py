@@ -3,7 +3,7 @@ from lizzy import SolverType
 
 model = liz.LizzyModel()
 
-model.read_mesh_file("../meshes/Rect_with_RT.msh")
+model.read_mesh_file("../meshes/Rect_with_RT_S4.msh")
 model.assign_simulation_parameters(wo_delta_time=10, fill_tolerance=0.01)
 
 model.create_resin("resin", 0.1)
@@ -25,5 +25,5 @@ model.assign_vent("outlet", "outlet_zone")
 model.initialise_solver(SolverType.ITERATIVE_PETSC)
 solution = model.solve()
 
-model.save_results(solution, "rect_with_RT")
+model.save_results(solution, "rect_with_RT_S4")
 
