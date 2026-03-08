@@ -175,15 +175,15 @@ class Solver:
     def generate_initial_time_step(self):
         time_0 = 0
         dt_0 = 0
-        p_0 = np.full(self.mesh.nodes.N, self.bcs.p0_val, dtype=np.float64)
-        fill_factor_0 = np.zeros(self.mesh.nodes.N)
-        flow_front_0 = np.zeros(self.mesh.nodes.N)
+        p_0 = np.full(len(self.mesh.nodes), self.bcs.p0_val, dtype=np.float64)
+        fill_factor_0 = np.zeros(len(self.mesh.nodes))
+        flow_front_0 = np.zeros(len(self.mesh.nodes))
         for idx, val in zip(self.bcs.dirichlet_idx, self.bcs.dirichlet_vals):
             p_0[idx] = val
             fill_factor_0[idx] = 1
             flow_front_0[idx] = 1
-        v_0 = np.zeros((self.mesh.triangles.N, 3))
-        v_nodal_0 = np.zeros((self.mesh.nodes.N, 3))
+        v_0 = np.zeros((len(self.mesh.triangles), 3))
+        v_nodal_0 = np.zeros((len(self.mesh.nodes), 3))
         write_out_0 = True
         initial_time_step = (time_0, dt_0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0, write_out_0)
         return initial_time_step
@@ -283,7 +283,7 @@ class Solver:
     def solve(self, log="on"):
         solve_time_start = time.time()
         self.step_end_time = np.inf  # reset step end time for full solve
-        print("SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
+        print("SOLVE STARTED for mesh with {} elements".format(len(self.mesh.triangles)))
         self.update_bcs()
         while self.n_empty_cvs > 0:
             self.solve_time_step()

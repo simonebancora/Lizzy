@@ -11,7 +11,6 @@ if TYPE_CHECKING:
     from lizzy._core.materials import PorousMaterial, Rosette, Resin
     from lizzy._core.gates.gates import Inlet, PressureInlet, FlowRateInlet, Vent
     from lizzy._core.cvmesh.entities import Node, Triangle
-    from lizzy._core.cvmesh.collections import nodes, elements
     from lizzy.datatypes import Solution
 
 from typing import Dict, Literal
@@ -161,13 +160,13 @@ class LizzyModel:
     # ===========================================================================
     
     @preinit_only
-    def get_elements(self) -> elements:
+    def get_elements(self) -> list[Triangle]:
         """Returns the list of all mesh elements.
 
         Returns
         -------
-        :class:`~lizzy._core.cvmesh.collections.elements`
-            List of all :class:`~lizzy._core.cvmesh.entities.Triangle` elements in the mesh.
+        list of :class:`~lizzy._core.cvmesh.entities.Triangle`
+            List of all Triangle elements in the mesh.
         """
         return self._mesh.triangles
 
@@ -188,13 +187,13 @@ class LizzyModel:
         return self._mesh.triangles[idx]
 
     @preinit_only
-    def get_nodes(self) -> nodes:
+    def get_nodes(self) -> list[Node]:
         """Returns the list of all mesh nodes.
 
         Returns
         -------
-        :class:`~lizzy._core.cvmesh.collections.nodes`
-            List of all :class:`~lizzy._core.cvmesh.entities.Node` objects in the mesh.
+        list of :class:`~lizzy._core.cvmesh.entities.Node`
+            List of all Node objects in the mesh.
         """
         return self._mesh.nodes
 

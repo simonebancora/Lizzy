@@ -14,7 +14,6 @@ if TYPE_CHECKING:
 
 import numpy as np
 from .construction import MeshBuilder
-from .collections import nodes, lines, elements
 from lizzy.exceptions import MeshError
 
 
@@ -33,19 +32,22 @@ class Mesh:
     def __init__(self):
         self.mesh_view : MeshView = None
         self.mesh_data = None
-        self.nodes : list[Node] = nodes([])
-        self.lines : list[Line] = lines([])
-        self.boundary_lines : list[BoundaryLine] = lines([])
-        self.triangles : list[Triangle] = elements([])
-        self.tetras = elements([])
+        self.nodes : list[Node] = []
+        self.lines : list[Line] = []
+        self.boundary_lines : list[BoundaryLine] = []
+        self.triangles : list[Triangle] = []
+        self.tetras = []
         self.CVs : list[CV] = []
-        self.node_coords = np.array([])
+        self.node_coords : np.ndarray = None
+        self.tri_conn_table : np.ndarray = None
 
     # Init method:
     def build_mesh(self, mesh_data):
         self.mesh_data = mesh_data
         mb = MeshBuilder()
         self.nodes, self.lines, self.boundary_lines, self.triangles, self.CVs, self.mesh_view = mb.build_mesh(mesh_data)
+        self.node_coords = mesh_data['all_nodes_coords']
+        self.tri_conn_table = mesh_data['nodes_conn']
     
     def update_elements_with_assigned_material(self, element_idxs, material: PorousMaterial, rosette: Rosette):
         for idx in element_idxs:

@@ -69,7 +69,7 @@ class Preprocessor:
         self.setup_cvs()
         self.assign_fill_solver_maps()
         K_sing, f_orig = self.assemble_global_stiffnes_matrix()
-        self.vsolver.precalculate_darcy_operator(self.mesh.triangles)
+        self.vsolver.precalculate_darcy_operator(self.mesh.triangles, self.mesh.tri_conn_table)
         return K_sing, f_orig
     
     

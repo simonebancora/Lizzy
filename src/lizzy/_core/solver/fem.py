@@ -29,11 +29,11 @@ def Assembly(mesh, mu, sparse=True):
         Global force vector
     """
     if sparse:
-        K_tri = lil_matrix((mesh.nodes.N, mesh.nodes.N))
+        K_tri = lil_matrix((len(mesh.nodes), len(mesh.nodes)))
     else:
-        K_tri = np.zeros((mesh.nodes.N, mesh.nodes.N))
+        K_tri = np.zeros((len(mesh.nodes), len(mesh.nodes)))
     
-    f = np.zeros((mesh.nodes.N,))
+    f = np.zeros((len(mesh.nodes),))
 
     for tri in mesh.triangles:
         k_el = tri.grad_N.T @ tri.k @ tri.grad_N * tri.A * tri.h / mu

@@ -8,7 +8,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
-from .collections import nodes, lines, elements
 from lizzy._core.cvmesh.entities import Node, Line, BoundaryLine, Triangle, CV
 
 class MeshView:
@@ -103,21 +102,18 @@ class MeshBuilder:
 
     def create_entities(self, n_nodes, n_triangles, n_lines, node_coords, tri_conn, physical_lines_conn, boundary_line_idx_to_tri_idx):
         # preallocate lists
-        new_nodes = nodes([None]*n_nodes)
-        new_lines = lines([None]*n_lines)
-        new_boundary_lines = lines([None]*len(physical_lines_conn))
-        new_triangles = elements([None]*n_triangles)
+        new_nodes = [None]*n_nodes
+        new_lines = [None]*n_lines
+        new_boundary_lines = [None]*len(physical_lines_conn)
+        new_triangles = [None]*n_triangles
         # create nodes
         for i in range(n_nodes):
             new_nodes[i] = Node(node_coords[i,0], node_coords[i,1], node_coords[i,2], i)
-        new_nodes.XYZ = node_coords
-        new_nodes.N = len(new_nodes)
         # create lines
         for i in range(n_lines):
             local_conn = self.line_idx_to_node_idxs[i]
             local_node_objs = [new_nodes[idx] for idx in local_conn]
             new_lines[i] = Line(*local_node_objs, i)
-        new_lines.N = len(new_lines)
         # create triangles
         for i in range(n_triangles):
             local_nodes_conn = self.triangle_idx_to_node_idxs[i]
@@ -130,8 +126,6 @@ class MeshBuilder:
             local_conn = physical_lines_conn[i]
             local_node_objs = [new_nodes[idx] for idx in local_conn]
             new_boundary_lines[i] = BoundaryLine(*local_node_objs, i, new_triangles[boundary_line_idx_to_tri_idx[i]])
-        new_triangles.nodes_conn_table = tri_conn
-        new_triangles.N = len(new_triangles)
         
         return new_nodes, new_lines, new_triangles, new_boundary_lines
 
