@@ -12,16 +12,16 @@ class SimulationParameters:
 
     Attributes
     ----------
-    wo_delta_time : float
+    output_interval : float
         Interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
     fill_tolerance : float
         Tolerance on the fill factor to consider a CV as filled. Default: 0.01
     end_step_when_sensor_triggered : bool
         If True, ends current solution step and creates a write-out when a sensor changes state. Default: False
 
-    
+
     """
-    wo_delta_time: float = -1
+    output_interval: float = -1
     fill_tolerance: float = 0.01
     has_been_assigned : bool = False
     end_step_when_sensor_triggered : bool = False
@@ -33,7 +33,7 @@ class SimulationParameters:
         """Prints the currently assigned simulation parameters to the console."""
         params = textwrap.dedent(rf"""
         Currently assigned simulation parameters:
-        - "wo_delta_time": {self.wo_delta_time} [s],
+        - "output_interval": {self.output_interval} [s],
         - "fill_tolerance": {self.fill_tolerance},
         - "end_step_when_sensor_triggered": {self.end_step_when_sensor_triggered}
         """)
@@ -50,7 +50,7 @@ class SimulationParameters:
             Keyword arguments corresponding to parameter names and their new values.
             Each key must be a valid attribute of the `SimulationParameters` class, otherwise, an `AttributeError` is raised. Valid parameters are:
         
-            - ``wo_delta_time``: interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
+            - ``output_interval``: interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
             - ``fill_tolerance``: tolerance on the fill factor to consider a CV as filled. Default: 0.01
             - ``end_step_when_sensor_triggered``: if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
 
@@ -59,9 +59,12 @@ class SimulationParameters:
         AttributeError
             If any key in `kwargs` does not correspond to a known attribute.
         """
+        # TODO: this probably breaks
+        _ALIASES = {"wo_delta_time": "output_interval"}
         self.has_been_assigned = True
         for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
+            resolved_key = _ALIASES.get(key, key)
+            if hasattr(self, resolved_key):
+                setattr(self, resolved_key, value)
             else:
                 raise AttributeError(f"'{self.__class__.__name__}' Error: unknown attribute '{key}'")

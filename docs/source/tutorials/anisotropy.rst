@@ -22,7 +22,7 @@ The first steps are to import Lizzy, create a LizzyModel, read the mesh file and
 
     model = liz.LizzyModel()
     model.read_mesh_file("Radial.msh")
-    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
+    model.assign_simulation_parameters(mu=0.1, output_interval=100)
 
 Creating an oriented anisotropic material
 -----------------------------------------
@@ -80,7 +80,7 @@ The full script
 
     model = liz.LizzyModel()
     model.read_mesh_file("Radial.msh")
-    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
+    model.assign_simulation_parameters(mu=0.1, output_interval=100)
 
     rosette = liz.Rosette((1,0,0))
     model.create_material(1E-10, 1E-11, 1E-10, 0.5, 1.0, "aniso_material")

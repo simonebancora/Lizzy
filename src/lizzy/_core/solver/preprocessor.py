@@ -37,7 +37,7 @@ class Preprocessor:
     # 1. check things were assigned
     def assignment_checks(self):
         if not self.simulation_parameters.has_been_assigned:
-            print(f"Warning: Simulation parameters were not assigned. Running with default values: wo_delta_time={self.simulation_parameters.wo_delta_time}")
+            print(f"Warning: Simulation parameters were not assigned. Running with default values: output_interval={self.simulation_parameters.output_interval}")
         if not self.material_manager._resin_was_assigned:
             raise ConfigurationError("No resin assigned to the model. Create a resin using LizzyModel.create_resin and assign it using LizzyModel.assign_resin.")
         self.gates_manager.assert_unique_boundary_assignments()
@@ -66,7 +66,6 @@ class Preprocessor:
 
     def run_preproc_sequence(self):
         print("Preprocessing...")
-        self.assignment_checks()
         self.setup_cvs()
         self.assign_fill_solver_maps()
         K_sing, f_orig = self.assemble_global_stiffnes_matrix()

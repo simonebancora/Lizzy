@@ -39,7 +39,7 @@ To begin with, we create a mesh and define some process parameters as usual:
     model.read_mesh_file("Complex_rotated.msh")
 
     # assign viscosity
-    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
+    model.assign_simulation_parameters(mu=0.1, output_interval=100)
 
 Creating materials
 ------------------
@@ -118,7 +118,7 @@ The full script
     model = liz.LizzyModel()
     model.read_mesh_file("Complex_rotated.msh")
 
-    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
+    model.assign_simulation_parameters(mu=0.1, output_interval=100)
 
     model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "material_iso")
     model.create_material(1E-10, 1E-11, 1E-11, 0.5, 1.0, "material_aniso")

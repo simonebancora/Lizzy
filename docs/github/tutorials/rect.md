@@ -33,7 +33,7 @@ In this example, both the script and the mesh are in the working folder. If your
 ### Defining material properties
 Next, we need to define a few material and process properties. To do so, we use the `SimulationParameters` singleton:
 ```
-liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
+liz.SimulationParameters.assign(mu=0.1, output_interval=100)
 ```
 Next, we can define the properties of the materials in the mesh. At the moment, material definition is handled in the script (in the future this will change). We can do so by creating a `PorousMaterial` and then using the `add_material` method of the `MaterialManager` singleton for each material that we want to add:
 ```
@@ -91,7 +91,7 @@ import lizzy as liz
 # read the mesh file: adjust path if needed
 mesh_reader = liz.Reader("../meshes/Rect1M_R1.msh")
 
-liz.SimulationParameters.assign(mu=0.1, wo_delta_time=100)
+liz.SimulationParameters.assign(mu=0.1, output_interval=100)
 
 # add a material to each material tag present in the mesh
 material = liz.PorousMaterial(1E-10, 1E-10, 1E-10, 0.5, 1.0)

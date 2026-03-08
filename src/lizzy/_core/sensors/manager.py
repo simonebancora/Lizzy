@@ -104,7 +104,6 @@ class SensorManager:
         """
         try:
             sensor = self.sensors_dict[idx]
-        except:
+        except KeyError:
             raise KeyError(f"Could not find sensor with id: {idx}")
-        # TODO: not nice handling here
         return sensor

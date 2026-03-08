@@ -134,7 +134,7 @@ Let's assume a model is set up, and we specify to save a solution state every 10
 .. code-block::
 
     ...
-    model.assign_simulation_parameters(wo_delta_time=100)
+    model.assign_simulation_parameters(output_interval=100)
     ...
     model.solve()
 

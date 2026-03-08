@@ -3,7 +3,7 @@ import lizzy
 
 model = lizzy.LizzyModel()
 model.read_mesh_file("../meshes/Rect1M_R2.msh")
-model.assign_simulation_parameters(wo_delta_time=10)
+model.assign_simulation_parameters(output_interval=10)
 
 model.create_resin("resin_01", 0.1)
 model.assign_resin("resin_01")

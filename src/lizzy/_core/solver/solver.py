@@ -72,7 +72,7 @@ class Solver:
         self.f_orig = None
         self.current_time = 0
         self.n_empty_cvs = np.inf
-        self.next_wo_time = self.simulation_parameters.wo_delta_time
+        self.next_wo_time = self.simulation_parameters.output_interval
         self.step_end_time = np.inf
         self.step_completed = False
         self.solver_vars = {"fill_factor_array" : np.zeros(self.N_nodes, dtype=float),
@@ -130,12 +130,12 @@ class Solver:
                     boundary_flux_areas = boundary_line_thicknesses * boundary_line_lengths
                     total_area = np.sum(boundary_flux_areas)
                     node_pairs_idxs = self.mesh.mesh_view.boundary_line_idx_to_node_idxs[boundary_line_idxs] # gives 2 node idxs. At this point, node_pair_idxs (n_lines, 2) and line_lengths (n_lines, ) are in the same order - shape: (n_neumann_lines, 2)
-                    neumann_vals_pairs = np.repeat(boundary_flux_areas/2, 2) * (inlet.q_value/total_area) # TODO temporary dummy value for flow rate. Need calc area flux
-                    neumann_vals_pairs = neumann_vals_pairs.reshape(len(node_pairs_idxs), 2) # at this point we have: node pairs, val pairs (dummy) where we need to modify rhs f vector - shape: (n_neumann_lines, 2)
+                    neumann_vals_pairs = np.repeat(boundary_flux_areas/2, 2) * (inlet.q_value/total_area)
+                    neumann_vals_pairs = neumann_vals_pairs.reshape(len(node_pairs_idxs), 2)
                     if inlet.is_open:
                         neumann_idxs_pairs.append(node_pairs_idxs)
                         neumann_vals_per_idx_pair.append(neumann_vals_pairs)
-                    print("WARNING: Flow rate BC not fully implemented. Results may be incorrect.")
+                    print("Note: Flow rate BC is experimental.")
                 case _:
                     pass
         # TODO: do this following assertion a little better...
@@ -194,7 +194,7 @@ class Solver:
         Initialises a new solution, resetting all simulation variables. It is sufficient to call this method to reset the simulation and run again.
         """
         self.current_time = 0
-        self.next_wo_time = self.simulation_parameters.wo_delta_time
+        self.next_wo_time = self.simulation_parameters.output_interval
         self.solver_vars["fill_factor_array"] = np.zeros(self.N_nodes)
         self.bcs = SolverBCs()
         self.mesh.empty_cvs()
@@ -223,10 +223,10 @@ class Solver:
             self.step_completed = True
             return dt, write_out
         
-        if self.simulation_parameters.wo_delta_time > 0.0:
+        if self.simulation_parameters.output_interval > 0.0:
             if next_time > self.next_wo_time:
                 dt = self.next_wo_time - self.current_time
-                self.next_wo_time += self.simulation_parameters.wo_delta_time
+                self.next_wo_time += self.simulation_parameters.output_interval
                 write_out = True
         else:
             write_out = True

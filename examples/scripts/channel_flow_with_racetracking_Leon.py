@@ -4,7 +4,7 @@ from lizzy import SolverType
 model = liz.LizzyModel()
 
 model.read_mesh_file("../meshes/Rect_Type_1.msh")
-model.assign_simulation_parameters(wo_delta_time=10, fill_tolerance=0.01)
+model.assign_simulation_parameters(output_interval=10, fill_tolerance=0.01)
 
 model.create_resin("resin", 0.145)
 model.assign_resin("resin")

@@ -53,7 +53,7 @@ class GatesManager:
 
 
     def _fetch_inlet(self, inlet_selector:Inlet | str) -> Inlet:
-        if type(inlet_selector) is Inlet:
+        if isinstance(inlet_selector, Inlet):
             return inlet_selector
         else:
             try:
@@ -78,6 +78,16 @@ class GatesManager:
             self._assigned_inlets[boundary_tag] = selected_inlet
             selected_inlet._assigned = True
     
+    def _fetch_vent(self, vent_selector:Vent | str) -> Vent:
+        if isinstance(vent_selector, Vent):
+            return vent_selector
+        else:
+            try:
+                selected_vent = self._created_vents[vent_selector]
+            except KeyError:
+                raise KeyError(f"Vent '{vent_selector}' is not found in existing vents. Check the name, or create the vent first.")
+            return selected_vent
+
     def assign_vent(self, vent_selector:Vent | str, boundary_tag:str):
         """Selects a vent from existing ones and assigns it to the indicated mesh boundary.
 
@@ -88,13 +98,7 @@ class GatesManager:
         boundary_tag : str
             An existing mesh boundary tag where to assign the vent.
         """
-        if type(vent_selector) is Vent:
-            selected_vent = vent_selector
-        else:
-            try:
-                selected_vent = self._created_vents[vent_selector]
-            except KeyError:
-                raise KeyError(f"Vent '{vent_selector}' is not found in existing vents. Check the name, or create the vent first.")
+        selected_vent = self._fetch_vent(vent_selector)
         if selected_vent not in self._assigned_vents.values():
             if len(self._assigned_vents) > 0:
                 raise ConfigurationError("Multiple vents assigned to the model. Currently only one vent is supported.")
@@ -110,7 +114,7 @@ class GatesManager:
             case "delta":
                 selected_inlet.p_value += pressure_value
             case _:
-                raise KeyError
+                raise ValueError(f"Invalid mode '{mode}'. Must be 'set' or 'delta'.")
 
     def open_inlet(self, inlet_selector:Inlet | str):
         selected_inlet = self._fetch_inlet(inlet_selector)
