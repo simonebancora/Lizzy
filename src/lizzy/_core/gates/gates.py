@@ -13,21 +13,20 @@ class InletType(Enum):
 
 
 class Inlet(ABC):
-    """A class representing an inlet boundary condition.
-
-    Parameters
-    ----------
-    name : str
-        Name of the inlet.
-    p_value : float
-        Initial pressure value at the inlet [Pa].
+    """Abstract class representing an inlet. :class:`~lizzy.gates.PressureInlet` and :class:`~lizzy.gates.FlowRateInlet` derive from this class.
     """
     def __init__(self, name:str, inlet_type:InletType):
         super().__init__()
-        self.name = name
+        self._name = name
         self._type = inlet_type
         self._assigned = False
         self._open = True
+    
+    @property
+    def name(self) -> str:
+        """Unique name of the inlet. (read-only)
+        """
+        return self._name
     
     @property
     def is_open(self) -> bool:

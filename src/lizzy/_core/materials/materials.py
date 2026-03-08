@@ -22,6 +22,12 @@ class PorousMaterial:
         Thickness of the material in the out-of-plane direction.
     """
     def __init__(self, name:str, k_vals : tuple[float, float, float], porosity:float, thickness:float):
+        if any(k <= 0 for k in k_vals):
+            raise ValueError(f"Material '{name}': all permeability values must be positive, got {k_vals}.")
+        if not (0 < porosity < 1):
+            raise ValueError(f"Material '{name}': porosity must be between 0 and 1 (exclusive), got {porosity}.")
+        if thickness <= 0:
+            raise ValueError(f"Material '{name}': thickness must be positive, got {thickness}.")
         self.is_isotropic = np.allclose([k_vals[0], k_vals[1], k_vals[2]], k_vals[0], atol=1e-14, rtol=0)
         self.k_princ = np.diag(k_vals)
         self.porosity = porosity
@@ -42,5 +48,7 @@ class Resin:
         Dynamic viscosity of the resin [Pa.s]
     """
     def __init__(self, name:str, mu:float):
+        if mu <= 0:
+            raise ValueError(f"Resin '{name}': viscosity must be positive, got {mu}.")
         self.name = name
         self.mu = mu

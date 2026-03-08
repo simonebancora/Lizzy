@@ -17,7 +17,7 @@ Solver initialization
 
 Every Lizzy script is broadly divided in two parts:
 
-- Model definition: the model is created and all elements of the simulation are set. This includes creating mesh, materials, sensors, intlets, etc...
+- Model definition: the model is created and all elements of the simulation are set. This includes creating mesh, materials, sensors, inlets, etc...
 - Solution: the simulation is run and the solution is computed.
 
 The solver initialisation is what separates these two parts. Before it can run the simulation, the solver must always be initialised by calling the :meth:`~lizzy.LizzyModel.initialise_solver` method: 
@@ -52,7 +52,7 @@ Time step vs time interval
 Throughout this section, we will encounter multiple times the terms "time step" and "time interval". It is important to clarify the difference between these two concepts:
 
 - **Time step:** The discrete increment of time used by the solver to advance the simulation. The time step is determined by the solver at runtime. **The user has no control over this quantity**.
-- **Time interval:** An amount of time over which the simulation advances. A time interval is tipically composed of multiple time steps. **The user has full control over this quantity**. For example, if a simulation is run until the part is completely filled, then the time interval is the entird fill time. Conversely, if we set our simulation to run for a fixed time interval, e.g., 60 seconds, then pause and do something, and then resume the simulation, then the time interval is 60 seconds.
+- **Time interval:** An amount of time over which the simulation advances. A time interval is typically composed of multiple time steps. **The user has full control over this quantity**. For example, if a simulation is run until the part is completely filled, then the time interval is the entird fill time. Conversely, if we set our simulation to run for a fixed time interval, e.g., 60 seconds, then pause and do something, and then resume the simulation, then the time interval is 60 seconds.
 
 Running a simulation until the part is filled
 ---------------------------------------------
@@ -134,7 +134,7 @@ Let's assume a model is set up, and we specify to save a solution state every 10
 .. code-block::
 
     ...
-    model.assign_simulation_parameters(wo_delta_time=100)
+    model.assign_simulation_parameters(output_interval=100)
     ...
     model.solve()
 
@@ -171,5 +171,31 @@ Consult the :class:`~lizzy.datatypes.Solution` API reference to get more informa
 
 The Solution object is also used by Lizzy to write result files. More information on this in :ref:`saving_results`.
 
+Lightweight mode
+----------------
+
+Packing the :class:`~lizzy.datatypes.Solution` at the end of a solve interval  has a cost. There are cases when storing results for saving output files is not necessary (e.g. when running a parametric / optimization study with a large number of simulations). For these cases, it is possible to skip entirely the packing of the Solution by setting the model to "Lightweight mode":
+
+.. code-block::
+
+    model.lightweight = True
+
+This flag (default is False) can be set at any time before or after solver initialisation, and will apply from the next instruction in the script. In lightweight mode, Lizzy does not create any :class:`~lizzy.datatypes.Solution` object, saving memory and computation time. The consequence is that the :meth:`~lizzy.LizzyModel.save_results` method cannot be used (see :ref:`saving_results`).
+
+Resetting a simulation
+----------------------
+
+To reset the simulation and run it again from scratch — without rebuilding the model — use the :meth:`~lizzy.LizzyModel.initialise_new_solution` method:
+
+.. code-block::
+
+    model.initialise_new_solution()
+
+This empties the part, resets the simulation time to zero, restores all inlets to their initial open/closed state, and clears all sensor readings. The mesh, materials, boundary conditions, and preprocessed data (stiffness matrix, etc.) are preserved, making this faster than calling :meth:`~lizzy.LizzyModel.initialise_solver` again.
+
+This can be useful for parametric studies, where the same mesh and material setup is reused across multiple runs.
+
+.. note::
+    The methods :meth:`~lizzy.LizzyModel.initialise_new_solution` and :meth:`~lizzy.LizzyModel.initialise_solver` are different. The former merely resets the simulation fields and gate states to initial values, but does not initialise the solver anew. Any method that requires being called before solver initialisation will still need to reinitialise the solver with :meth:`~lizzy.LizzyModel.initialise_solver`. On the other hand, :meth:`~lizzy.LizzyModel.initialise_solver` also calles :meth:`~lizzy.LizzyModel.initialise_new_solution` internally.
 
 

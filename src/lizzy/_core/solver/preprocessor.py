@@ -7,18 +7,16 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from lizzy._core.cvmesh import mesh
 if TYPE_CHECKING:
     from lizzy._core.sensors import SensorManager
-    from lizzy._core.bcond import GatesManager
+    from lizzy._core.gates import GatesManager
     from lizzy._core.cvmesh import Mesh
     from lizzy._core.materials import MaterialManager, Rosette, PorousMaterial
     from lizzy._core.datatypes import SimulationParameters
 
-import sys
 import numpy as np
-import time
 from lizzy._core.solver import *
+from lizzy.exceptions import ConfigurationError
 from .timestep_manager import TimeStepManager
 from .vsolvers import VelocitySolver
 from .fillsolver import FillSolver
@@ -39,32 +37,11 @@ class Preprocessor:
     # 1. check things were assigned
     def assignment_checks(self):
         if not self.simulation_parameters.has_been_assigned:
-            print(f"Warning: Simulation parameters were not assigned. Running with default values: wo_delta_time={self.simulation_parameters.wo_delta_time}")
-        if self.material_manager._assigned_resin == None:
-            print(f"ERROR: No resin assigned to the model. Create a resin using `LizzyModel.create_resin` and assign it using `LizzyModel.assign_resin`")
-            sys.exit(1)
-        if self.material_manager._resin_was_assigned == False:
-            print("WARNING-MATERIAL MANAGER: No resin was assigned. Running simulation with default resin: viscosity value 0.1 Pa.s. Create a resin using `LizzyModel.create_resin` and assign it using `LizzyModel.assign_resin` to remove this warning.")
+            print(f"Warning: Simulation parameters were not assigned. Running with default values: output_interval={self.simulation_parameters.output_interval}")
+        if not self.material_manager._resin_was_assigned:
+            raise ConfigurationError("No resin assigned to the model. Create a resin using LizzyModel.create_resin and assign it using LizzyModel.assign_resin.")
         self.gates_manager.assert_unique_boundary_assignments()
-
-    # 2. assign materials to elements
-    def assign_materials_to_elements(self):
-        materials = self.material_manager.assigned_materials
-        rosettes = self.material_manager.assigned_rosettes
-        for tri in self.mesh.triangles:
-            try:
-                material : PorousMaterial = materials[tri.material_tag]
-                if material.is_isotropic:
-                    tri.k = material.k_princ
-                else:
-                    rosette : Rosette = rosettes[tri.material_tag]
-                    u, v, w = rosette.project_along_normal(tri.n)
-                    R = np.array([u, v, w]).T
-                    tri.k = R @ material.k_princ @ R.T
-                tri.porosity = materials[tri.material_tag].porosity
-                tri.h = materials[tri.material_tag].thickness
-            except KeyError:
-                exit(f"Mesh contains unassigned material tag: {tri.material_tag}")
+        self.mesh.assert_all_elements_have_material()
 
     # 3. setup control volumes
     def setup_cvs(self):
@@ -89,12 +66,10 @@ class Preprocessor:
 
     def run_preproc_sequence(self):
         print("Preprocessing...")
-        self.assignment_checks()
-        self.assign_materials_to_elements()
         self.setup_cvs()
         self.assign_fill_solver_maps()
         K_sing, f_orig = self.assemble_global_stiffnes_matrix()
-        self.vsolver.precalculate_darcy_operator(self.mesh.triangles)
+        self.vsolver.precalculate_darcy_operator(self.mesh.triangles, self.mesh.tri_conn_table)
         return K_sing, f_orig
     
     

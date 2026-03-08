@@ -4,9 +4,9 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import sys
 from .gates import Inlet, PressureInlet, FlowRateInlet, Vent
 from typing import Literal
+from lizzy.exceptions import ConfigurationError
 
 class GatesManager:
     """Manager for all boundary condition operations.
@@ -53,7 +53,7 @@ class GatesManager:
 
 
     def _fetch_inlet(self, inlet_selector:Inlet | str) -> Inlet:
-        if type(inlet_selector) is Inlet:
+        if isinstance(inlet_selector, Inlet):
             return inlet_selector
         else:
             try:
@@ -78,6 +78,16 @@ class GatesManager:
             self._assigned_inlets[boundary_tag] = selected_inlet
             selected_inlet._assigned = True
     
+    def _fetch_vent(self, vent_selector:Vent | str) -> Vent:
+        if isinstance(vent_selector, Vent):
+            return vent_selector
+        else:
+            try:
+                selected_vent = self._created_vents[vent_selector]
+            except KeyError:
+                raise KeyError(f"Vent '{vent_selector}' is not found in existing vents. Check the name, or create the vent first.")
+            return selected_vent
+
     def assign_vent(self, vent_selector:Vent | str, boundary_tag:str):
         """Selects a vent from existing ones and assigns it to the indicated mesh boundary.
 
@@ -88,40 +98,15 @@ class GatesManager:
         boundary_tag : str
             An existing mesh boundary tag where to assign the vent.
         """
-        if type(vent_selector) is Vent:
-            selected_vent = vent_selector
-        else:
-            try:
-                selected_vent = self._created_vents[vent_selector]
-            except KeyError:
-                raise KeyError(f"Vent '{vent_selector}' is not found in existing vents. Check the name, or create the vent first.")
+        selected_vent = self._fetch_vent(vent_selector)
         if selected_vent not in self._assigned_vents.values():
             if len(self._assigned_vents) > 0:
-                print("ERROR: Multiple vents assigned to the model. Currently only one vent is supported.")
-                sys.exit(1)
+                raise ConfigurationError("Multiple vents assigned to the model. Currently only one vent is supported.")
             self._assigned_vents[boundary_tag] = selected_vent
             selected_vent._assigned = True
     
     # TODO: functionality should be added to change the pressure over time, along different time interpolation options
     def change_inlet_pressure(self, inlet_selector:Inlet | str, pressure_value:float, mode: Literal["set", "delta"] = "set"):
-        """Changes the pressure value at the selected inlet to a new value, according to the selected mode.
-
-        Parameters
-        ----------
-        inlet_selector : Inlet | str
-            Either the inlet object to assign, or the name of an existing inlet.
-        pressure_value : float
-            The new pressure value to set at the inlet.
-        mode : {'set', 'delta'}, optional
-            How to apply the new pressure value:
-
-            - ``set`` (default): directly set the new pressure value.
-            - ``delta``: increment the existing pressure by the given value.
-        Raises
-        ------
-        KeyError
-            If the `mode` is not one of the allowed values.
-        """
         selected_inlet = self._fetch_inlet(inlet_selector)
         match mode:
             case "set":
@@ -129,36 +114,17 @@ class GatesManager:
             case "delta":
                 selected_inlet.p_value += pressure_value
             case _:
-                raise KeyError
+                raise ValueError(f"Invalid mode '{mode}'. Must be 'set' or 'delta'.")
 
     def open_inlet(self, inlet_selector:Inlet | str):
-        """Sets the selected inlet state to `open`. When open, the inlet applies its p_value as a Dirichlet boundary condition.
-
-        Parameters
-        ----------
-        inlet_selector : Inlet | str
-            Either the inlet object to assign, or the name of an existing inlet.
-        """
         selected_inlet = self._fetch_inlet(inlet_selector)
         selected_inlet.set_open(True)
 
     def close_inlet(self, inlet_selector:Inlet | str):
-        """Sets the selected inlet state to `closed`. When closed, the inlet acts as a Neumann natural boundary condition (no flux).
-
-        Parameters
-        ----------
-        inlet_selector : Inlet | str
-            Either the inlet object to assign, or the name of an existing inlet.
-        
-        Note
-        ----
-        An inlet can be opened and closed at any time during the simulation to simulate valve operations. The stored p_value is preserved when the inlet is closed.
-        """
         selected_inlet = self._fetch_inlet(inlet_selector)
         selected_inlet.set_open(False)
     
     def reset_inlets(self):
-        """Calls the :meth:`~lizzy.bcond.bcond.Inlet.reset` method on all inlets currently present in the :attr:`~lizzy.bcond.bcond.BCManager.assigned_inlets` dictionary."""
         for tag, inlet in self._assigned_inlets.items():
             inlet.reset()
 
@@ -166,15 +132,5 @@ class GatesManager:
         """Checks that each boundary has at most one inlet or vent assigned, and raises an error if this is not the case.
         """
         boundary_names = list(self._assigned_inlets.keys()) + list(self._assigned_vents.keys())
-        print(boundary_names)
         if len(boundary_names) != len(set(boundary_names)):
-            print("ERROR: Multiple inlets or vents assigned to the same boundary. Check the assigned inlets and vents for duplicate boundary tags.")
-            sys.exit(1)
-
- 
-    # def remove_inlet(self, *inlets: Inlet):
-    #     for inlet in inlets:
-    #         try:
-    #             self.inlets.remove(inlet)
-    #         except ValueError:
-    #             print (f"Inlet '{inlet.physical_tag}' not assigned in BCManager.")
+            raise ConfigurationError("Multiple inlets or vents assigned to the same boundary. Check the assigned inlets and vents for duplicate boundary tags.")

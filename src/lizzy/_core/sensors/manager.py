@@ -46,7 +46,7 @@ class SensorManager:
         """Perform some precalculations to initialise the manager. This method is called automatically by the solver when a new simulation is initialised (not meant for user).
         """
         if len(self.sensors) > 0:
-            all_node_coords = mesh.nodes.XYZ
+            all_node_coords = mesh.node_coords
             for sensor in self.sensors:
                 distances = []
                 for node_coords in all_node_coords:
@@ -104,7 +104,6 @@ class SensorManager:
         """
         try:
             sensor = self.sensors_dict[idx]
-        except:
+        except KeyError:
             raise KeyError(f"Could not find sensor with id: {idx}")
-        # TODO: not nice handling here
         return sensor

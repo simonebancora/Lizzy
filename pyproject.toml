@@ -17,7 +17,6 @@ dependencies = [
     "numpy",
     "scipy",
     "h5py",
-    "matplotlib"
 ]
 description = "A filling simulation solver for Liquid Composite Molding (LCM) processes"
 readme = "README.md"

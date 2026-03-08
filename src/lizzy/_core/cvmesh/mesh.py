@@ -8,12 +8,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy._core.io import Reader
-    from lizzy._core.materials import MaterialManager, Rosette, PorousMaterial
     from lizzy._core.cvmesh.entities import Node, Line, BoundaryLine, Triangle, CV
+    from .construction import MeshView
+    from lizzy._core.materials import PorousMaterial, Rosette
 
 import numpy as np
-from .construction import MeshBuilder, MeshView
-from .collections import nodes, lines, elements
+from .construction import MeshBuilder
+from lizzy.exceptions import MeshError
 
 
 class Mesh:
@@ -28,19 +29,43 @@ class Mesh:
         Dictionary containing mesh data, returned by IO.Reader
 
     """
-    def __init__(self, mesh_reader:Reader):
-        self.mesh_view:MeshView = None
-        self.mesh_data = mesh_reader.mesh_data
-        self.nodes : list[Node] = nodes([])
-        self.lines : list[Line] = lines([])
-        self.boundary_lines : list[BoundaryLine] = lines([])
-        self.triangles : list[Triangle] = elements([])
-        self.tetras = elements([])
-        self.CVs :list[CV] = []
+    def __init__(self):
+        self.mesh_view : MeshView = None
+        self.mesh_data = None
+        self.nodes : list[Node] = []
+        self.lines : list[Line] = []
+        self.boundary_lines : list[BoundaryLine] = []
+        self.triangles : list[Triangle] = []
+        self.tetras = []
+        self.CVs : list[CV] = []
+        self.node_coords : np.ndarray = None
+        self.tri_conn_table : np.ndarray = None
 
-        # Init methods:
-        self.mb = MeshBuilder()
-        self.nodes, self.lines, self.boundary_lines, self.triangles, self.CVs, self.mesh_view = self.mb.build_mesh(self.mesh_data)
+    # Init method:
+    def build_mesh(self, mesh_data):
+        self.mesh_data = mesh_data
+        mb = MeshBuilder()
+        self.nodes, self.lines, self.boundary_lines, self.triangles, self.CVs, self.mesh_view = mb.build_mesh(mesh_data)
+        self.node_coords = mesh_data['all_nodes_coords']
+        self.tri_conn_table = mesh_data['nodes_conn']
+    
+    def update_elements_with_assigned_material(self, element_idxs, material: PorousMaterial, rosette: Rosette):
+        for idx in element_idxs:
+            tri = self.triangles[idx]
+            if material.is_isotropic:
+                tri.k = material.k_princ
+            else:
+                u, v, w = rosette.project_along_normal(tri.n)
+                R = np.array([u, v, w]).T
+                tri.k = R @ material.k_princ @ R.T
+            tri.porosity = material.porosity
+            tri.h = material.thickness
+            tri.material_assigned = True
+    
+    def assert_all_elements_have_material(self):
+        for tri in self.triangles:
+            if not tri.material_assigned:
+                raise MeshError(f"Element with id {tri.idx} does not have an assigned material. Check material assignments.")
 
     def empty_cvs(self):
         for cv in self.CVs:

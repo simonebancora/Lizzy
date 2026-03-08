@@ -6,13 +6,28 @@ lizzy.gates
 
 .. autoclass:: lizzy.gates.Inlet
     
+
+.. autoclass:: lizzy.gates.PressureInlet
+    
     .. rubric:: Properties
 
-    .. autoproperty:: Inlet.p_value
-    .. autoproperty:: Inlet.p0
-    .. autoproperty:: Inlet.is_open
+    .. autoproperty:: PressureInlet.p_value
+    .. autoproperty:: PressureInlet.p0
+    .. autoproperty:: PressureInlet.is_open
     
     .. rubric:: Methods
 
-    .. automethod:: Inlet.reset
-    .. automethod:: Inlet.set_open
+    .. automethod:: PressureInlet.reset
+    .. automethod:: PressureInlet.set_open
+
+.. autoclass:: lizzy.gates.FlowRateInlet
+    
+    .. rubric:: Properties
+
+    .. autoproperty:: FlowRateInlet.q_value
+    .. autoproperty:: FlowRateInlet.is_open
+    
+    .. rubric:: Methods
+
+    .. automethod:: FlowRateInlet.reset
+    .. automethod:: FlowRateInlet.set_open

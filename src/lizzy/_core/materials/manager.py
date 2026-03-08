@@ -4,10 +4,10 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import sys
 import numpy as np
 from .materials import PorousMaterial, Resin
 from .rosette import Rosette
+from lizzy.exceptions import ConfigurationError
 
 class MaterialManager:
     """Manager for all material operations.
@@ -46,8 +46,7 @@ class MaterialManager:
 
     def _check_name_uniqueness_in_dict(self, name, dictionary):
         if name in dictionary.keys():
-            print(f"ERROR: the name '{name}' has been used more than once. Use unique names.")
-            sys.exit(1)
+            raise ConfigurationError(f"The name '{name}' has been used more than once. Use unique names.")
     
     def fetch_material(self, material_selector:str):
         try:
@@ -99,6 +98,9 @@ class MaterialManager:
         selected_material.assigned = True
         self._assigned_materials[mesh_tag] = selected_material
         self._assigned_rosettes[mesh_tag] = rosette
+        return selected_material, rosette
+    
+
     
     def assign_resin(self, resin_selector:str):
         selected_resin : Resin = self._fetch_resin(resin_selector)

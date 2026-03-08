@@ -38,8 +38,8 @@ class Writer:
         if os.path.isdir(destination_path):
             shutil.rmtree(destination_path)
         os.makedirs(destination_path, exist_ok=True)
-        points = self._mesh.nodes.XYZ  # Node coordinates, assumed to be (N, 3)
-        cells = self._mesh.triangles.nodes_conn_table  # Triangle connectivity (M, 3)
+        points = self._mesh.node_coords  # Node coordinates, assumed to be (N, 3)
+        cells = self._mesh.tri_conn_table  # Triangle connectivity (M, 3)
         cells_list = []
         for i in range(len(cells)) :
             cells_list.append(cells[i])

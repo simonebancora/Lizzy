@@ -20,41 +20,56 @@ The LIZZY namespace exposes the :class:`~lizzy.LizzyModel` class, which provides
     .. autoproperty:: lizzy.LizzyModel.current_time
     .. autoproperty:: lizzy.LizzyModel.latest_solution
 
-    Methods
-    -------
-    
-    .. rubric:: Core model setup methods
+    Model setup methods
+    -------------------
 
     .. automethod:: lizzy.LizzyModel.read_mesh_file
     .. automethod:: lizzy.LizzyModel.print_mesh_info
-    .. automethod:: lizzy.LizzyModel.create_material
-    .. automethod:: lizzy.LizzyModel.assign_material
     .. automethod:: lizzy.LizzyModel.assign_simulation_parameters
     .. automethod:: lizzy.LizzyModel.print_simulation_parameters
+    .. automethod:: lizzy.LizzyModel.create_resin
+    .. automethod:: lizzy.LizzyModel.assign_resin
+    .. automethod:: lizzy.LizzyModel.create_material
+    .. automethod:: lizzy.LizzyModel.assign_material
+    .. automethod:: lizzy.LizzyModel.create_rosette
 
-    .. rubric:: Getter methods
+    Mesh management methods
+    -----------------------
 
-    .. automethod:: lizzy.LizzyModel.get_number_of_empty_cvs
-    .. automethod:: lizzy.LizzyModel.get_current_time
-    .. automethod:: lizzy.LizzyModel.get_latest_solution
+    .. automethod:: lizzy.LizzyModel.get_elements
+    .. automethod:: lizzy.LizzyModel.get_element_by_idx
+    .. automethod:: lizzy.LizzyModel.get_nodes
+    .. automethod:: lizzy.LizzyModel.get_node_by_idx
+
     
-    .. rubric:: Inlet management methods
+    Inlet management methods
+    ------------------------
     
-    .. automethod:: lizzy.LizzyModel.create_inlet
+    .. automethod:: lizzy.LizzyModel.create_pressure_inlet
+    .. automethod:: lizzy.LizzyModel.create_flowrate_inlet
+
     .. automethod:: lizzy.LizzyModel.assign_inlet
     .. automethod:: lizzy.LizzyModel.fetch_inlet_by_name
     .. automethod:: lizzy.LizzyModel.change_inlet_pressure
     .. automethod:: lizzy.LizzyModel.open_inlet
     .. automethod:: lizzy.LizzyModel.close_inlet
+    
+    Vent management methods
+    -----------------------
 
-    .. rubric:: Sensor management methods
+    .. automethod:: lizzy.LizzyModel.create_vent
+    .. automethod:: lizzy.LizzyModel.assign_vent
+
+    Sensor management methods
+    -------------------------
     
     .. automethod:: lizzy.LizzyModel.create_sensor
     .. automethod:: lizzy.LizzyModel.print_sensor_readings
     .. automethod:: lizzy.LizzyModel.get_sensor_trigger_states
     .. automethod:: lizzy.LizzyModel.get_sensor_by_id
 
-    .. rubric:: Solver methods
+    Solver methods
+    --------------
     
     .. automethod:: lizzy.LizzyModel.initialise_solver
     .. automethod:: lizzy.LizzyModel.solve

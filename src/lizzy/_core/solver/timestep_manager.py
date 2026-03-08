@@ -71,14 +71,6 @@ class TimeStepManager:
                                 self.fill_factor_buffer[wo_idx, :],
                                 self.flow_front_buffer[wo_idx, :],
                                 )
-        # solution = {"time_steps" : len(wo_idx),
-        #             "p" : [step.P for step in wo_time_steps],
-        #             "v" : [step.V.tolist() for step in wo_time_steps],
-        #             "v_nodal" : [step.V_nodal for step in wo_time_steps],
-        #             "time" : [step.time for step in wo_time_steps],
-        #             "fill_factor" : [step.fill_factor for step in wo_time_steps],
-        #             "free_surface" : [step.flow_front for step in wo_time_steps],
-        #             }
         return solution_obj
 
     def reset(self):

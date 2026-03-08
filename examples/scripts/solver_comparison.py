@@ -25,7 +25,7 @@ model.read_mesh_file("../meshes/Rect1M_R1.msh")
 
 # Set simulation parameters
 model.assign_simulation_parameters(
-    wo_delta_time=100,   # Initial time step guess [s]
+    output_interval=100,   # Interval between solution write-outs [s]
     fill_tolerance=0.00  # Fill fraction tolerance for CV to be considered full
 )
 

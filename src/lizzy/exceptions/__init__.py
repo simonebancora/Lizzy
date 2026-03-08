@@ -4,6 +4,17 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from .model import LizzyModel
+class LizzyError(Exception):
+    """Base exception for all Lizzy errors."""
 
-__all__ = ["LizzyModel"]
+
+class StateError(LizzyError):
+    """Method called in wrong model state (pre-init vs post-init)."""
+
+
+class ConfigurationError(LizzyError):
+    """Missing or invalid setup: unassigned resin, duplicate names, multiple vents, etc."""
+
+
+class MeshError(LizzyError):
+    """Mesh-related error: missing physical tag, unassigned element material."""

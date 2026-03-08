@@ -6,8 +6,13 @@
 
 from lizzy.model import LizzyModel
 from lizzy._core.solver import SolverType
+from lizzy.exceptions import LizzyError, StateError, ConfigurationError, MeshError
 
 __all__ = [
     "LizzyModel",
     "SolverType",
+    "LizzyError",
+    "StateError",
+    "ConfigurationError",
+    "MeshError",
 ]

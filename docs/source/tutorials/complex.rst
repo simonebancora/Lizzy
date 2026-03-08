@@ -34,12 +34,11 @@ To begin with, we create a mesh and define some process parameters as usual:
 
     import lizzy as liz
 
-    # read mesh
     model = liz.LizzyModel()
     model.read_mesh_file("Complex_rotated.msh")
-
-    # assign viscosity
-    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
+    model.assign_simulation_parameters(output_interval=100)
+    model.create_resin("resin", viscosity=0.1)
+    model.assign_resin("resin")
 
 Creating materials
 ------------------
@@ -48,9 +47,9 @@ We shall create the following materials:
 
 .. code-block::
 
-    model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "material_iso")
-    model.create_material(1E-10, 1E-11, 1E-11, 0.5, 1.0, "material_aniso")
-    model.create_material(1E-7, 1E-7, 1E-7, 0.5, 0.5, "material_racetrack")
+    model.create_material("material_iso", (1E-10, 1E-10, 1E-10), 0.5, 1.0)
+    model.create_material("material_aniso", (1E-10, 1E-11, 1E-11), 0.5, 1.0)
+    model.create_material("material_racetrack", (1E-7, 1E-7, 1E-7), 0.5, 0.5)
 
 As we can see, one of the materials (``material_aniso``) is anisotropic by one order of magnitude between :math:`k_1` and :math:`k_2`. Furthermore, the racetrack material has a mich higher permeability (3 orders of magnitude higher than ``material_iso`` and half the thickness.
 
@@ -98,7 +97,7 @@ We can now conclude the script by assigning BCs and launching the solver. Nothin
 .. code-block::
 
     # BCs
-    model.create_inlet(1E+05, "inlet")
+    model.create_pressure_inlet("inlet", 1E+05)
     model.assign_inlet("inlet", "inlet")
 
     # Solve
@@ -118,17 +117,19 @@ The full script
     model = liz.LizzyModel()
     model.read_mesh_file("Complex_rotated.msh")
 
-    model.assign_simulation_parameters(mu=0.1, wo_delta_time=100)
+    model.assign_simulation_parameters(output_interval=100)
+    model.create_resin("resin", viscosity=0.1)
+    model.assign_resin("resin")
 
-    model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "material_iso")
-    model.create_material(1E-10, 1E-11, 1E-11, 0.5, 1.0, "material_aniso")
-    model.create_material(1E-7, 1E-7, 1E-7, 0.5, 0.5, "material_racetrack")
+    model.create_material("material_iso", (1E-10, 1E-10, 1E-10), 0.5, 1.0)
+    model.create_material("material_aniso", (1E-10, 1E-11, 1E-11), 0.5, 1.0)
+    model.create_material("material_racetrack", (1E-7, 1E-7, 1E-7), 0.5, 0.5)
     rosette_ramp = liz.Rosette(model.get_node_by_id(12).coords, model.get_node_by_id(13).coords)
     model.assign_material("material_iso", "Lshape")
     model.assign_material("material_aniso", "ramp", rosette_ramp)
     model.assign_material("material_racetrack", "racetrack")
 
-    model.create_inlet(1E+05, "inlet")
+    model.create_pressure_inlet("inlet", 1E+05)
     model.assign_inlet("inlet", "inlet")
 
     model.initialise_solver()

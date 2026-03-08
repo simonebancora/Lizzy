@@ -1,19 +1,40 @@
 Managing materials
 ==================
 
-In this section we describe how to create and assign materials in Lizzy. All operations can be performed using the :class:`~lizzy.LizzyModel` user-facing methods.
+In this section we describe how to create and assign the resin (fluid) and porous materials in Lizzy. All operations can be performed using the :class:`~lizzy.LizzyModel` user-facing methods.
 
-Materials in Lizzy
--------------------
+Defining the resin
+------------------
 
-In Lizzy, a material is represented by the :class:`~lizzy.materials.PorousMaterial` class. This class encapsulates the properties of a porous material, including its permeability, porosity, and thickness. Each material is defined by the following properties:
+The resin represents the fluid that will fill the part. It is defined by its dynamic viscosity and must be created and assigned before initialising the solver.
+
+To create a resin, use the :meth:`~lizzy.LizzyModel.create_resin` method, providing a unique name and a dynamic viscosity value [Pa·s]:
+
+.. code-block::
+
+    model.create_resin("resin", viscosity=0.1)
+
+A :class:`~lizzy.materials.Resin` object is created and stored in the model. To assign it to the simulation, use the :meth:`~lizzy.LizzyModel.assign_resin` method:
+
+.. code-block::
+
+    model.assign_resin("resin")
+
+.. note::
+
+    Only one resin can be assigned at a time. The resin must be assigned before calling :meth:`~lizzy.LizzyModel.initialise_solver`, otherwise an error will be raised.
+
+Porous materials in Lizzy
+-------------------------
+
+In Lizzy, a porous material is represented by the :class:`~lizzy.materials.PorousMaterial` class. This class encapsulates the properties of a porous material, including its permeability, porosity, and thickness. Each material is defined by the following properties:
 
 - **Name**: A unique string identifier for the material.
 - **Permeability (k1, k2, k3)**: The permeability of the material in three principal directions (in m²).
 - **Porosity**: The porosity of the material (dimensionless, between 0 and 1).
 - **Thickness**: The thickness of the material (in m). A material can represent a single layer of fabric, or a multi-layer laminate. In the latter case, the thickness represents the total thickness of the laminate.
 
-The current version of Lizzy does not allow to compose a multi-layer laminate automatically by defining its layers. Instead, the user must compute the equivalent permeability, porosity, and thickness of the laminate externally and define a single :class:`~lizzy.materials.PorousMaterial` object representing the entire laminate. This is tipically done using arithmetic average schemes :cite:`calado1996effective` :cite:`bancora2018effective`. We plan to implement an automated multi-layer laminate definition feature in future releases.
+The current version of Lizzy does not allow to compose a multi-layer laminate automatically by defining its layers. Instead, the user must compute the equivalent permeability, porosity, and thickness of the laminate externally and define a single :class:`~lizzy.materials.PorousMaterial` object representing the entire laminate. This is typically done using arithmetic average schemes :cite:`calado1996effective` :cite:`bancora2018effective`. We plan to implement an automated multi-layer laminate definition feature in future releases.
 
 Creating materials
 -------------------
@@ -67,3 +88,57 @@ When the assignment happens, the remaining components of the local rosette (:mat
         k_iso = 1.0E-11
         model.create_material("material_iso", (k_iso, k_iso, k_iso), 0.5, 1.0)
         model.assign_material("material_iso", "domain_01")
+
+
+Element-wise manipulation
+-------------------------
+
+After assigning a material to a domain, the material properties are stored as attributes directly on each element object. This allows to overwrite individual element properties with arbitrary spatial distributions that are not expressible through the standard :meth:`~lizzy.LizzyModel.assign_material` workflow.
+
+Two methods are available for this:
+
+- :meth:`~lizzy.LizzyModel.get_elements`: returns the list of all elements in the mesh.
+- :meth:`~lizzy.LizzyModel.get_element_by_idx`: returns a single element by its integer index.
+
+The editable element attributes are:
+
+- ``elem.h``: thickness (float, in m).
+- ``elem.porosity``: porosity (float, dimensionless).
+- ``elem.k``: permeability tensor (3×3 numpy array, in m²).
+
+**Example: spatially varying thickness**
+
+Say we have a part of length :math:`L` and want to assign a linearly varying thickness :math:`h(x)`, going from :math:`h(0) = 1` mm to :math:`h(L) = 5` mm. We first assign a material (which sets a uniform thickness), then overwrite the thickness element by element:
+
+.. code-block::
+
+    import numpy as np
+
+    # assign material to the domain (sets a uniform thickness initially)
+    model.assign_material("material_01", "domain")
+
+    # iterate over all elements and overwrite the thickness
+    L = 1.0  # part length in m
+    for elem in model.get_elements():
+        x = elem.centroid[0]
+        elem.h = 0.001 + 0.004 * (x / L)
+
+**Example: spatially varying permeability**
+
+The same approach applies to permeability. The ``elem.k`` attribute stores the full 3×3 permeability tensor in the global frame. For an isotropic permeability that varies linearly along x, we can write:
+
+.. code-block::
+
+    import numpy as np
+
+    model.assign_material("material_01", "domain")
+
+    L = 1.0
+    for elem in model.get_elements():
+        x = elem.centroid[0]
+        k_val = 1e-10 + 9e-10 * (x / L)  # varies from 1E-10 to 1E-9 m²
+        elem.k = np.diag([k_val, k_val, k_val])
+
+.. note::
+    Element-wise manipulation must be performed **before** calling :meth:`~lizzy.LizzyModel.initialise_solver`. Modifying element properties after solver initialisation is not supported, as it would imply non-trivial physical implications during an ongoing filling (e.g. changing the thickness of an already-filled element).
+
