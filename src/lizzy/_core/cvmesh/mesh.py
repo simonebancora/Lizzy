@@ -5,7 +5,6 @@
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import sys
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy._core.io import Reader
@@ -16,6 +15,7 @@ if TYPE_CHECKING:
 import numpy as np
 from .construction import MeshBuilder
 from .collections import nodes, lines, elements
+from lizzy.exceptions import MeshError
 
 
 class Mesh:
@@ -63,8 +63,7 @@ class Mesh:
     def assert_all_elements_have_material(self):
         for tri in self.triangles:
             if not tri.material_assigned:
-                print(f"ERROR: Element with id {tri.idx} does not have an assigned material. Check material assignments.")
-                sys.exit(1)
+                raise MeshError(f"Element with id {tri.idx} does not have an assigned material. Check material assignments.")
 
     def empty_cvs(self):
         for cv in self.CVs:

@@ -15,10 +15,10 @@ if TYPE_CHECKING:
     from lizzy._core.materials import MaterialManager
 
 
-import sys
 import numpy as np
 import time
 from lizzy._core.solver import *
+from lizzy.exceptions import MeshError, ConfigurationError
 from .timestep_manager import TimeStepManager
 from .vsolvers import VelocitySolver
 from .fillsolver import FillSolver
@@ -124,9 +124,7 @@ class Solver:
         viscosity = self.material_manager.assigned_resin.mu
         for boundary_name, inlet in dict_boundary_name_to_inlet_obj.items():
             if boundary_name not in phys_boundary_names_set:
-                print("\nFatal error: The application has terminated.")
-                print(f"Mesh does not contain physical tag: {boundary_name}")
-                sys.exit(1)
+                raise MeshError(f"Mesh does not contain physical tag: '{boundary_name}'.")
             match inlet.type:
                 case InletType.PRESSURE:
                     node_idxs = self.mesh.mesh_view.phys_boundary_name_to_node_idxs[boundary_name]
@@ -160,9 +158,7 @@ class Solver:
                 self.bcs.neumann_idx = np.concatenate(neumann_idxs_pairs).flatten()
                 self.bcs.neumann_vals = np.concatenate(neumann_vals_per_idx_pair).flatten()
         except ValueError:
-            print("\nFatal error: The application has terminated.")
-            print("No inlets are currently open. At least one inlet must be open at all times to allow resin to flow into the part.")
-            sys.exit(1)
+            raise ConfigurationError("No inlets are currently open. At least one inlet must be open at all times to allow resin to flow into the part.")
         
         # assign vacuum vent pressure if vent exists
         if len(self.gates_manager._assigned_vents) > 0:

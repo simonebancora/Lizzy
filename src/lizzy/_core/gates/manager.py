@@ -4,9 +4,9 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import sys
 from .gates import Inlet, PressureInlet, FlowRateInlet, Vent
 from typing import Literal
+from lizzy.exceptions import ConfigurationError
 
 class GatesManager:
     """Manager for all boundary condition operations.
@@ -97,8 +97,7 @@ class GatesManager:
                 raise KeyError(f"Vent '{vent_selector}' is not found in existing vents. Check the name, or create the vent first.")
         if selected_vent not in self._assigned_vents.values():
             if len(self._assigned_vents) > 0:
-                print("ERROR: Multiple vents assigned to the model. Currently only one vent is supported.")
-                sys.exit(1)
+                raise ConfigurationError("Multiple vents assigned to the model. Currently only one vent is supported.")
             self._assigned_vents[boundary_tag] = selected_vent
             selected_vent._assigned = True
     
@@ -130,5 +129,4 @@ class GatesManager:
         """
         boundary_names = list(self._assigned_inlets.keys()) + list(self._assigned_vents.keys())
         if len(boundary_names) != len(set(boundary_names)):
-            print("ERROR: Multiple inlets or vents assigned to the same boundary. Check the assigned inlets and vents for duplicate boundary tags.")
-            sys.exit(1)
+            raise ConfigurationError("Multiple inlets or vents assigned to the same boundary. Check the assigned inlets and vents for duplicate boundary tags.")

@@ -3,9 +3,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy.model import LizzyModel
 
-import sys
 from functools import wraps
 from enum import Enum
+
+from lizzy.exceptions import StateError
 
 
 class State(Enum):
@@ -16,8 +17,7 @@ def preinit_only(method):
     @wraps(method)
     def wrapper(self:LizzyModel, *args, **kwargs):
         if self._state != State.PRE_INIT:
-            print(f"ERROR: Method '{method.__name__}' must be called before `initialise_solver()`.")
-            sys.exit(1)
+            raise StateError(f"Method '{method.__name__}' must be called before initialise_solver().")
         return method(self, *args, **kwargs)
     return wrapper
 
@@ -25,7 +25,6 @@ def postinit_only(method):
     @wraps(method)
     def wrapper(self:LizzyModel, *args, **kwargs):
         if self._state != State.POST_INIT:
-            print(f"ERROR: Method '{method.__name__}' must be called after initialise_solver().")
-            sys.exit(1)
+            raise StateError(f"Method '{method.__name__}' must be called after initialise_solver().")
         return method(self, *args, **kwargs)
     return wrapper

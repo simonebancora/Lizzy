@@ -4,11 +4,20 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+import sys
 import argparse
 from lizzy.utils.splash_logo import print_logo
+from lizzy.exceptions import LizzyError
 import textwrap
 
 def main():
+    try:
+        _main()
+    except LizzyError as e:
+        print(f"\nError: {e}")
+        sys.exit(1)
+
+def _main():
     parser = argparse.ArgumentParser(
         prog="lizzy",
         description="Lizzy CLI",)

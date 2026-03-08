@@ -15,10 +15,10 @@ if TYPE_CHECKING:
     from lizzy._core.materials import MaterialManager, Rosette, PorousMaterial
     from lizzy._core.datatypes import SimulationParameters
 
-import sys
 import numpy as np
 import time
 from lizzy._core.solver import *
+from lizzy.exceptions import ConfigurationError
 from .timestep_manager import TimeStepManager
 from .vsolvers import VelocitySolver
 from .fillsolver import FillSolver
@@ -40,11 +40,8 @@ class Preprocessor:
     def assignment_checks(self):
         if not self.simulation_parameters.has_been_assigned:
             print(f"Warning: Simulation parameters were not assigned. Running with default values: wo_delta_time={self.simulation_parameters.wo_delta_time}")
-        if self.material_manager._assigned_resin == None:
-            print(f"ERROR: No resin assigned to the model. Create a resin using `LizzyModel.create_resin` and assign it using `LizzyModel.assign_resin`")
-            sys.exit(1)
-        if self.material_manager._resin_was_assigned == False:
-            print("WARNING-MATERIAL MANAGER: No resin was assigned. Running simulation with default resin: viscosity value 0.1 Pa.s. Create a resin using `LizzyModel.create_resin` and assign it using `LizzyModel.assign_resin` to remove this warning.")
+        if not self.material_manager._resin_was_assigned:
+            raise ConfigurationError("No resin assigned to the model. Create a resin using LizzyModel.create_resin and assign it using LizzyModel.assign_resin.")
         self.gates_manager.assert_unique_boundary_assignments()
         self.mesh.assert_all_elements_have_material()
 
