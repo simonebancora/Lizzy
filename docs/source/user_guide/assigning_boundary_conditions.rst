@@ -31,13 +31,13 @@ Let's say we have imported a mesh with one boundary named "left_edge" and one bo
         Physical domains:        ['domain']
         Physical lines:          ['left_edge', 'right_edge']
 
-First, we will create an inlet using the :meth:`~lizzy.LizzyModel.create_inlet` method. This method requires two arguments: a unique name for the inlet and the inlet initial pressure (in Pa). Let's create an inlet named "inlet_1" with a pressure of 1.0E05 Pa:
+First, we will create a pressure inlet using the :meth:`~lizzy.LizzyModel.create_pressure_inlet` method. This method requires two arguments: a unique name for the inlet and the inlet initial pressure (in Pa). Let's create an inlet named "inlet_1" with a pressure of 1.0E05 Pa:
 
 .. code-block::
 
-    model.create_inlet("inlet_1", 1e5)
+    model.create_pressure_inlet("inlet_1", 1e5)
 
-An :class:`~lizzy.gates.Inlet` object is created and stored in the model, but it is not assigned yet to any boundary. To do so, we use the :meth:`~lizzy.LizzyModel.assign_inlet` method, providing the name of the inlet and the name of the mesh boundary where we want to assign it:
+A :class:`~lizzy.gates.PressureInlet` object is created and stored in the model, but it is not assigned yet to any boundary. To do so, we use the :meth:`~lizzy.LizzyModel.assign_inlet` method, providing the name of the inlet and the name of the mesh boundary where we want to assign it:
 
 .. code-block::
 
@@ -45,18 +45,18 @@ An :class:`~lizzy.gates.Inlet` object is created and stored in the model, but it
 
 .. tip::
 
-    An alternative way to assign inlets is to pass them direcltly by reference. When creating an inlet, an :class:`~lizzy.gates.Inlet` object is returned. This object can be stored in a variable and passed directly to the :meth:`~lizzy.LizzyModel.assign_inlet` method. For example:
+    An alternative way to assign inlets is to pass them directly by reference. When creating an inlet, a :class:`~lizzy.gates.PressureInlet` object is returned. This object can be stored in a variable and passed directly to the :meth:`~lizzy.LizzyModel.assign_inlet` method. For example:
 
     .. code-block::
 
-        new_inlet = model.create_inlet("inlet_1", 1e5)
+        new_inlet = model.create_pressure_inlet("inlet_1", 1e5)
         model.assign_inlet(new_inlet, "left_edge")
 
 Once an inlet is assigned, it is set to "open" state by default. We can check its state at any time using the :attr:`~lizzy.gates.Inlet.is_open` property (read-only).
 
 .. code-block:: console
 
-    >>> new_inlet = model.create_inlet("inlet_1", 1e5)
+    >>> new_inlet = model.create_pressure_inlet("inlet_1", 1e5)
     >>> model.assign_inlet(new_inlet, "left_edge")
     >>> new_inlet.is_open
 
@@ -76,6 +76,34 @@ This expression returns the :class:`~lizzy.gates.Inlet` object with that name. W
 .. note::
 
     This method works even at runtime, i.e., after the solver has been initialised by calling :meth:`~lizzy.LizzyModel.initialise_solver`.
+
+Creation and assignment of vents
+----------------------------------
+
+.. note::
+    The following operations are to be performed **before** the solver is initialised by calling :meth:`~lizzy.LizzyModel.initialise_solver`.
+
+A vent is an outlet boundary condition that prescribes a fixed vacuum pressure (typically 0 Pa) at a mesh boundary. It represents the exit point through which air is evacuated during resin infusion.
+
+To create a vent, use the :meth:`~lizzy.LizzyModel.create_vent` method, providing a unique name and an optional vacuum pressure value [Pa] (default is 0.0):
+
+.. code-block::
+
+    model.create_vent("vent_1")
+
+To assign the vent to a mesh boundary, use the :meth:`~lizzy.LizzyModel.assign_vent` method:
+
+.. code-block::
+
+    model.assign_vent("vent_1", "right_edge")
+
+.. note::
+    Currently only one vent can be assigned to the model. Attempting to assign a second vent will raise a :class:`~lizzy.exceptions.ConfigurationError`.
+
+.. note::
+    Lizzy does not currently simulate the formation of dry spots. The vent vacuum pressure is applied as a boundary condition to all unfilled control volumes in the domain at every time step, not exclusively at the designated vent boundary. This is a simplification of the physical problem and means that the vent location does not affect the pressure field in the unfilled region.
+
+If no vent is assigned, a default vacuum pressure of 0.0 Pa is applied to all unfilled control volumes.
 
 Runtime operations
 -------------------

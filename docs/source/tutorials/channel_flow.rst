@@ -56,52 +56,59 @@ Let's read the mesh file that we have copied:
 Make sure that the path given points to the mesh file that we have copied in the folder.
 In this example, both the script and the mesh are in the working folder. If your folder structure is different, adjust the mesh path accordingly.
 
-Now that the mesh is read, we need to define a few material and process properties. To do so, we use the :meth:`~lizzy.LizzyModel.assign_simulation_parameters` method:
+Now that the mesh is read, we need to define a few material and process properties. First, let's set the simulation output interval using the :meth:`~lizzy.LizzyModel.assign_simulation_parameters` method:
 
 .. code-block:: python
 
-    model.assign_simulation_parameters(mu=0.1, output_interval=100)
+    model.assign_simulation_parameters(output_interval=100)
 
-``mu`` is the resin viscosity, ``output_interval`` controls the interval of time at which the simulation result is saved in the results file. Omitting or assigning a negative value to ``output_interval`` will save every single time step in the result file (usually undesired).
+``output_interval`` controls the interval of simulation time at which the result is saved to the output file. Omitting or assigning a negative value will save every single time step (usually undesired).
 
 .. note::
 
-    There is no particular order in the script as where the :meth:`~lizzy.LizzyModel.assign_simulation_parameters` method should be called, as long as it is done *before* the solver is initialised by the :meth:`~lizzy.LizzyModel.initialise_solver` method (further on). Failure to do so, or omitting the call entirely, will result in running the simulation with default values. The solver will warn us with a message: ``>>> Warning: Process parameters were not assigned. Running with default values: mu= 0.1, output_interval= -1``
+    There is no particular order in the script as where the :meth:`~lizzy.LizzyModel.assign_simulation_parameters` method should be called, as long as it is done *before* the solver is initialised by the :meth:`~lizzy.LizzyModel.initialise_solver` method (further on). Failure to do so, or omitting the call entirely, will result in running the simulation with default values.
 
-Next, we can define the properties of the materials in the mesh. At the moment, material definition is handled in the script (in the future this will change). We can do so by creating a material and then assigning it to a selected domain:
+Next, define the resin (fluid) to be used in the simulation:
 
 .. code-block:: python
 
-    model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "test_material")
+    model.create_resin("resin", viscosity=0.1)
+    model.assign_resin("resin")
+
+The :meth:`~lizzy.LizzyModel.create_resin` method takes a name and a dynamic viscosity value [Pa.s]. The resin must be assigned to the model using :meth:`~lizzy.LizzyModel.assign_resin`.
+
+Now we can define the properties of the material in the mesh and assign it to a mesh domain:
+
+.. code-block:: python
+
+    model.create_material("test_material", (1E-10, 1E-10, 1E-10), 0.5, 1.0)
     model.assign_material("test_material", 'domain')
 
 The method :meth:`~lizzy.LizzyModel.create_material` instantiates a ``PorousMaterial`` object which is stored in the model. The arguments of :meth:`~lizzy.LizzyModel.create_material` are:
 
-* ``k1`` (float): principal permeability value in local direction :math:`\mathbf{e}_1`
-* ``k2`` (float): principal permeability value in local direction :math:`\mathbf{e}_2`
-* ``k3`` (float): principal permeability value in local direction :math:`\mathbf{e}_3`
-* ``porosity`` (float): the fraction of total material volume that is not occupied by solid material (1 - Vf)
-* ``thickness`` (float): the thickness of the material.
-* ``name`` (str): the name assigned to the material. This is used to identify the material from now on, for example when it needs to be selected for assignment by the following line: ``assign_material("material name", "mesh domain name")``
+* ``name`` (str): the name assigned to the material, used to identify it for later assignment.
+* ``k_vals`` (tuple[float, float, float]): permeability values :math:`(k_1, k_2, k_3)` in principal directions [m²].
+* ``porosity`` (float): the fraction of total material volume not occupied by solid material (1 - Vf).
+* ``thickness`` (float): the thickness of the material in the out-of-plane direction [m].
 
-Note that no material orientation was defined. This is ok because the material declared is isotropic. Behind the scenes, Lizzy assigns a global rosette aligned with the global x, y, z axes when no rosette is declared. Local material orientations and zone-specific rosettes will be detailed in more advanced examples.
+Note that no material orientation was defined. This is ok because the material declared is isotropic. Behind the scenes, Lizzy assigns a default rosette aligned with the global x, y, z axes. Local material orientations and zone-specific rosettes will be detailed in more advanced examples.
 
 .. note::
 
-    Each material tag present in the mesh must be assigned a material, otherwise we will get an error: ``>>> Mesh contains unassigned material tag: domain``
+    Each material tag present in the mesh must be assigned a material, otherwise initialisation will raise an error.
 
 Boundary conditions
 -------------------
 
-Next, we will create some boundary conditions. In this example we will create an inlet on the left edge of the mesh.
-At the moment, only inlets with assigned pressure are supported. Inlets are created following the same pattern as for materials: the inlet is created with a name, and then assigned:
+Next, we will create some boundary conditions. In this example we will create a pressure inlet on the left edge of the mesh.
+Inlets are created with a name and a pressure value, then assigned to a mesh boundary:
 
 .. code-block::
 
-    model.create_inlet(1E+05, "inlet_left")
+    model.create_pressure_inlet("inlet_left", 1E+05)
     model.assign_inlet("inlet_left", "left_edge")
 
-The :meth:`~lizzy.LizzyModel.create_inlet` method takes two arguments: the pressure value (``1E+05``) and the name of the inlet (``"inlet_left"``).
+The :meth:`~lizzy.LizzyModel.create_pressure_inlet` method takes the inlet name and the prescribed pressure value [Pa].
 
 
 Initialise solver
@@ -122,7 +129,7 @@ The next step is to call the :meth:`~lizzy.LizzyModel.solve` method to run the f
 
     solution = model.solve()
 
-The :meth:`~lizzy.LizzyModel.solve` method returns a ``solution`` dictionary, which is **not** stored in the LizzyModel and therefore must be captured.
+The :meth:`~lizzy.LizzyModel.solve` method returns a :class:`~lizzy.datatypes.Solution` object, which can be captured optionally. The same can also be fetched from the model :attr:`~lizzy.LizzyModel.latest_solution` attribute.
 
 Write results
 -------------
@@ -144,10 +151,12 @@ The full script
 
     model = liz.LizzyModel()
     model.read_mesh_file("Rect1M_R1.msh")
-    model.assign_simulation_parameters(mu=0.1, output_interval=100)
-    model.create_material(1E-10, 1E-10, 1E-10, 0.5, 1.0, "example_material")
+    model.assign_simulation_parameters(output_interval=100)
+    model.create_resin("resin", viscosity=0.1)
+    model.assign_resin("resin")
+    model.create_material("example_material", (1E-10, 1E-10, 1E-10), 0.5, 1.0)
     model.assign_material("example_material", 'domain')
-    model.create_inlet(100000, "inlet_left")
+    model.create_pressure_inlet("inlet_left", 100000)
     model.assign_inlet("inlet_left", "left_edge")
     model.initialise_solver()
     solution = model.solve()

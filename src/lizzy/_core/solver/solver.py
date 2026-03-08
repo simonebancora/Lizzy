@@ -280,7 +280,7 @@ class Solver:
         self.n_empty_cvs = len(p0_idxs)
         self.bcs.p0_idx = p0_idxs
 
-    def solve(self, log="on") -> dict:
+    def solve(self, log="on"):
         solve_time_start = time.time()
         self.step_end_time = np.inf  # reset step end time for full solve
         print("SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
@@ -296,7 +296,7 @@ class Solver:
         print("\nSOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
         return solution
 
-    def solve_time_interval(self, time_interval:float, log="off", lightweight=False) -> dict:
+    def solve_time_interval(self, time_interval:float, log="off", lightweight=False):
         self.step_completed = False
         self.step_end_time = self.current_time + time_interval
         solve_time_start = time.time()

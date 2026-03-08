@@ -104,7 +104,7 @@ class LizzyModel:
     
     @property
     def latest_solution(self) -> Solution:
-        """The most recent solution from the model (read-only). This value is None is the model is run in `lightweight` mode.
+        """The most recent solution from the model (read-only). This value is None if the model is run in `lightweight` mode.
         """
         return self._latest_solution
     
@@ -162,25 +162,55 @@ class LizzyModel:
     
     @preinit_only
     def get_elements(self) -> elements:
-        """Returns the mesh Elements.
+        """Returns the list of all mesh elements.
+
+        Returns
+        -------
+        :class:`~lizzy._core.cvmesh.collections.elements`
+            List of all :class:`~lizzy._core.cvmesh.entities.Triangle` elements in the mesh.
         """
         return self._mesh.triangles
 
     @preinit_only
     def get_element_by_idx(self, idx: int) -> Triangle:
-        """Returns the mesh Element with the given index.
+        """Returns the mesh element at the given index.
+
+        Parameters
+        ----------
+        idx : int
+            Integer index of the element.
+
+        Returns
+        -------
+        :class:`~lizzy.entities.Triangle`
+            The element at the given index.
         """
         return self._mesh.triangles[idx]
 
     @preinit_only
     def get_nodes(self) -> nodes:
-        """Returns the mesh Nodes.
+        """Returns the list of all mesh nodes.
+
+        Returns
+        -------
+        :class:`~lizzy._core.cvmesh.collections.nodes`
+            List of all :class:`~lizzy._core.cvmesh.entities.Node` objects in the mesh.
         """
         return self._mesh.nodes
 
     @preinit_only
     def get_node_by_idx(self, idx: int) -> Node:
-        """Returns the mesh Node with the given index.
+        """Returns the mesh node at the given index.
+
+        Parameters
+        ----------
+        idx : int
+            Integer index of the node.
+
+        Returns
+        -------
+        :class:`~lizzy.entities.Node`
+            The node at the given index.
         """
         return self._mesh.nodes[idx]
     
@@ -205,7 +235,7 @@ class LizzyModel:
         
         Examples
         --------
-        >>> model.assign_simulation_parameters(mu=0.2, output_interval=50)
+        >>> model.assign_simulation_parameters(output_interval=50)
 
         Raises
         ------
@@ -232,20 +262,16 @@ class LizzyModel:
         ----------
         name : str
             Unique name of the new material.
-        k1 : float
-            Permeability in the first principal direction.
-        k2 : float
-            Permeability in the second principal direction.
-        k3 : float
-            Permeability in the third principal direction.
+        k_vals : tuple[float, float, float]
+            Permeability values in the three principal directions (k1, k2, k3) [m²]. All values must be positive.
         porosity : float
-            Volumetric porosity of the material (porosity = 1 - fibre volume fraction).
+            Volumetric porosity of the material (porosity = 1 - fibre volume fraction). Must be between 0 and 1 (exclusive).
         thickness : float
-            Thickness of the material [mm].
-        
+            Thickness of the material in the out-of-plane direction [m]. Must be positive.
+
         Returns
         -------
-        :class:`~lizzy.core.materials.PorousMaterial`
+        :class:`~lizzy.materials.PorousMaterial`
             Reference to the created material.
         """
         new_material = self._material_manager.create_material(name, k_vals, porosity, thickness)
@@ -284,7 +310,7 @@ class LizzyModel:
         
         Returns
         -------
-        :class:`~lizzy.core.materials.Resin`
+        :class:`~lizzy.materials.Resin`
             Reference to the created resin.
         """
         new_resin = self._material_manager.create_resin(name, viscosity)
@@ -296,25 +322,25 @@ class LizzyModel:
 
         Parameters
         ----------
-        material_selector : str
-            Name of the resin to assign. Must correspond to an existing resin created with `LizzyModel.create_resin`.
+        resin_selector : Resin | str
+            The resin object or name of the resin to assign. Must correspond to an existing resin created with :func:`~LizzyModel.create_resin`.
         """
         self._material_manager.assign_resin(resin_selector)
 
     @preinit_only
     def create_rosette(self, name:str, u:tuple[float, float, float]) -> Rosette:
-        """Create a new rosette that can then be selected and used in the model.
+        """Create a new orientation rosette that can then be used when assigning a material.
 
         Parameters
         ----------
         name : str
-            Name unique name of the new rosette.
+            Unique name of the new rosette.
         u : tuple[float, float, float]
-            The first point defining the first axis of the rosette (k1 direction).
+            Direction vector defining the first principal direction of the rosette (k1 direction), expressed in global (x, y, z) coordinates. Does not need to be normalised.
 
         Returns
         -------
-        :class:`~lizzy.core.materials.Rosette`
+        :class:`~lizzy.materials.Rosette`
             Reference to the created rosette.
         """
         new_rosette = self._material_manager.create_rosette(name, u)
@@ -442,7 +468,7 @@ class LizzyModel:
             - ``delta``: increment the existing pressure by the given value.
         Raises
         ------
-        KeyError
+        ValueError
             If the `mode` is not one of the allowed values.
         """
         self._gates_manager.change_inlet_pressure(inlet_selector, pressure_value, mode)
@@ -489,7 +515,7 @@ class LizzyModel:
 
     @postinit_only
     def print_sensor_readings(self):
-        """Prints to the console the current values of :attr:`~lizzy.sensors.Sensor.time`, :attr:`~lizzy.sensors.Sensor.pressure`, :attr:`~lizzy.sensors.Sensor.fill_factor` and :attr:`~lizzy.sensors.Sensor.velocity` of each sensor.
+        """Prints to the console the current readings of each sensor: time, pressure, fill factor and velocity.
         """
         self._sensor_manager.print_sensor_readings()
 
@@ -500,6 +526,16 @@ class LizzyModel:
     
     def get_sensor_by_id(self, idx:int) -> Sensor:
         """Fetches a sensor by its index.
+
+        Parameters
+        ----------
+        idx : int
+            Index of the sensor to fetch. Sensors are indexed in the order they were created, starting from 0.
+
+        Returns
+        -------
+        :class:`~lizzy.sensors.Sensor`
+            The fetched sensor object.
         """
         return self._sensor_manager.get_sensor_by_id(idx)
 

@@ -22,7 +22,9 @@ The first steps are to import Lizzy, create a LizzyModel, read the mesh file and
 
     model = liz.LizzyModel()
     model.read_mesh_file("Radial.msh")
-    model.assign_simulation_parameters(mu=0.1, output_interval=100)
+    model.assign_simulation_parameters(output_interval=100)
+    model.create_resin("resin", viscosity=0.1)
+    model.assign_resin("resin")
 
 Creating an oriented anisotropic material
 -----------------------------------------
@@ -38,7 +40,7 @@ The next step is to create one anisotropic material and assign it to the domain:
 
 .. code-block::
 
-    model.create_material(1E-10, 1E-11, 1E-10, 0.5, 1.0, "aniso_material")
+    model.create_material("aniso_material", (1E-10, 1E-11, 1E-10), 0.5, 1.0)
     model.assign_material("aniso_material", "domain", rosette)
 
 Note the factor 10 difference between :math:`k_1` and :math:`k_2`. Lastly, we can assign the material and the rosette to a given domain patch - in this case, only the *domain* tag is present in the mesh.
@@ -61,7 +63,7 @@ We can now conclude the script by assigning boundary conditions to the *inner_ri
 
 .. code-block::
 
-    model.create_inlet(1E+05, "inner_inlet")
+    model.create_pressure_inlet("inner_inlet", 1E+05)
     model.assign_inlet("inner_inlet", "inner_rim")
 
     # solve
@@ -80,13 +82,15 @@ The full script
 
     model = liz.LizzyModel()
     model.read_mesh_file("Radial.msh")
-    model.assign_simulation_parameters(mu=0.1, output_interval=100)
+    model.assign_simulation_parameters(output_interval=100)
+    model.create_resin("resin", viscosity=0.1)
+    model.assign_resin("resin")
 
     rosette = liz.Rosette((1,0,0))
-    model.create_material(1E-10, 1E-11, 1E-10, 0.5, 1.0, "aniso_material")
+    model.create_material("aniso_material", (1E-10, 1E-11, 1E-10), 0.5, 1.0)
     model.assign_material("aniso_material", "domain", rosette)
 
-    model.create_inlet(1E+05, "inner_inlet")
+    model.create_pressure_inlet("inner_inlet", 1E+05)
     model.assign_inlet("inner_inlet", "inner_rim")
 
     model.initialise_solver()

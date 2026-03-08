@@ -25,10 +25,21 @@ The LIZZY namespace exposes the :class:`~lizzy.LizzyModel` class, which provides
 
     .. automethod:: lizzy.LizzyModel.read_mesh_file
     .. automethod:: lizzy.LizzyModel.print_mesh_info
-    .. automethod:: lizzy.LizzyModel.create_material
-    .. automethod:: lizzy.LizzyModel.assign_material
     .. automethod:: lizzy.LizzyModel.assign_simulation_parameters
     .. automethod:: lizzy.LizzyModel.print_simulation_parameters
+    .. automethod:: lizzy.LizzyModel.create_resin
+    .. automethod:: lizzy.LizzyModel.assign_resin
+    .. automethod:: lizzy.LizzyModel.create_material
+    .. automethod:: lizzy.LizzyModel.assign_material
+    .. automethod:: lizzy.LizzyModel.create_rosette
+
+    Mesh management methods
+    -----------------------
+
+    .. automethod:: lizzy.LizzyModel.get_elements
+    .. automethod:: lizzy.LizzyModel.get_element_by_idx
+    .. automethod:: lizzy.LizzyModel.get_nodes
+    .. automethod:: lizzy.LizzyModel.get_node_by_idx
 
     
     Inlet management methods

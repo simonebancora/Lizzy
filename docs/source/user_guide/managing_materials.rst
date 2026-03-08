@@ -1,12 +1,33 @@
 Managing materials
 ==================
 
-In this section we describe how to create and assign materials in Lizzy. All operations can be performed using the :class:`~lizzy.LizzyModel` user-facing methods.
+In this section we describe how to create and assign the resin (fluid) and porous materials in Lizzy. All operations can be performed using the :class:`~lizzy.LizzyModel` user-facing methods.
 
-Materials in Lizzy
--------------------
+Defining the resin
+------------------
 
-In Lizzy, a material is represented by the :class:`~lizzy.materials.PorousMaterial` class. This class encapsulates the properties of a porous material, including its permeability, porosity, and thickness. Each material is defined by the following properties:
+The resin represents the fluid that will fill the part. It is defined by its dynamic viscosity and must be created and assigned before initialising the solver.
+
+To create a resin, use the :meth:`~lizzy.LizzyModel.create_resin` method, providing a unique name and a dynamic viscosity value [Pa·s]:
+
+.. code-block::
+
+    model.create_resin("resin", viscosity=0.1)
+
+A :class:`~lizzy.materials.Resin` object is created and stored in the model. To assign it to the simulation, use the :meth:`~lizzy.LizzyModel.assign_resin` method:
+
+.. code-block::
+
+    model.assign_resin("resin")
+
+.. note::
+
+    Only one resin can be assigned at a time. The resin must be assigned before calling :meth:`~lizzy.LizzyModel.initialise_solver`, otherwise an error will be raised.
+
+Porous materials in Lizzy
+-------------------------
+
+In Lizzy, a porous material is represented by the :class:`~lizzy.materials.PorousMaterial` class. This class encapsulates the properties of a porous material, including its permeability, porosity, and thickness. Each material is defined by the following properties:
 
 - **Name**: A unique string identifier for the material.
 - **Permeability (k1, k2, k3)**: The permeability of the material in three principal directions (in m²).
