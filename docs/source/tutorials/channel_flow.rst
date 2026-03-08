@@ -40,7 +40,7 @@ Creating the Lizzy model
 
 Every simulation model in Lizzy is created and defined using the LizzyModel class. This is the main class of the solver and provides all APIs necessary to fully define a simulation scenario.
 
-The first expression in asy Lizzy script is always to create the LizzyModel that will be used in the simulation:
+The first expression in any Lizzy script is always to create the LizzyModel that will be used in the simulation:
 
 .. code-block::
 
@@ -138,7 +138,7 @@ The write-out of results in Paraview-compatible format is handled by the :meth:`
 
 .. code-block::
 
-    model.save_results(solution, "Rect1M_R1")
+    model.save_results(result_name="Rect1M_R1")
 
 The :meth:`~lizzy.LizzyModel.save_results` method takes two arguments: the solution object returned by the solver and a string that specifies the name of the folder that will be created and where the results will be saved.
 
@@ -160,7 +160,7 @@ The full script
     model.assign_inlet("inlet_left", "left_edge")
     model.initialise_solver()
     solution = model.solve()
-    model.save_results(solution, "Rect1M_R1")
+    model.save_results(result_name="Rect1M_R1")
 
 Solution visualisation
 ----------------------

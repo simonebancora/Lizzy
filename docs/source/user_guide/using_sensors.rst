@@ -111,7 +111,7 @@ In this example, sensor 0 has not yet been reached by the resin, while sensors 1
 Triggering write-outs on sensor events
 ----------------------------------------
 
-By enabling the ``end_step_when_sensor_triggered`` simulation parameter, Lizzy will automatically end the current solution step and create a result write-out whenever a sensor transitions to the triggered state (i.e., when the resin front reaches a sensor for the first time). This ensures that the exact moment of resin arrival is always captured in the solution, independently of the regular write-out schedule (``wo_interval``).
+By enabling the ``end_step_when_sensor_triggered`` simulation parameter, Lizzy will automatically end the current solution step and create a result write-out whenever a sensor transitions to the triggered state (i.e., when the resin front reaches a sensor for the first time). This ensures that the exact moment of resin arrival is always captured in the solution, independently of the regular write-out schedule (``output_interval``).
 
 To enable this behaviour, set the parameter before initialising the solver:
 

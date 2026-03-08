@@ -34,7 +34,7 @@ In Lizzy, a porous material is represented by the :class:`~lizzy.materials.Porou
 - **Porosity**: The porosity of the material (dimensionless, between 0 and 1).
 - **Thickness**: The thickness of the material (in m). A material can represent a single layer of fabric, or a multi-layer laminate. In the latter case, the thickness represents the total thickness of the laminate.
 
-The current version of Lizzy does not allow to compose a multi-layer laminate automatically by defining its layers. Instead, the user must compute the equivalent permeability, porosity, and thickness of the laminate externally and define a single :class:`~lizzy.materials.PorousMaterial` object representing the entire laminate. This is tipically done using arithmetic average schemes :cite:`calado1996effective` :cite:`bancora2018effective`. We plan to implement an automated multi-layer laminate definition feature in future releases.
+The current version of Lizzy does not allow to compose a multi-layer laminate automatically by defining its layers. Instead, the user must compute the equivalent permeability, porosity, and thickness of the laminate externally and define a single :class:`~lizzy.materials.PorousMaterial` object representing the entire laminate. This is typically done using arithmetic average schemes :cite:`calado1996effective` :cite:`bancora2018effective`. We plan to implement an automated multi-layer laminate definition feature in future releases.
 
 Creating materials
 -------------------

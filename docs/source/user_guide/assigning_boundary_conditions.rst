@@ -12,10 +12,12 @@ Creation and assignment of inlets
 .. note::
     The following operations are to be performed **before** the solver is initialised by calling :meth:`~lizzy.LizzyModel.initialise_solver`.
 
-Creating an inlet
-~~~~~~~~~~~~~~~~~~
+Lizzy supports two types of inlets:
 
-Let's say we have imported a mesh with one boundary named "left_edge" and one boundary names "right_edge", and we want to assign an inlet boundary condition to the "left_edge" boundary:
+- **Pressure inlet** (:class:`~lizzy.gates.PressureInlet`): prescribes a fixed pressure (Dirichlet BC) at the boundary. This is the most common inlet type.
+- **Flow rate inlet** (:class:`~lizzy.gates.FlowRateInlet`): prescribes a fixed volumetric flow rate (Neumann BC) at the boundary. This is an experimental feature.
+
+Let's say we have imported a mesh with one boundary named "left_edge" and one boundary named "right_edge":
 
 .. image:: ../../images/Rect1M_R1_mesh.jpg
    :width: 80%
@@ -24,20 +26,38 @@ Let's say we have imported a mesh with one boundary named "left_edge" and one bo
 .. code-block:: console
 
     >>> model.print_mesh_info()
-    >>> 
+    >>>
         Mesh file format: MSH (v4 ASCII),
         Case name:    EXAMPLE_EDGES,
         Mesh contains 1500 nodes, 3000 elements.
         Physical domains:        ['domain']
         Physical lines:          ['left_edge', 'right_edge']
 
-First, we will create a pressure inlet using the :meth:`~lizzy.LizzyModel.create_pressure_inlet` method. This method requires two arguments: a unique name for the inlet and the inlet initial pressure (in Pa). Let's create an inlet named "inlet_1" with a pressure of 1.0E05 Pa:
+Pressure inlet
+~~~~~~~~~~~~~~
+
+To create a pressure inlet, use the :meth:`~lizzy.LizzyModel.create_pressure_inlet` method, providing a unique name and the prescribed pressure [Pa]:
 
 .. code-block::
 
     model.create_pressure_inlet("inlet_1", 1e5)
 
-A :class:`~lizzy.gates.PressureInlet` object is created and stored in the model, but it is not assigned yet to any boundary. To do so, we use the :meth:`~lizzy.LizzyModel.assign_inlet` method, providing the name of the inlet and the name of the mesh boundary where we want to assign it:
+A :class:`~lizzy.gates.PressureInlet` object is created and stored in the model, but not yet assigned to any boundary. To assign it, use the :meth:`~lizzy.LizzyModel.assign_inlet` method:
+
+.. code-block::
+
+    model.assign_inlet("inlet_1", "left_edge")
+
+Flow rate inlet
+~~~~~~~~~~~~~~~
+
+To create a flow rate inlet, use the :meth:`~lizzy.LizzyModel.create_flowrate_inlet` method, providing a unique name and the prescribed volumetric flow rate [m³/s]:
+
+.. code-block::
+
+    model.create_flowrate_inlet("inlet_1", 1e-6)
+
+Assign it to a boundary with the same :meth:`~lizzy.LizzyModel.assign_inlet` method:
 
 .. code-block::
 
@@ -45,7 +65,7 @@ A :class:`~lizzy.gates.PressureInlet` object is created and stored in the model,
 
 .. tip::
 
-    An alternative way to assign inlets is to pass them directly by reference. When creating an inlet, a :class:`~lizzy.gates.PressureInlet` object is returned. This object can be stored in a variable and passed directly to the :meth:`~lizzy.LizzyModel.assign_inlet` method. For example:
+    An alternative way to assign inlets is to pass the inlet object directly by reference instead of its name. When creating an inlet, the object is returned and can be stored in a variable:
 
     .. code-block::
 
@@ -165,12 +185,11 @@ This will produce the same effect as using the :meth:`~lizzy.LizzyModel.open_inl
 
 .. warning::
 
-    Do not close all the inlets in the model at the same time! At last one inlet should always be open to compute the next time step. Closing all inlets will lead to an error:
+    Do not close all the inlets in the model at the same time! At least one inlet should always be open to compute the next time step. Closing all inlets will lead to an error:
 
     .. code-block:: console
 
-        >>> Fatal error: The application has terminated.
-        >>> No inlets are currently open. At least one inlet must be open at all times.
+        >>> ConfigurationError: No inlets are currently open. At least one inlet must be open at all times.
 
 Modifying inlet pressure
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

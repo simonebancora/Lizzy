@@ -10,9 +10,9 @@ In this section, we cover how to use Lizzy setting up and running simulations.
 
    basics
    reading_a_mesh
-   assigning_boundary_conditions
    assigning_parameters
    managing_materials
+   assigning_boundary_conditions
    using_sensors
    solver_operations
    saving_results

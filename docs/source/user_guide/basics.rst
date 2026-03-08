@@ -43,17 +43,17 @@ As Lizzy is just an imported package, the solver can be used within any Python s
 The LizzyModel class
 ---------------------
 
-The :class:`~lizzy.LizzyModel` class is the main protagonist of any Lizzy script. This class provides APIs to execute all the core fucntionalities of the solver.
+The :class:`~lizzy.LizzyModel` class is the main protagonist of any Lizzy script. This class provides APIs to execute all the core functionalities of the solver.
 When writing a Lizzy script, typically the first step (after importing the library) is to instantiate a :class:`~lizzy.LizzyModel` object:
 
 .. code-block::
 
     model = liz.LizzyModel()
 
-The Lizzy API is designed so that, in most cases, the :class:`~lizzy.LizzyModel` class is the only one the user needs do access to do any operation:
+The Lizzy API is designed so that, in most cases, the :class:`~lizzy.LizzyModel` class is the only one the user needs to access to do any operation:
 
 .. code-block::
 
     operation_output = model.some_method(args)
 
-The :ref:`using_lizzy` section of this documentation is dedicated to showing how elementary operations can be done in Lizzy. The :ref:`api_reference_index` provides detailed information about the LizzyModel functionalities anf other namespaces of Lizzy.
+The :ref:`using_lizzy` section of this documentation is dedicated to showing how elementary operations can be done in Lizzy. The :ref:`api_reference_index` provides detailed information about the LizzyModel functionalities and other namespaces of Lizzy.
