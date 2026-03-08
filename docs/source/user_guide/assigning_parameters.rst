@@ -1,3 +1,5 @@
+.. _assigning_parameters:
+
 Simulation Parameters
 =========================
 

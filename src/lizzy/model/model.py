@@ -12,10 +12,8 @@ if TYPE_CHECKING:
     from lizzy._core.gates.gates import Inlet, PressureInlet, FlowRateInlet, Vent
     from lizzy.datatypes import Solution
 
-
 from typing import Dict, Literal
 from types import MappingProxyType
-
 from lizzy._core.io import Reader, Writer
 from lizzy._core.cvmesh import Mesh
 from lizzy._core.gates import GatesManager
@@ -25,7 +23,6 @@ from lizzy._core.datatypes import SimulationParameters
 from lizzy._core.materials import MaterialManager
 from lizzy.utils.splash_logo import print_logo
 from lizzy.utils.decorators import State, preinit_only, postinit_only
-
 
 class LizzyModel:
     """
@@ -56,6 +53,10 @@ class LizzyModel:
         self._material_manager = MaterialManager()
         self._gates_manager = GatesManager()
         self._sensor_manager = SensorManager()
+    
+    # ===========================================================================
+    # Properties
+    # ===========================================================================
 
     @property
     def lightweight(self):
@@ -109,75 +110,9 @@ class LizzyModel:
     def gates_manager(self) -> GatesManager:
         return self._gates_manager
     
-    @property
-    def simulation_parameters(self) -> SimulationParameters:
-        return self._simulation_parameters
-
-    def print_simulation_parameters(self) -> None:
-        """
-        Print the currently assigned simulation parameters.
-        """
-        self._simulation_parameters.print_current()
-    
-    def get_number_of_empty_cvs(self) -> int:
-        """
-        Returns
-        -------
-        int:
-            :attr:`~lizzy.LizzyModel.n_empty_cvs`
-        """
-        return self.n_empty_cvs
-
-    def get_current_time(self) -> float:
-        """
-        Returns
-        -------
-        float
-            :attr:`~lizzy.LizzyModel.current_time`
-        """
-        return self.current_time
-
-    @postinit_only
-    def get_latest_solution(self) -> Dict:
-        """
-        Returns
-        -------
-        dict
-            :attr:`~lizzy.LizzyModel.latest_solution`
-        """
-        return self.latest_solution
-
-    @preinit_only
-    def assign_simulation_parameters(self, **kwargs):
-        r"""
-        Assigns new values to one or more simulation parameters using keyword arguments.
-
-        Parameters
-        ----------
-        **kwargs
-            Keyword arguments corresponding to parameter names and their new values.
-            Valid keywords are:
-        
-            mu: float, optional
-                Viscosity [Pa s]. Default: 0.1
-            wo_delta_time: float, optional
-                Interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
-            fill_tolerance: float, optional
-                Tolerance on the fill factor to consider a CV as filled. Default: 0.01
-            end_step_when_sensor_triggered: bool, optional
-                If True, ends current solution step and creates a write-out when a sensor changes state. Default: False
-        
-        Examples
-        --------
-        >>> model.assign_simulation_parameters(mu=0.2, wo_delta_time=50)
-        
-
-        Raises
-        ------
-        AttributeError
-            If any key in `kwargs` does not correspond to a known attribute.
-        """
-        self._simulation_parameters.assign(**kwargs)
+    # ===========================================================================
+    # IO API
+    # ===========================================================================
 
     @preinit_only
     def read_mesh_file(self, mesh_file_path:str):
@@ -193,7 +128,6 @@ class LizzyModel:
         self._model_name = self._reader.case_name
         self._mesh.build_mesh(self._reader.mesh_data)
         
-    
     def print_mesh_info(self) -> None:
         """Prints some information about the mesh.
         """
@@ -201,6 +135,92 @@ class LizzyModel:
             print("Mesh data is empty. Please read a mesh file first.")
             return
         self._reader.print_mesh_info()
+    
+    @postinit_only
+    def save_results(self, solution: Solution = None, result_name:str = None, **kwargs):
+        """Save the results contained in the solution dictionary into an XDMF file.
+
+        Parameters
+        ----------
+        solution : :class:`~lizzy.datatypes.Solution`, optional
+            The solution that should be written to the XDMF file. If none passed, the latest solution present in the model will be used.
+        result_name : str, optional
+            The name of the solution file that will be created. If none passed, the name of the mesh file with appended '_RES' will be used.
+        """
+        if solution == None:
+            solution = self._latest_solution
+        if result_name == None:
+            result_name = self._model_name + '_RES'
+        self._writer.assign_mesh(self._mesh)
+        self._writer.save_results(solution, result_name, **kwargs)
+    
+    # ===========================================================================
+    # Mesh API
+    # ===========================================================================
+    
+    @preinit_only
+    def get_elements(self):
+        """Returns the mesh Elements.
+        """
+        return self._mesh.triangles
+    
+    @preinit_only
+    def get_element_by_idx(self, idx: int):
+        """Returns the mesh Element with the given index.
+        """
+        return self._mesh.triangles[idx]
+    
+    @preinit_only
+    def get_nodes(self):
+        """Returns the mesh Nodes.
+        """
+        return self._mesh.nodes
+    
+    @preinit_only
+    def get_node_by_idx(self, idx: int):
+        """Returns the mesh Node with the given index.
+        """
+        return self._mesh.nodes[idx]
+    
+    # ===========================================================================
+    # Simulation parameters
+    # ===========================================================================
+
+    @preinit_only
+    def assign_simulation_parameters(self, **kwargs):
+        r"""
+        Assigns new values to one or more simulation parameters using keyword arguments.
+
+        Parameters
+        ----------
+        **kwargs
+            Keyword arguments corresponding to parameter names and their new values.
+            Valid keywords are:
+
+            - ``wo_delta_time`` (float, optional): interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
+            - ``fill_tolerance`` (float, optional): tolerance on the fill factor to consider a CV as filled. Default: 0.01
+            - ``end_step_when_sensor_triggered`` (bool, optional): if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
+        
+        Examples
+        --------
+        >>> model.assign_simulation_parameters(mu=0.2, wo_delta_time=50)
+
+        Raises
+        ------
+        AttributeError
+            If any key in `kwargs` does not correspond to a known attribute.
+        """
+        self._simulation_parameters.assign(**kwargs)
+
+    def print_simulation_parameters(self) -> None:
+        """
+        Print the currently assigned simulation parameters.
+        """
+        self._simulation_parameters.print_current()
+
+    # ===========================================================================
+    # Materials API
+    # ===========================================================================
 
     @preinit_only
     def create_material(self, name : str, k_vals : tuple[float, float, float], porosity: float, thickness: float) -> PorousMaterial:
@@ -230,25 +250,6 @@ class LizzyModel:
         return new_material
     
     @preinit_only
-    def create_resin(self, name : str, viscosity : float) -> Resin:
-        """Create a new resin that can then be selected and used in the model.
-
-        Parameters
-        ----------
-        name : str
-            Unique name of the resin.
-        viscosity : float
-            Dynamic viscosity of the resin [Pa.s]
-        
-        Returns
-        -------
-        :class:`~lizzy.core.materials.Resin`
-            Reference to the created resin.
-        """
-        new_resin = self._material_manager.create_resin(name, viscosity)
-        return new_resin
-    
-    @preinit_only
     def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
         """Assign an existing material to a labeled mesh region.
 
@@ -267,6 +268,25 @@ class LizzyModel:
         except KeyError:
             raise KeyError(f"Domain tag '{mesh_tag}' not found in mesh physical domains. Check the name, or assign the material to an existing mesh tag.")
         self._mesh.update_elements_with_assigned_material(element_idxs, material, rosette)
+    
+    @preinit_only
+    def create_resin(self, name : str, viscosity : float) -> Resin:
+        """Create a new resin that can then be selected and used in the model.
+
+        Parameters
+        ----------
+        name : str
+            Unique name of the resin.
+        viscosity : float
+            Dynamic viscosity of the resin [Pa.s]
+        
+        Returns
+        -------
+        :class:`~lizzy.core.materials.Resin`
+            Reference to the created resin.
+        """
+        new_resin = self._material_manager.create_resin(name, viscosity)
+        return new_resin
 
     @preinit_only
     def assign_resin(self, resin_selector):
@@ -297,6 +317,10 @@ class LizzyModel:
         """
         new_rosette = self._material_manager.create_rosette(name, u)
         return new_rosette
+    
+    # ===========================================================================
+    # Gates API
+    # ===========================================================================
 
     @preinit_only
     def create_pressure_inlet(self, name:str, initial_pressure_value:float) -> PressureInlet:
@@ -397,7 +421,6 @@ class LizzyModel:
         selected_inlet = self._gates_manager._fetch_inlet(inlet_name)
         return selected_inlet
     
-
     def change_inlet_pressure(self, inlet_selector:Inlet | str, pressure_value:float, mode: Literal["set", "delta"] = "set"):
         """Changes the pressure value at the selected inlet to a new value, according to the selected mode.
 
@@ -438,6 +461,10 @@ class LizzyModel:
             Either the inlet object reference, or the name of an existing inlet.
         """
         self._gates_manager.close_inlet(inlet_selector)
+    
+    # ===========================================================================
+    # Sensors API
+    # ===========================================================================
 
     #TODO: get coords arg as tuple or np array, then ids as int or string
     @preinit_only
@@ -466,12 +493,14 @@ class LizzyModel:
         """Returns a list of sensor trigger states: True if the sensor has been triggered, False otherwise."""
         return self._sensor_manager.sensor_trigger_states
     
-
     def get_sensor_by_id(self, idx)  -> Sensor:
         """Fetches a sensor by its index.
         """
         return self._sensor_manager.get_sensor_by_id(idx)
 
+    # ===========================================================================
+    # Solver API
+    # ===========================================================================
 
     def initialise_solver(self, solver_type:SolverType = SolverType.ITERATIVE_PETSC, 
                          solver_tol:float = 1e-8, solver_max_iter:int = 1000, 
@@ -543,30 +572,3 @@ class LizzyModel:
         Initialises a new solution, resetting all simulation variables. The part will be emptied and initial boundary conditions restored. This method can be called to reset a simulation and run a new one, without resetting the model.
         """
         self._solver.initialise_new_solution()
-    
-    @postinit_only
-    def save_results(self, solution: Solution = None, result_name:str = None, **kwargs):
-        """Save the results contained in the solution dictionary into an XDMF file.
-
-        Parameters
-        ----------
-        solution : :class:`~lizzy.datatypes.Solution`, optional
-            The solution that should be written to the XDMF file. If none passed, the latest solution present in the model will be used.
-        result_name : str, optional
-            The name of the solution file that will be created. If none passed, the name of the mesh file with appended '_RES' will be used.
-        """
-        if solution == None:
-            solution = self._latest_solution
-        if result_name == None:
-            result_name = self._model_name + '_RES'
-        self._writer.assign_mesh(self._mesh)
-        self._writer.save_results(solution, result_name, **kwargs)
-
-    def get_node_by_id(self, node_id:int):
-        return self._mesh.nodes[node_id]
-
-
-
-
-
-

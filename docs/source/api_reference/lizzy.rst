@@ -30,12 +30,6 @@ The LIZZY namespace exposes the :class:`~lizzy.LizzyModel` class, which provides
     .. automethod:: lizzy.LizzyModel.assign_simulation_parameters
     .. automethod:: lizzy.LizzyModel.print_simulation_parameters
 
-    Getter methods
-    --------------
-
-    .. automethod:: lizzy.LizzyModel.get_number_of_empty_cvs
-    .. automethod:: lizzy.LizzyModel.get_current_time
-    .. automethod:: lizzy.LizzyModel.get_latest_solution
     
     Inlet management methods
     ------------------------

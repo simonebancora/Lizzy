@@ -67,3 +67,57 @@ When the assignment happens, the remaining components of the local rosette (:mat
         k_iso = 1.0E-11
         model.create_material("material_iso", (k_iso, k_iso, k_iso), 0.5, 1.0)
         model.assign_material("material_iso", "domain_01")
+
+
+Element-wise manipulation
+-------------------------
+
+After assigning a material to a domain, the material properties are stored as attributes directly on each element object. This allows to overwrite individual element properties with arbitrary spatial distributions that are not expressible through the standard :meth:`~lizzy.LizzyModel.assign_material` workflow.
+
+Two methods are available for this:
+
+- :meth:`~lizzy.LizzyModel.get_elements`: returns the list of all elements in the mesh.
+- :meth:`~lizzy.LizzyModel.get_element_by_idx`: returns a single element by its integer index.
+
+The editable element attributes are:
+
+- ``elem.h``: thickness (float, in m).
+- ``elem.porosity``: porosity (float, dimensionless).
+- ``elem.k``: permeability tensor (3×3 numpy array, in m²).
+
+**Example: spatially varying thickness**
+
+Say we have a part of length :math:`L` and want to assign a linearly varying thickness :math:`h(x)`, going from :math:`h(0) = 1` mm to :math:`h(L) = 5` mm. We first assign a material (which sets a uniform thickness), then overwrite the thickness element by element:
+
+.. code-block::
+
+    import numpy as np
+
+    # assign material to the domain (sets a uniform thickness initially)
+    model.assign_material("material_01", "domain")
+
+    # iterate over all elements and overwrite the thickness
+    L = 1.0  # part length in m
+    for elem in model.get_elements():
+        x = elem.centroid[0]
+        elem.h = 0.001 + 0.004 * (x / L)
+
+**Example: spatially varying permeability**
+
+The same approach applies to permeability. The ``elem.k`` attribute stores the full 3×3 permeability tensor in the global frame. For an isotropic permeability that varies linearly along x, we can write:
+
+.. code-block::
+
+    import numpy as np
+
+    model.assign_material("material_01", "domain")
+
+    L = 1.0
+    for elem in model.get_elements():
+        x = elem.centroid[0]
+        k_val = 1e-10 + 9e-10 * (x / L)  # varies from 1E-10 to 1E-9 m²
+        elem.k = np.diag([k_val, k_val, k_val])
+
+.. note::
+    Element-wise manipulation must be performed **before** calling :meth:`~lizzy.LizzyModel.initialise_solver`. Modifying element properties after solver initialisation is not supported, as it would imply non-trivial physical implications during an ongoing filling (e.g. changing the thickness of an already-filled element).
+

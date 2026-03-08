@@ -13,6 +13,7 @@ In this section, we cover how to use Lizzy setting up and running simulations.
    assigning_boundary_conditions
    assigning_parameters
    managing_materials
+   using_sensors
    solver_operations
    saving_results
 

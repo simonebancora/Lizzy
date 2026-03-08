@@ -1,3 +1,5 @@
+.. _assigning_boundary_conditions:
+
 Boundary conditions operations
 ==================================
 
