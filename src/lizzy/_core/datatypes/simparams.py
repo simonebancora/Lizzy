@@ -59,12 +59,9 @@ class SimulationParameters:
         AttributeError
             If any key in `kwargs` does not correspond to a known attribute.
         """
-        # TODO: this probably breaks
-        _ALIASES = {"wo_delta_time": "output_interval"}
         self.has_been_assigned = True
         for key, value in kwargs.items():
-            resolved_key = _ALIASES.get(key, key)
-            if hasattr(self, resolved_key):
-                setattr(self, resolved_key, value)
+            if hasattr(self, key):
+                setattr(self, key, value)
             else:
                 raise AttributeError(f"'{self.__class__.__name__}' Error: unknown attribute '{key}'")
