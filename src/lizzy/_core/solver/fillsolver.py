@@ -36,7 +36,6 @@ class FillSolver:
             if self.all_fluxes_per_second[i] > 0:
                 dt = ((1.00 - fill_factor_array[active_cv_id]) * cv_volumes_array[active_cv_id]) / self.all_fluxes_per_second[i]
                 candidate_dts.append(dt)
-        np.array(candidate_dts)
         dt = np.min(candidate_dts)
         return dt
 
@@ -54,44 +53,3 @@ class FillSolver:
         v_array_local = v_array[ids]
         cv_flux_per_s = np.sum(np.einsum('ij,ij->i', v_array_local, flux_terms_local))
         return cv_flux_per_s
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# def find_free_surface_cvs_OLD(self, fill_factor_array, cv_support_cvs_array):
-#     """
-#     Finds the control volumes that are on the flow front. These cvs have a fill factor < 1.
-#     """
-#     free_surface_array = np.zeros_like(fill_factor_array)
-#     active_cv_ids = []
-#     for i, ff in enumerate(fill_factor_array):
-#         if ff < 1:
-#             neighbor_fills = fill_factor_array[cv_support_cvs_array[i]]
-#             if np.max(neighbor_fills >= 1):
-#                 active_cv_ids.append(i)
-#                 free_surface_array[i] = 1
-#
-#     return active_cv_ids, free_surface_array
-
-
-# def find_free_surface_cvs_SLOW(self, fill_factor_array, cv_adj_matrix):
-#     """
-#     Finds the control volumes that are on the flow front. These cvs have a fill factor < 1.
-#     """
-#     # cv_adj_matrix_full = cv_adj_matrix.toarray()
-#     unfilled_cv_mask = np.diag((fill_factor_array < 1).astype(int))
-#     filled_cv_mask = (fill_factor_array >= 1).astype(int)
-#     free_surface_array = (unfilled_cv_mask @ cv_adj_matrix @ filled_cv_mask > 0).astype(int)
-#     active_cv_ids = np.where(free_surface_array == 1)[0]
-#     return active_cv_ids, free_surface_array

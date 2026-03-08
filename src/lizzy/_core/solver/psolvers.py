@@ -67,59 +67,6 @@ class PressureSolver:
         return p
 
     @staticmethod
-    def apply_bcs(k, f, bcs):
-        """
-        Apply boundary conditions using symmetric elimination (traditional method).
-        
-        Note: This method modifies the entire matrix for each BC, which is inefficient
-        for filling simulations. Consider using solve_with_mask() instead for better performance.
-        """
-        dirichlet_idx_full = np.concatenate((bcs.dirichlet_idx, bcs.p0_idx), axis=None)
-        dirichlet_vals_full = np.concatenate((bcs.dirichlet_vals, np.zeros(len(bcs.p0_idx))), axis=None)
-
-        # Convert to dense if sparse (traditional solver works better with dense for BC application)
-        if issparse(k):
-            k_modified = k.toarray()
-        else:
-            k_modified = k.copy()
-            
-        f_modified = f.copy()
-
-        # Eliminate Dirichlet DOFs symmetrically
-        for idx, val in zip(dirichlet_idx_full, dirichlet_vals_full):
-            f_modified -= k_modified[:, idx] * val
-            k_modified[:, idx] = 0
-            k_modified[idx, :] = 0
-            k_modified[idx, idx] = 1
-            f_modified[idx] = val
-
-        return k_modified, f_modified
-
-
-    @staticmethod
-    def apply_starting_bcs(k, f, bcs):
-        """Apply boundary conditions at the start (legacy method)."""
-        dirichlet_idx_full = np.concatenate((bcs.dirichlet_idx, bcs.p0_idx), axis=None)
-        dirichlet_vals_full = np.concatenate((bcs.dirichlet_vals, np.zeros(len(bcs.p0_idx))), axis=None)
-
-        # Convert to dense if sparse
-        if issparse(k):
-            k_modified = k.toarray()
-        else:
-            k_modified = k.copy()
-            
-        f_modified = f.copy()
-
-        for idx, val in zip(dirichlet_idx_full, dirichlet_vals_full):
-            f_modified -= k_modified[:, idx] * val
-            k_modified[:, idx] = 0
-            k_modified[idx, :] = 0
-            k_modified[idx, idx] = 1
-            f_modified[idx] = val
-
-        return k_modified, f_modified
-
-    @staticmethod
     def solve_with_mask(k_original, f_original, bcs, method:SolverType = SolverType.DIRECT_SPARSE,
                        tol:float = 1e-8, max_iter:int = 1000, verbose:bool = False, **solver_kwargs):
         """
@@ -194,42 +141,5 @@ class PressureSolver:
         p_full[dirichlet_idx] = dirichlet_vals
         
         return p_full
-
-    @staticmethod
-    def free_dofs(k_sol, f_sol, k_sing, f_orig, new_dofs):
-        for dof in new_dofs:
-            k_sol[dof, :] = k_sing[dof, :]
-            k_sol[:, dof] = k_sing[:, dof]
-            f_sol[dof] = f_orig[dof]
-        return k_sol, f_sol
-
-    # @staticmethod
-    # def NEW_solve(k, f, bcs):
-    #     dirichlet_idx_full = np.concatenate((bcs.dirichlet_idx, bcs.p0_idx), axis=None)
-    #     dirichlet_vals_full = np.concatenate((bcs.dirichlet_vals, np.zeros((1, len(bcs.p0_idx)))), axis=None)
-    #
-    #     all_idx = np.arange(k.shape[0])
-    #     free_idx = np.setdiff1d(all_idx, dirichlet_idx_full)
-    #
-    #     # Adjust right-hand side for known Dirichlet values
-    #     f_mod = f[free_idx] - k[np.ix_(free_idx, dirichlet_idx_full)] @ dirichlet_vals_full
-    #
-    #     # Remove rows and columns from stiffness matrix
-    #     k_mod = k[np.ix_(free_idx, free_idx)]
-    #
-    #     # p_reduced = np.linalg.solve(k_mod, f_mod)
-    #
-    #     p_reduced, info = cg(k_mod, f_mod)
-    #
-    #
-    #     p_full = np.zeros_like(f)
-    #     p_full[free_idx] = p_reduced
-    #     p_full[dirichlet_idx_full] = dirichlet_vals_full
-    #
-    #     return p_full
-
-
-
-
 
 

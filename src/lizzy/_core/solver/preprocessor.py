@@ -7,7 +7,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from lizzy._core.cvmesh import mesh
 if TYPE_CHECKING:
     from lizzy._core.sensors import SensorManager
     from lizzy._core.gates import GatesManager
@@ -16,7 +15,6 @@ if TYPE_CHECKING:
     from lizzy._core.datatypes import SimulationParameters
 
 import numpy as np
-import time
 from lizzy._core.solver import *
 from lizzy.exceptions import ConfigurationError
 from .timestep_manager import TimeStepManager

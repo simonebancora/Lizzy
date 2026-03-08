@@ -40,11 +40,6 @@ class Node:
         self.node_ids : list[int] = []
     def __str__(self):
         return "Node ID: " + str(self.idx)
-    
-    def assign_triangle(self, triangle:Triangle):
-        self.triangles.append(triangle)
-        self.triangle_ids.append(triangle.idx)
-
 
 
 class Element2D:
@@ -63,7 +58,6 @@ class Element2D:
         "lines",
         "line_ids",
         "centroid",
-        "v"
     )
 
     def __init__(self):
@@ -80,7 +74,6 @@ class Element2D:
         self.lines : tuple[Line] = []
         self.line_ids : list[int] = []
         self.centroid = np.zeros(3)
-        self.v : np.ndarray = np.zeros((3,1))
         self.material_assigned = False
 
 class Triangle(Element2D):

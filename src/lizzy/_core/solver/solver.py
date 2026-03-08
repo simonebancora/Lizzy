@@ -7,7 +7,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from lizzy._core.cvmesh import mesh
 if TYPE_CHECKING:
     from lizzy._core.sensors import SensorManager
     from lizzy._core.gates import GatesManager
@@ -71,27 +70,17 @@ class Solver:
         self.N_nodes = mesh.mesh_view.n_nodes
         self.K_sing = None
         self.f_orig = None
-        self.K_sol = None
-        self.f_sol = None
-        self.new_step_dofs = []
         self.current_time = 0
         self.n_empty_cvs = np.inf
         self.next_wo_time = self.simulation_parameters.wo_delta_time
         self.step_end_time = np.inf
         self.step_completed = False
-        self.k_local_all = np.empty((self.mesh.triangles.N, 6))
-        self.f_local_all = np.zeros((self.mesh.triangles.N, 3))
         self.solver_vars = {"fill_factor_array" : np.zeros(self.N_nodes, dtype=float),
-                            "filled_node_ids" : np.empty(self.N_nodes, dtype=int),
                             "free_surface_array" : np.empty(self.N_nodes),
                             "cv_volumes_array" : np.empty(self.N_nodes),}
-        # self.cv_adj_matrix = lil_matrix((self.N_nodes, self.N_nodes), dtype=int)
         self.cv_support_cvs_array = self.mesh.mesh_view.node_idx_to_node_idxs # TODO do cleaner
 
         self.perform_precalcs()
-        
-        # self.compute_k_local()
-        # when a solver is instantiated, all simulation variables are initialised
         self.initialise_new_solution()
     
 
@@ -178,11 +167,8 @@ class Solver:
         """
         Must be called AFTER calling "update_bcs()"
         """
-        # initial_cvs = self.mesh.CVs[self.bcs.dirichlet_idx]
         self.solver_vars["fill_factor_array"][self.bcs.dirichlet_idx] = 1
         self.solver_vars["fill_factor_array"][self.bcs.neumann_idx] = 1
-        # for cv in initial_cvs:
-        #     cv.fill = 1.0
 
 
     
@@ -218,8 +204,6 @@ class Solver:
         p0_idxs = self.get_empty_nodes_idx(self.solver_vars["fill_factor_array"])
         self.n_empty_cvs = len(p0_idxs)
         self.bcs.p0_idx = p0_idxs
-        # self.K_sol, self.f_sol = PressureSolver.apply_starting_bcs(self.K_sing, self.f_orig, self.bcs)
-        self.solver_vars["filled_node_ids"] = np.where(self.solver_vars["fill_factor_array"] >= 1)[0]
         active_cvs_ids, self.solver_vars["free_surface_array"] = self.fill_solver.find_free_surface_cvs(
             self.solver_vars["fill_factor_array"], self.cv_support_cvs_array)
         self.time_step_manager.reset()
@@ -255,7 +239,6 @@ class Solver:
         if triggered:
             write_out = True
             self.step_completed = True
-            # print("\nSensor triggered")
         return write_out
 
     def solve_time_step(self):
@@ -275,7 +258,6 @@ class Solver:
             **self.solver_kwargs)
 
         v_array = self.vsolver.calculate_elem_velocities(p, self.material_manager.assigned_resin.mu)
-        # v_nodal_array = self.vsolver.calculate_nodal_velocities(self.mesh.nodes, v_array)
         v_nodal_array = np.zeros((self.N_nodes, 3))
 
         active_cvs_ids, free_surface = self.fill_solver.find_free_surface_cvs(fill_factor, self.cv_support_cvs_array)
@@ -318,7 +300,6 @@ class Solver:
         self.step_completed = False
         self.step_end_time = self.current_time + time_interval
         solve_time_start = time.time()
-        # print("STEP SOLVE STARTED for mesh with {} elements".format(self.mesh.triangles.N))
         while self.step_completed == False and self.n_empty_cvs > 0:
             self.update_bcs()
             self.solve_time_step()
@@ -331,13 +312,4 @@ class Solver:
             solution = self.time_step_manager.pack_solution()
         solve_time_end = time.time()
         total_solve_time = solve_time_end - solve_time_start
-        # print("\nSTEP SOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
         return solution
-    
-
-
-#was after `fill_current_time_step`
-# find the newly filled cv ids as difference from the previous step
-# current_filled_node_ids = np.where(self.solver_vars["fill_factor_array"] >= 1)[0]
-# self.new_step_dofs = [id for id in current_filled_node_ids if id not in self.solver_vars["filled_node_ids"]]
-# self.solver_vars["filled_node_ids"] = current_filled_node_ids

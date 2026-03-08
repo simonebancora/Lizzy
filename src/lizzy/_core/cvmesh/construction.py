@@ -203,7 +203,6 @@ class MeshBuilder:
         CVs : list[CV] = [None]*n_nodes
         for i in range(n_nodes):
             CVs[i] = CV(nodes[i])
-            # node_idx_to_flux_ndarray[i] = CVs[i].compute_flux_terms()
         # reference support CVs
         for cv in CVs:
             connected_nodes = cv.node.node_ids
