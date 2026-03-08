@@ -6,28 +6,6 @@ Saving results
 In this section we look at how we can save simulation results to files that can be read externally.
 All operations can be performed using the :class:`~lizzy.LizzyModel` user-facing methods. For more details about the underlying core components, please refer to the :ref:`api_reference_index` documentation.
 
-The Solution object
--------------------
-
-Every call to :meth:`~lizzy.LizzyModel.solve` or :meth:`~lizzy.LizzyModel.solve_time_interval` returns a :class:`~lizzy.datatypes.Solution` object containing the full time series of solution fields (fill factor, pressure, velocity, free surface) for all write-out time steps.
-
-The solution is also automatically stored inside the model and is accessible via the :attr:`~lizzy.LizzyModel.latest_solution` property. This means that calling :meth:`~lizzy.LizzyModel.save_results` with no arguments will always save the most recent result:
-
-.. code-block::
-
-    model.solve()
-    model.save_results()  # saves model.latest_solution automatically
-
-Capturing the return value is only necessary for advanced use cases, such as saving results from multiple intermediate solve intervals independently:
-
-.. code-block::
-
-    sol_1 = model.solve_time_interval(300)
-    model.change_inlet_pressure("inlet", 2e5)
-    sol_2 = model.solve_time_interval(300)
-
-    model.save_results(sol_1, "results_phase_1")
-    model.save_results(sol_2, "results_phase_2")
 
 Saving to file
 --------------
