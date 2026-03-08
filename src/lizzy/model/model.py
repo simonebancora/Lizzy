@@ -10,6 +10,8 @@ if TYPE_CHECKING:
     from lizzy._core.sensors import Sensor
     from lizzy._core.materials import PorousMaterial, Rosette, Resin
     from lizzy._core.gates.gates import Inlet, PressureInlet, FlowRateInlet, Vent
+    from lizzy._core.cvmesh.entities import Node, Triangle
+    from lizzy._core.cvmesh.collections import nodes, elements
     from lizzy.datatypes import Solution
 
 from typing import Dict, Literal
@@ -23,6 +25,7 @@ from lizzy._core.datatypes import SimulationParameters
 from lizzy._core.materials import MaterialManager
 from lizzy.utils.splash_logo import print_logo
 from lizzy.utils.decorators import State, preinit_only, postinit_only
+from lizzy.exceptions import ConfigurationError
 
 class LizzyModel:
     """
@@ -39,7 +42,6 @@ class LizzyModel:
         self._sensor_manager:SensorManager = None
         self._mesh:Mesh = None
         self._solver:Solver = None
-        self._renderer : any = None
         self._latest_solution: Solution = None
         self._lightweight:bool = False
         self._state:State = State.PRE_INIT
@@ -159,25 +161,25 @@ class LizzyModel:
     # ===========================================================================
     
     @preinit_only
-    def get_elements(self):
+    def get_elements(self) -> elements:
         """Returns the mesh Elements.
         """
         return self._mesh.triangles
-    
+
     @preinit_only
-    def get_element_by_idx(self, idx: int):
+    def get_element_by_idx(self, idx: int) -> Triangle:
         """Returns the mesh Element with the given index.
         """
         return self._mesh.triangles[idx]
-    
+
     @preinit_only
-    def get_nodes(self):
+    def get_nodes(self) -> nodes:
         """Returns the mesh Nodes.
         """
         return self._mesh.nodes
-    
+
     @preinit_only
-    def get_node_by_idx(self, idx: int):
+    def get_node_by_idx(self, idx: int) -> Node:
         """Returns the mesh Node with the given index.
         """
         return self._mesh.nodes[idx]
@@ -197,13 +199,13 @@ class LizzyModel:
             Keyword arguments corresponding to parameter names and their new values.
             Valid keywords are:
 
-            - ``wo_delta_time`` (float, optional): interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
+            - ``output_interval`` (float, optional): interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
             - ``fill_tolerance`` (float, optional): tolerance on the fill factor to consider a CV as filled. Default: 0.01
             - ``end_step_when_sensor_triggered`` (bool, optional): if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
         
         Examples
         --------
-        >>> model.assign_simulation_parameters(mu=0.2, wo_delta_time=50)
+        >>> model.assign_simulation_parameters(mu=0.2, output_interval=50)
 
         Raises
         ------
@@ -250,7 +252,7 @@ class LizzyModel:
         return new_material
     
     @preinit_only
-    def assign_material(self, material_selector, mesh_tag:str, rosette:Rosette = None):
+    def assign_material(self, material_selector:PorousMaterial | str, mesh_tag:str, rosette:Rosette = None) -> None:
         """Assign an existing material to a labeled mesh region.
 
         Parameters
@@ -289,7 +291,7 @@ class LizzyModel:
         return new_resin
 
     @preinit_only
-    def assign_resin(self, resin_selector):
+    def assign_resin(self, resin_selector:Resin | str) -> None:
         """Assign an existing resin to the model.
 
         Parameters
@@ -361,7 +363,7 @@ class LizzyModel:
         return new_inlet
 
     @preinit_only
-    def assign_inlet(self, inlet_selector:Inlet | str, boundary_tag:str):
+    def assign_inlet(self, inlet_selector:Inlet | str, boundary_tag:str) -> None:
         """Selects an inlet from created ones and assigns it to the indicated mesh boundary.
 
         Parameters
@@ -393,8 +395,11 @@ class LizzyModel:
         return new_vent
     
     @preinit_only
-    def assign_vent(self, vent_selector:Vent | str, boundary_tag:str):
+    def assign_vent(self, vent_selector:Vent | str, boundary_tag:str) -> None:
         """Selects a vent from created ones and assigns it to the indicated mesh boundary.
+
+        .. note::
+            Currently only one vent can be assigned to the model. Attempting to assign a second vent will raise a :class:`~lizzy.exceptions.ConfigurationError`.
 
         Parameters
         ----------
@@ -468,7 +473,7 @@ class LizzyModel:
 
     #TODO: get coords arg as tuple or np array, then ids as int or string
     @preinit_only
-    def create_sensor(self, x:float, y:float, z:float):
+    def create_sensor(self, x:float, y:float, z:float) -> None:
         """Create a virtual sensor at the specified position and add it to the model.
 
         Parameters
@@ -493,7 +498,7 @@ class LizzyModel:
         """Returns a list of sensor trigger states: True if the sensor has been triggered, False otherwise."""
         return self._sensor_manager.sensor_trigger_states
     
-    def get_sensor_by_id(self, idx)  -> Sensor:
+    def get_sensor_by_id(self, idx:int) -> Sensor:
         """Fetches a sensor by its index.
         """
         return self._sensor_manager.get_sensor_by_id(idx)
@@ -502,13 +507,13 @@ class LizzyModel:
     # Solver API
     # ===========================================================================
 
-    def initialise_solver(self, solver_type:SolverType = SolverType.ITERATIVE_PETSC, 
-                         solver_tol:float = 1e-8, solver_max_iter:int = 1000, 
+    def initialise_solver(self, solver_type:SolverType = SolverType.ITERATIVE_PETSC,
+                         solver_tol:float = 1e-8, solver_max_iter:int = 1000,
                          solver_verbose:bool = False,
                          **solver_kwargs):
         """
         Initialize the solver for the filling simulation.
-        
+
         Parameters
         ----------
         solver_type : SolverType
@@ -522,13 +527,32 @@ class LizzyModel:
             Print solver convergence information
         **solver_kwargs
             Additional solver-specific keyword arguments
+
+        Raises
+        ------
+        ConfigurationError
+            If required components (resin, materials, inlets, vents) are not properly assigned.
         """
-        
-        self._solver = Solver(self._mesh, self._gates_manager, self._simulation_parameters, 
-                            self._material_manager, self._sensor_manager, solver_type, 
+        self._validate_configuration()
+
+        self._solver = Solver(self._mesh, self._gates_manager, self._simulation_parameters,
+                            self._material_manager, self._sensor_manager, solver_type,
                             solver_tol, solver_max_iter, solver_verbose, **solver_kwargs)
-        
+
         self._state = State.POST_INIT
+
+    def _validate_configuration(self):
+        """Run all configuration checks before solver construction."""
+        if not self._simulation_parameters.has_been_assigned:
+            print(f"Warning: Simulation parameters were not assigned. Running with default values: output_interval={self._simulation_parameters.output_interval}")
+        if not self._material_manager._resin_was_assigned:
+            raise ConfigurationError("No resin assigned to the model. Create a resin using LizzyModel.create_resin and assign it using LizzyModel.assign_resin.")
+        if len(self._gates_manager.assigned_inlets) == 0:
+            raise ConfigurationError("No inlets assigned to the model. Create and assign at least one inlet before initialising the solver.")
+        if len(self._gates_manager.assigned_vents) == 0:
+            print("Warning: No vents assigned to the model. A default vent pressure of 0.0 Pa will be used.")
+        self._gates_manager.assert_unique_boundary_assignments()
+        self._mesh.assert_all_elements_have_material()
 
     @postinit_only
     def solve(self, log="on") -> Solution:
