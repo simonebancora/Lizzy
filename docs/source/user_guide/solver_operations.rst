@@ -171,6 +171,17 @@ Consult the :class:`~lizzy.datatypes.Solution` API reference to get more informa
 
 The Solution object is also used by Lizzy to write result files. More information on this in :ref:`saving_results`.
 
+Lightweight mode
+----------------
+
+Packing the :class:`~lizzy.datatypes.Solution` at the end of a solve interval  has a cost. There are cases when storing results for saving output files is not necessary (e.g. when running a parametric / optimization study with a large number of simulations). For these cases, it is possible to skip entirely the packing of the Solution by setting the model to "Lightweight mode":
+
+.. code-block::
+
+    model.lightweight = True
+
+This flag (default is False) can be set at any time before or after solver initialisation, and will apply from the next instruction in the script. In lightweight mode, Lizzy does not create any :class:`~lizzy.datatypes.Solution` object, saving memory and computation time. The consequence is that the :meth:`~lizzy.LizzyModel.save_results` method cannot be used (see :ref:`saving_results`).
+
 Resetting a simulation
 ----------------------
 

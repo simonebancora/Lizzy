@@ -13,11 +13,10 @@ maintainers = [
     ]
 requires-python = ">=3.10"
 dependencies = [
-    "meshio==5.3.5",
+    "meshio>=5.3,<6",
     "numpy",
     "scipy",
     "h5py",
-    "matplotlib"
 ]
 description = "A filling simulation solver for Liquid Composite Molding (LCM) processes"
 readme = "README.md"

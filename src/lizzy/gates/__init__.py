@@ -1,1 +1,3 @@
-from lizzy._core.gates.gates import PressureInlet, FlowRateInlet, Inlet, Vent
+from lizzy._core.gates import PressureInlet, FlowRateInlet, Inlet, Vent
+
+__all__ = ["PressureInlet", "FlowRateInlet", "Inlet", "Vent"]

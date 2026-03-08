@@ -148,6 +148,11 @@ class LizzyModel:
         result_name : str, optional
             The name of the solution file that will be created. If none passed, the name of the mesh file with appended '_RES' will be used.
         """
+        if self._lightweight:
+            raise ConfigurationError(
+                "save_results() cannot be called when the model is in lightweight mode. "
+                "Set model.lightweight = False before solving to enable result serialisation."
+            )
         if solution == None:
             solution = self._latest_solution
         if result_name == None:

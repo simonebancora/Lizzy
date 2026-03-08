@@ -36,17 +36,6 @@ The following fields are saved at each write-out time step:
 - **Pressure**: pressure field [Pa].
 - **Velocity**: Darcy velocity field [m/s].
 
-Lightweight mode
-----------------
-
-When running many short solve intervals in a loop (e.g. to update boundary conditions frequently, or in a parametric study with a large number of simulations), packing the :class:`~lizzy.datatypes.Solution` at each step has a cost. Lightweight mode skips this step, reducing memory usage and overhead:
-
-.. code-block::
-
-    model.lightweight = True
-
-In lightweight mode, :meth:`~lizzy.LizzyModel.solve_time_interval` does not create any :class:`~lizzy.datatypes.Solution` object and :meth:`~lizzy.LizzyModel.save_results` cannot be used.
-
 .. note::
 
-    Lightweight mode can be toggled at any time before or after solver initialisation.
+    If the model is run in "Lighweight mode", Lizzy does not create any :class:`~lizzy.datatypes.Solution` object and :meth:`~lizzy.LizzyModel.save_results` cannot be called (will throw a ConfigurationError).
