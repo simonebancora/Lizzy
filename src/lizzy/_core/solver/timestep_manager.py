@@ -22,10 +22,9 @@ class TimeStepManager:
         self.v_nodal_buffer : np.ndarray = None
         self.fill_factor_buffer : np.ndarray = None
         self.flow_front_buffer : np.ndarray = None
-        self.write_out_buffer : np.ndarray = None
         self.reset()
 
-    def save_timestep(self, time, dt, P, v_array, v_nodal_array, fill_factor, flow_front, write_out):
+    def save_timestep(self, time, dt, P, v_array, v_nodal_array, fill_factor, flow_front):
         if self.time_step_count >= self.time_step_buffer_size:
             self.grow_buffers()
         self.time_buffer[self.time_step_count] = time
@@ -35,7 +34,6 @@ class TimeStepManager:
         self.v_nodal_buffer[self.time_step_count, :, :] = v_nodal_array
         self.fill_factor_buffer[self.time_step_count, :] = fill_factor
         self.flow_front_buffer[self.time_step_count, :] = flow_front
-        self.write_out_buffer[self.time_step_count] = write_out
         self.time_step_count += 1
 
     
@@ -48,28 +46,19 @@ class TimeStepManager:
             self.v_nodal_buffer = np.resize(self.v_nodal_buffer, (new_size, self.v_nodal_buffer.shape[1], self.v_nodal_buffer.shape[2]))
             self.fill_factor_buffer = np.resize(self.fill_factor_buffer, (new_size, self.fill_factor_buffer.shape[1]))
             self.flow_front_buffer = np.resize(self.flow_front_buffer, (new_size, self.flow_front_buffer.shape[1]))
-            self.write_out_buffer = np.resize(self.write_out_buffer, new_size)
             self.time_step_buffer_size = new_size
 
 
-    def get_write_out_indices(self):
-        write_out_array = self.write_out_buffer[:self.time_step_count]
-        return np.nonzero(write_out_array)[0]
-
     def pack_solution(self):
-        # flag the last time step as write-out regardless of its setting:
-        if self.time_step_count > 0:
-            self.write_out_buffer[self.time_step_count - 1] = True
-        # populate solution with write-out time steps:
-        wo_idx = self.get_write_out_indices()
-        solution_obj = Solution(len(wo_idx),
-                                wo_idx,
-                                self.p_buffer[wo_idx, :],
-                                self.v_buffer[wo_idx, :, :],
-                                self.v_nodal_buffer[wo_idx, :, :],
-                                self.time_buffer[wo_idx],
-                                self.fill_factor_buffer[wo_idx, :],
-                                self.flow_front_buffer[wo_idx, :],
+        n = self.time_step_count
+        solution_obj = Solution(n,
+                                np.arange(n),
+                                self.p_buffer[:n, :],
+                                self.v_buffer[:n, :, :],
+                                self.v_nodal_buffer[:n, :, :],
+                                self.time_buffer[:n],
+                                self.fill_factor_buffer[:n, :],
+                                self.flow_front_buffer[:n, :],
                                 )
         return solution_obj
 
@@ -83,4 +72,3 @@ class TimeStepManager:
         self.v_nodal_buffer = np.empty((self.time_step_buffer_size, self.n_nodes, 3), dtype=float)
         self.fill_factor_buffer = np.empty((self.time_step_buffer_size, self.n_nodes), dtype=float)
         self.flow_front_buffer = np.empty((self.time_step_buffer_size, self.n_nodes), dtype=int)
-        self.write_out_buffer = np.empty(self.time_step_buffer_size, dtype=bool)

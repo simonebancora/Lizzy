@@ -608,7 +608,7 @@ class LizzyModel:
         solution : :class:`~lizzy.datatypes.Solution`
             A Solution object storing the solution fields up to the time step reached
         """
-        self._latest_solution = self._solver.solve(log=log)
+        self._latest_solution = self._solver.solve(log=log, lightweight=self._lightweight)
         return self._latest_solution
 
     @postinit_only
