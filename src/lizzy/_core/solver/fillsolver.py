@@ -27,24 +27,21 @@ class FillSolver:
 
     def calculate_time_step(self, active_cv_ids, fill_factor_array, cv_volumes_array, v_array):
         # calculate fluxes/s per each CV
-        self.all_fluxes_per_second = [self.CalculateVolFluxes(v_array, cv_id) for cv_id in active_cv_ids]
+        self.all_fluxes_per_second = np.array([self.CalculateVolFluxes(v_array, cv_id) for cv_id in active_cv_ids])
 
         # calculate time step to fill one:
-        candidate_dts = []
-        for i in range(len(active_cv_ids)):
-            active_cv_id = active_cv_ids[i]
-            if self.all_fluxes_per_second[i] > 0:
-                dt = ((1.00 - fill_factor_array[active_cv_id]) * cv_volumes_array[active_cv_id]) / self.all_fluxes_per_second[i]
-                candidate_dts.append(dt)
-        dt = np.min(candidate_dts)
+        positive = self.all_fluxes_per_second > 0
+        dt = np.min(
+            (1.0 - fill_factor_array[active_cv_ids[positive]]) * cv_volumes_array[active_cv_ids[positive]] / self.all_fluxes_per_second[positive]
+        )
         return dt
 
     def fill_current_time_step(self, active_cv_ids, fill_factor_array, cv_volumes_array, dt, fill_tolerance):
-        for i, id in enumerate(active_cv_ids):
-            fill_factor_array[id] = min(fill_factor_array[id] + self.all_fluxes_per_second[i] * dt / cv_volumes_array[id], 1)
-        for i in range(len(fill_factor_array)):
-            if fill_factor_array[i] >= (1 - fill_tolerance):
-                fill_factor_array[i] = 1
+        fill_factor_array[active_cv_ids] = np.minimum(
+            fill_factor_array[active_cv_ids] + self.all_fluxes_per_second * dt / cv_volumes_array[active_cv_ids],
+            1.0
+        )
+        fill_factor_array[fill_factor_array >= (1 - fill_tolerance)] = 1.0
         return fill_factor_array
 
     def CalculateVolFluxes(self, v_array, cv_id):

@@ -15,7 +15,7 @@ class VelocitySolver:
     def precalculate_darcy_operator(self, triangles, tri_conn_table):
         """precalculate vectorised coefficient darcy_operator of shape function gradients for velocity: v = darcy_operator * p"""
         b_ncol = triangles[0].grad_N.shape[1]
-        self.darcy_operator = np.empty((len(triangles), 3, b_ncol), dtype=object)
+        self.darcy_operator = np.empty((len(triangles), 3, b_ncol), dtype=float)
         for i in range(len(triangles)):
             self.darcy_operator[i] = triangles[i].k.T @ triangles[i].grad_N
         self.nodes_conn = tri_conn_table

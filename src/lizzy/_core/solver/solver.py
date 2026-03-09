@@ -184,8 +184,7 @@ class Solver:
             flow_front_0[idx] = 1
         v_0 = np.zeros((len(self.mesh.triangles), 3))
         v_nodal_0 = np.zeros((len(self.mesh.nodes), 3))
-        write_out_0 = True
-        initial_time_step = (time_0, dt_0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0, write_out_0)
+        initial_time_step = (time_0, dt_0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0)
         return initial_time_step
         
 
@@ -241,7 +240,7 @@ class Solver:
             self.step_completed = True
         return write_out
 
-    def solve_time_step(self):
+    def solve_time_step(self, lightweight=False):
         fill_factor = self.solver_vars["fill_factor_array"]
         free_surface = self.solver_vars["free_surface_array"]
         cv_volumes = self.solver_vars["cv_volumes_array"]
@@ -271,16 +270,20 @@ class Solver:
 
         if self.simulation_parameters.end_step_when_sensor_triggered:
             write_out = self.handle_wo_by_sensor_triggered(write_out, fill_factor)
-        self.time_step_manager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, fill_factor, free_surface, write_out)
-        if write_out:
-            # update sensors
-            self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
         # update the empty nodes idxs and count for next step
         p0_idxs = self.get_empty_nodes_idx(fill_factor)
         self.n_empty_cvs = len(p0_idxs)
         self.bcs.p0_idx = p0_idxs
+        # always save and probe the final timestep
+        if self.n_empty_cvs == 0:
+            write_out = True
+        if write_out:
+            if not lightweight:
+                self.time_step_manager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, fill_factor, free_surface)
+            self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
 
-    def solve(self, log="on"):
+    def solve(self, log="on", lightweight=False):
+        solution = None
         solve_time_start = time.time()
         self.step_end_time = np.inf  # reset step end time for full solve
         print("SOLVE STARTED for mesh with {} elements".format(len(self.mesh.triangles)))
@@ -289,7 +292,8 @@ class Solver:
             self.solve_time_step()
             if log == "on":
                 print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs), end='')
-        solution = self.time_step_manager.pack_solution()
+        if not lightweight:
+            solution = self.time_step_manager.pack_solution()
         # good night and good luck
         solve_time_end = time.time()
         total_solve_time = solve_time_end - solve_time_start
@@ -297,18 +301,17 @@ class Solver:
         return solution
 
     def solve_time_interval(self, time_interval:float, log="off", lightweight=False):
+        solution = None
         self.step_completed = False
         self.step_end_time = self.current_time + time_interval
         solve_time_start = time.time()
         while self.step_completed == False and self.n_empty_cvs > 0:
             self.update_bcs()
-            self.solve_time_step()
+            self.solve_time_step(lightweight=lightweight)
             if log == "on":
                 print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs),
                       end='')
-        if lightweight:
-            solution = "Lightweight mode: no solution is saved"
-        else:
+        if not lightweight:
             solution = self.time_step_manager.pack_solution()
         solve_time_end = time.time()
         total_solve_time = solve_time_end - solve_time_start
