@@ -71,6 +71,7 @@ class Solver:
         self.K_sing = None
         self.f_orig = None
         self.current_time = 0
+        self.time_step_counter = 0
         self.n_empty_cvs = np.inf
         self.next_wo_time = self.simulation_parameters.output_interval
         self.step_end_time = np.inf
@@ -175,6 +176,7 @@ class Solver:
     def generate_initial_time_step(self):
         time_0 = 0
         dt_0 = 0
+        time_step_number = 0
         p_0 = np.full(len(self.mesh.nodes), self.bcs.p0_val, dtype=np.float64)
         fill_factor_0 = np.zeros(len(self.mesh.nodes))
         flow_front_0 = np.zeros(len(self.mesh.nodes))
@@ -184,7 +186,7 @@ class Solver:
             flow_front_0[idx] = 1
         v_0 = np.zeros((len(self.mesh.triangles), 3))
         v_nodal_0 = np.zeros((len(self.mesh.nodes), 3))
-        initial_time_step = (time_0, dt_0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0)
+        initial_time_step = (time_step_number, time_0, dt_0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0)
         return initial_time_step
         
 
@@ -193,6 +195,7 @@ class Solver:
         Initialises a new solution, resetting all simulation variables. It is sufficient to call this method to reset the simulation and run again.
         """
         self.current_time = 0
+        self.time_step_counter = 0
         self.next_wo_time = self.simulation_parameters.output_interval
         self.solver_vars["fill_factor_array"] = np.zeros(self.N_nodes)
         self.bcs = SolverBCs()
@@ -211,6 +214,7 @@ class Solver:
         self._sensor_manager.reset_sensors()
         # TODO: this first probe is temporary and should be cleaner
         self._sensor_manager.probe_current_solution(self.time_step_manager.p_buffer[0], self.time_step_manager.v_nodal_buffer[0], self.time_step_manager.fill_factor_buffer[0], 0.0)
+        self.time_step_counter += 1
 
     def handle_wo_criterion(self, dt):
         write_out = False
@@ -279,8 +283,9 @@ class Solver:
             write_out = True
         if write_out:
             if not lightweight:
-                self.time_step_manager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, fill_factor, free_surface)
+                self.time_step_manager.save_timestep(self.time_step_counter, self.current_time, dt, p, v_array, v_nodal_array, fill_factor, free_surface)
             self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
+        self.time_step_counter += 1
 
     def solve(self, log="on", lightweight=False):
         solution = None
