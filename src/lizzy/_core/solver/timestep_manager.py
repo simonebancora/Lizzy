@@ -42,6 +42,7 @@ class TimeStepManager:
     def grow_buffers(self):
             new_size = self.time_step_buffer_size * 2
             self.time_buffer = np.resize(self.time_buffer, new_size)
+            self.time_step_number_buffer = np.resize(self.time_step_number_buffer, new_size)
             self.dt_buffer = np.resize(self.dt_buffer, new_size)
             self.p_buffer = np.resize(self.p_buffer, (new_size, self.p_buffer.shape[1]))
             self.v_buffer = np.resize(self.v_buffer, (new_size, self.v_buffer.shape[1], self.v_buffer.shape[2]))
