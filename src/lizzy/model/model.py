@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from lizzy._core.cvmesh.entities import Node, Triangle
     from lizzy.datatypes import Solution
 
+import os
 from typing import Dict, Literal
 from types import MappingProxyType
 from lizzy._core.io import Reader, Writer
@@ -95,7 +96,7 @@ class LizzyModel:
     # ===========================================================================
 
     @preinit_only
-    def read_mesh_file(self, mesh_file_path:str):
+    def read_mesh_file(self, mesh_file_path: str | os.PathLike) -> None:
         r"""
         Reads a mesh file and initialises the mesh. Currently only .MSH format is supported (Version 4 ASCII).
 
@@ -596,15 +597,15 @@ class LizzyModel:
         return self._latest_solution
 
     @postinit_only
-    def solve_time_interval(self, time_interval:float, log="off") -> Solution:
+    def solve_time_interval(self, time_interval:float, log=False) -> Solution:
         """Advance the filling simulation from the current time for the specified time interval.
 
         Parameters
         ----------
         time_interval : float
             The time period to advance the simulation for.
-        log : str, optional
-            Whether to print the progress of the solution, by default "off"
+        log : bool, optional
+            Whether to print the progress of the solution, by default False
 
         Returns
         -------
