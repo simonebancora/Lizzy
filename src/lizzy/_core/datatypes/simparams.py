@@ -26,6 +26,8 @@ class SimulationParameters:
     fill_tolerance: float = 0.01
     has_been_assigned : bool = False
     end_step_when_sensor_triggered : bool = False
+    lightweight : bool = False
+
     generate_fill_image :bool = False
     fill_image_resolution : int = 250
     display_fill : bool = False
@@ -36,7 +38,8 @@ class SimulationParameters:
         Currently assigned simulation parameters:
         - "output_interval": {self.output_interval} [s],
         - "fill_tolerance": {self.fill_tolerance},
-        - "end_step_when_sensor_triggered": {self.end_step_when_sensor_triggered}
+        - "end_step_when_sensor_triggered": {self.end_step_when_sensor_triggered},
+        - "lightweight": {self.lightweight},
         """)
         print(params)
 
@@ -54,6 +57,7 @@ class SimulationParameters:
             - ``output_interval``: interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
             - ``fill_tolerance``: tolerance on the fill factor to consider a CV as filled. Default: 0.01
             - ``end_step_when_sensor_triggered``: if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
+            - ``lightweight``: whether to run the model in lightweight mode. If True, the solver will not save time step data to disk, and will not probe sensors during the solve. This can be used to speed up the solve when intermediate data is not needed. Default: False
 
         Raises
         ------

@@ -49,7 +49,7 @@ bc_manager.add_inlet(inlet_1)
 The next step is to create an appropriate solver and call `solve` to run the filling simulation:
 ```
 solver = liz.Solver(mesh, bc_manager)
-solution = solver.solve(log="on")
+solution = solver.solve(log=True)
 ```
 ### Write results
 Create a `Writer` object to write out results:
@@ -84,7 +84,7 @@ bc_manager.add_inlet(inlet_1)
 
 # Instantiate a solver and solve
 solver = liz.Solver(mesh, bc_manager, liz.SolverType.DIRECT_SPARSE)
-solution = solver.solve(log="on")
+solution = solver.solve()
 
 # Create a write-out object and save results
 writer = liz.Writer(mesh)

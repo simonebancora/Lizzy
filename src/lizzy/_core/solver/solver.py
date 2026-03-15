@@ -244,7 +244,7 @@ class Solver:
             self.step_completed = True
         return write_out
 
-    def solve_time_step(self, lightweight=False):
+    def solve_time_step(self):
         fill_factor = self.solver_vars["fill_factor_array"]
         free_surface = self.solver_vars["free_surface_array"]
         cv_volumes = self.solver_vars["cv_volumes_array"]
@@ -282,12 +282,12 @@ class Solver:
         if self.n_empty_cvs == 0:
             write_out = True
         if write_out:
-            if not lightweight:
+            if not self.simulation_parameters.lightweight:
                 self.time_step_manager.save_timestep(self.time_step_counter, self.current_time, dt, p, v_array, v_nodal_array, fill_factor, free_surface)
             self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
         self.time_step_counter += 1
 
-    def solve(self, log="on", lightweight=False):
+    def solve(self, log=True):
         solution = None
         solve_time_start = time.time()
         self.step_end_time = np.inf  # reset step end time for full solve
@@ -295,9 +295,9 @@ class Solver:
         self.update_bcs()
         while self.n_empty_cvs > 0:
             self.solve_time_step()
-            if log == "on":
+            if log == True:
                 print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs), end='')
-        if not lightweight:
+        if not self.simulation_parameters.lightweight:
             solution = self.time_step_manager.pack_solution()
         # good night and good luck
         solve_time_end = time.time()
@@ -305,18 +305,18 @@ class Solver:
         print("\nSOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
         return solution
 
-    def solve_time_interval(self, time_interval:float, log="off", lightweight=False):
+    def solve_time_interval(self, time_interval:float, log=False):
         solution = None
         self.step_completed = False
         self.step_end_time = self.current_time + time_interval
         solve_time_start = time.time()
         while self.step_completed == False and self.n_empty_cvs > 0:
             self.update_bcs()
-            self.solve_time_step(lightweight=lightweight)
-            if log == "on":
+            self.solve_time_step()
+            if log == True:
                 print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs),
                       end='')
-        if not lightweight:
+        if not self.simulation_parameters.lightweight:
             solution = self.time_step_manager.pack_solution()
         solve_time_end = time.time()
         total_solve_time = solve_time_end - solve_time_start

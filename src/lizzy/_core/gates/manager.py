@@ -52,7 +52,7 @@ class GatesManager:
 
 
 
-    def _fetch_inlet(self, inlet_selector:Inlet | str) -> Inlet:
+    def fetch_inlet(self, inlet_selector:Inlet | str) -> Inlet:
         if isinstance(inlet_selector, Inlet):
             return inlet_selector
         else:
@@ -73,12 +73,12 @@ class GatesManager:
         boundary_tag : str
             An existing mesh boundary tag where to assign the inlet.
         """
-        selected_inlet = self._fetch_inlet(inlet_selector)
+        selected_inlet = self.fetch_inlet(inlet_selector)
         if selected_inlet not in self._assigned_inlets.values():
             self._assigned_inlets[boundary_tag] = selected_inlet
             selected_inlet._assigned = True
     
-    def _fetch_vent(self, vent_selector:Vent | str) -> Vent:
+    def fetch_vent(self, vent_selector:Vent | str) -> Vent:
         if isinstance(vent_selector, Vent):
             return vent_selector
         else:
@@ -98,7 +98,7 @@ class GatesManager:
         boundary_tag : str
             An existing mesh boundary tag where to assign the vent.
         """
-        selected_vent = self._fetch_vent(vent_selector)
+        selected_vent = self.fetch_vent(vent_selector)
         if selected_vent not in self._assigned_vents.values():
             if len(self._assigned_vents) > 0:
                 raise ConfigurationError("Multiple vents assigned to the model. Currently only one vent is supported.")
@@ -107,7 +107,7 @@ class GatesManager:
     
     # TODO: functionality should be added to change the pressure over time, along different time interpolation options
     def change_inlet_pressure(self, inlet_selector:Inlet | str, pressure_value:float, mode: Literal["set", "delta"] = "set"):
-        selected_inlet = self._fetch_inlet(inlet_selector)
+        selected_inlet = self.fetch_inlet(inlet_selector)
         match mode:
             case "set":
                 selected_inlet.p_value = pressure_value
@@ -117,11 +117,11 @@ class GatesManager:
                 raise ValueError(f"Invalid mode '{mode}'. Must be 'set' or 'delta'.")
 
     def open_inlet(self, inlet_selector:Inlet | str):
-        selected_inlet = self._fetch_inlet(inlet_selector)
+        selected_inlet = self.fetch_inlet(inlet_selector)
         selected_inlet.set_open(True)
 
     def close_inlet(self, inlet_selector:Inlet | str):
-        selected_inlet = self._fetch_inlet(inlet_selector)
+        selected_inlet = self.fetch_inlet(inlet_selector)
         selected_inlet.set_open(False)
     
     def reset_inlets(self):

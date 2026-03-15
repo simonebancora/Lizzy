@@ -13,7 +13,6 @@ The LIZZY namespace exposes the :class:`~lizzy.LizzyModel` class, which provides
     Properties
     ----------
     
-    .. autoproperty:: lizzy.LizzyModel.lightweight
     .. autoproperty:: lizzy.LizzyModel.assigned_materials
     .. autoproperty:: lizzy.LizzyModel.existing_materials
     .. autoproperty:: lizzy.LizzyModel.n_empty_cvs

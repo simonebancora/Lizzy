@@ -42,7 +42,6 @@ class LizzyModel:
         self._mesh:Mesh = None
         self._solver:Solver = None
         self._latest_solution: Solution = None
-        self._lightweight:bool = False
         self._state:State = State.PRE_INIT
         self._create_components()
 
@@ -58,22 +57,6 @@ class LizzyModel:
     # ===========================================================================
     # Properties
     # ===========================================================================
-
-    @property
-    def lightweight(self):
-        r"""Set whether to run the model in lightweight mode. Default is False.
-
-        When the model is run in lighweight mode, solver results are not serialised at the end of steps into solution output format and :func:`~LizzyModel.save_results` cannot be called. Useful to speed up computation when saving results to an output file is not necessary
-        
-        Note
-        ----
-        This property can be both read and set.
-        """
-        return self._lightweight
-
-    @lightweight.setter
-    def lightweight(self, value):
-        self._lightweight = value
 
     @property
     def assigned_materials(self) -> Dict[str, PorousMaterial]:
@@ -106,10 +89,6 @@ class LizzyModel:
         """The most recent solution from the model (read-only). This value is None if the model is run in `lightweight` mode.
         """
         return self._latest_solution
-    
-    @property
-    def gates_manager(self) -> GatesManager:
-        return self._gates_manager
     
     # ===========================================================================
     # IO API
@@ -148,14 +127,14 @@ class LizzyModel:
         result_name : str, optional
             The name of the solution file that will be created. If none passed, the name of the mesh file with appended '_RES' will be used.
         """
-        if self._lightweight:
+        if self._simulation_parameters.lightweight:
             raise ConfigurationError(
                 "save_results() cannot be called when the model is in lightweight mode. "
-                "Set model.lightweight = False before solving to enable result serialisation."
+                "Set model.assign_simulation_parameters(lightweight=False) before solving to enable result serialisation."
             )
-        if solution == None:
+        if solution is None:
             solution = self._latest_solution
-        if result_name == None:
+        if result_name is None:
             result_name = self._model_name + '_RES'
         self._writer.assign_mesh(self._mesh)
         self._writer.save_results(solution, result_name, **kwargs)
@@ -223,7 +202,7 @@ class LizzyModel:
     # ===========================================================================
 
     @preinit_only
-    def assign_simulation_parameters(self, **kwargs):
+    def assign_simulation_parameters(self, *, output_interval:float = -1, fill_tolerance:float = 0.01, end_step_when_sensor_triggered:bool = False, lightweight:bool = False) -> None:
         r"""
         Assigns new values to one or more simulation parameters using keyword arguments.
 
@@ -246,6 +225,7 @@ class LizzyModel:
         AttributeError
             If any key in `kwargs` does not correspond to a known attribute.
         """
+        kwargs = {key : value for key, value in locals().items() if key != "self"}
         self._simulation_parameters.assign(**kwargs)
 
     def print_simulation_parameters(self) -> None:
@@ -328,6 +308,10 @@ class LizzyModel:
         ----------
         resin_selector : Resin | str
             The resin object or name of the resin to assign. Must correspond to an existing resin created with :func:`~LizzyModel.create_resin`.
+        
+        Note
+        ----
+        Resin is a global property and does not need to be assigned to specific mesh regions. Only one resin can be assigned to the model, and it will be used for the entire simulation domain.
         """
         self._material_manager.assign_resin(resin_selector)
 
@@ -453,7 +437,7 @@ class LizzyModel:
         :class:`~lizzy.gates.Inlet`
             The fetched inlet object.
         """
-        selected_inlet = self._gates_manager._fetch_inlet(inlet_name)
+        selected_inlet = self._gates_manager.fetch_inlet(inlet_name)
         return selected_inlet
     
     def change_inlet_pressure(self, inlet_selector:Inlet | str, pressure_value:float, mode: Literal["set", "delta"] = "set"):
@@ -595,20 +579,20 @@ class LizzyModel:
         self._mesh.assert_all_elements_have_material()
 
     @postinit_only
-    def solve(self, log="on") -> Solution:
+    def solve(self, log=True) -> Solution:
         """Advance the filling simulation from the current time until the part is filled.
 
         Parameters
         ----------
-        log : str, optional
-            Whether to print the progress of the solution, by default "on"
+        log : bool, optional
+            Whether to print the progress of the solution, by default True
 
         Returns
         -------
         solution : :class:`~lizzy.datatypes.Solution`
             A Solution object storing the solution fields up to the time step reached
         """
-        self._latest_solution = self._solver.solve(log=log, lightweight=self._lightweight)
+        self._latest_solution = self._solver.solve(log=log)
         return self._latest_solution
 
     @postinit_only
@@ -627,7 +611,7 @@ class LizzyModel:
         solution : :class:`~lizzy.datatypes.Solution`
             A Solution object storing the solution fields up to the time step reached.
         """
-        self._latest_solution = self._solver.solve_time_interval(time_interval, log=log, lightweight=self._lightweight)
+        self._latest_solution = self._solver.solve_time_interval(time_interval, log=log)
         return self._latest_solution
     
     @postinit_only

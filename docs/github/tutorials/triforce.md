@@ -45,7 +45,7 @@ bc_manager.add_inlet(inlet_1)
 
 # Instantiate a solver and solve
 solver = liz.Solver(mesh, bc_manager, liz.SolverType.DIRECT_SPARSE)
-solution = solver.solve(log="on")
+solution = solver.solve()
 
 # Create a write-out object and save results
 writer = liz.Writer(mesh)
