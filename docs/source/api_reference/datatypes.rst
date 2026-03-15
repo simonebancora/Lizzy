@@ -5,9 +5,8 @@ lizzy.datatypes
 
 
 .. autoclass:: lizzy.datatypes.SimulationParameters
+    :members:
 
 
 .. autoclass:: lizzy.datatypes.Solution
-
-
-
+    :members:

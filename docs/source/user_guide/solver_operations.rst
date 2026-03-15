@@ -76,7 +76,7 @@ This will start the filling simulation from the latest state (if called for the 
 
     .. code-block::
 
-        model.solve(log="off")
+        model.solve(log=False)
 
 Running a simulation for a time interval
 ----------------------------------------
@@ -178,9 +178,9 @@ Packing the :class:`~lizzy.datatypes.Solution` at the end of a solve interval  h
 
 .. code-block::
 
-    model.lightweight = True
+    model.assign_simulation_parameters(lightweight=True)
 
-This flag (default is False) can be set at any time before or after solver initialisation, and will apply from the next instruction in the script. In lightweight mode, Lizzy does not create any :class:`~lizzy.datatypes.Solution` object, saving memory and computation time. The consequence is that the :meth:`~lizzy.LizzyModel.save_results` method cannot be used (see :ref:`saving_results`).
+This flag (default is False) must be set before solver initialisation. In lightweight mode, Lizzy does not create any :class:`~lizzy.datatypes.Solution` object, saving memory and computation time. The consequence is that the :meth:`~lizzy.LizzyModel.save_results` method cannot be used (see :ref:`saving_results`).
 
 Resetting a simulation
 ----------------------

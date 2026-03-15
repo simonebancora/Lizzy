@@ -14,6 +14,11 @@ lizzy.sensors
     .. autoproperty:: Sensor.fill_factor
     .. autoproperty:: Sensor.time
 
+    .. rubric:: Attributes
+
+    .. autoattribute:: Sensor.resin_arrived
+
     .. rubric:: Methods
 
+    .. automethod:: Sensor.get_latest
     .. automethod:: Sensor.info

@@ -39,7 +39,7 @@ class Inlet(ABC):
         return self._type
 
     def reset(self):
-        """Restores the inlet :attr:`~lizzy.core.bcond.Inlet.p_value` to the value assigned at creation time and sets it to open.
+        """Restores the inlet :attr:`~lizzy.gates.PressureInlet.p_value` to the value assigned at creation time and sets it to open.
         """
         self._open = True
     
@@ -91,7 +91,7 @@ class FlowRateInlet(Inlet):
     
     @property
     def q_value(self) -> float:
-        """Current pressure value [Pa].
+        """Current flow rate value [m³/s].
         """
         return self._q_value
 
@@ -103,7 +103,7 @@ class FlowRateInlet(Inlet):
     
     @property
     def q0(self) -> float:
-        """Initial pressure value assigned at inlet creation time. (read-only)
+        """Initial flow rate value assigned at inlet creation time [m³/s]. (read-only)
         """
         return self._q0
     

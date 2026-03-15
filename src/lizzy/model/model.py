@@ -216,6 +216,7 @@ class LizzyModel:
             - ``output_interval`` (float, optional): interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
             - ``fill_tolerance`` (float, optional): tolerance on the fill factor to consider a CV as filled. Default: 0.01
             - ``end_step_when_sensor_triggered`` (bool, optional): if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
+            - ``lightweight`` (bool, optional): if True, disables Solution packing after each solve, saving memory and computation time. :meth:`~LizzyModel.save_results` cannot be used in lightweight mode. Default: False
         
         Examples
         --------
