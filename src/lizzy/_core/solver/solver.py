@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 import numpy as np
 import time
 from lizzy._core.solver import *
-from lizzy.exceptions import MeshError, ConfigurationError
+from lizzy.exceptions import MeshError
 from .timestep_manager import TimeStepManager
 from .vsolvers import VelocitySolver
 from .fillsolver import FillSolver
@@ -105,6 +105,10 @@ class Solver:
 
     def update_bcs(self):
         # TODO this is more "update inlet dirichlet bcs" since it only applies pressure (doesn't add empty 0 pressure). It can be faster, but it doesn't run often (only at beginning of time intervals) so it's not critical
+        self.bcs.dirichlet_idx = np.empty(0, dtype=np.uint32)
+        self.bcs.dirichlet_vals = np.empty(0, dtype=np.float64)
+        self.bcs.neumann_idx = np.empty(0, dtype=np.uint32)
+        self.bcs.neumann_vals = np.empty(0, dtype=np.float64)
         dirichlet_idxs = []
         dirichlet_vals = []
         neumann_idxs_pairs = []
@@ -139,16 +143,12 @@ class Solver:
                     print("Note: Flow rate BC is experimental.")
                 case _:
                     pass
-        # TODO: do this following assertion a little better...
-        try:
-            if len(dirichlet_idxs) > 0:
-                self.bcs.dirichlet_idx = np.concatenate(dirichlet_idxs)
-                self.bcs.dirichlet_vals = np.concatenate(dirichlet_vals)
-            if len(neumann_idxs_pairs) > 0:
-                self.bcs.neumann_idx = np.concatenate(neumann_idxs_pairs).flatten()
-                self.bcs.neumann_vals = np.concatenate(neumann_vals_per_idx_pair).flatten()
-        except ValueError:
-            raise ConfigurationError("No inlets are currently open. At least one inlet must be open at all times to allow resin to flow into the part.")
+        if len(dirichlet_idxs) > 0:
+            self.bcs.dirichlet_idx = np.concatenate(dirichlet_idxs)
+            self.bcs.dirichlet_vals = np.concatenate(dirichlet_vals)
+        if len(neumann_idxs_pairs) > 0:
+            self.bcs.neumann_idx = np.concatenate(neumann_idxs_pairs).flatten()
+            self.bcs.neumann_vals = np.concatenate(neumann_vals_per_idx_pair).flatten()
         
         # assign vacuum vent pressure if vent exists
         if len(self.gates_manager._assigned_vents) > 0:
@@ -264,6 +264,7 @@ class Solver:
         v_nodal_array = np.zeros((self.N_nodes, 3))
 
         active_cvs_ids, free_surface = self.fill_solver.find_free_surface_cvs(fill_factor, self.cv_support_cvs_array)
+        self.solver_vars["free_surface_array"] = free_surface
         dt = self.fill_solver.calculate_time_step(active_cvs_ids, fill_factor, cv_volumes, v_array)
         dt, write_out = self.handle_wo_criterion(dt)
 
@@ -312,6 +313,22 @@ class Solver:
         solve_time_start = time.time()
         while self.step_completed == False and self.n_empty_cvs > 0:
             self.update_bcs()
+            if len(self.bcs.dirichlet_idx) == 0 and len(self.bcs.neumann_idx) == 0:
+                if not self.simulation_parameters.lightweight and self.simulation_parameters.output_interval > 0:
+                    fill_factor = self.solver_vars["fill_factor_array"]
+                    free_surface = self.solver_vars["free_surface_array"]
+                    p = np.zeros(self.N_nodes)
+                    v_array = np.zeros((len(self.mesh.triangles), 3))
+                    v_nodal_array = np.zeros((self.N_nodes, 3))
+                    while self.next_wo_time <= self.step_end_time:
+                        self.current_time = self.next_wo_time
+                        self.next_wo_time += self.simulation_parameters.output_interval
+                        self.time_step_manager.save_timestep(self.time_step_counter, self.current_time, 0.0, p, v_array, v_nodal_array, fill_factor, free_surface)
+                        self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
+                        self.time_step_counter += 1
+                self.current_time = self.step_end_time
+                self.step_completed = True
+                break
             self.solve_time_step()
             if log == True:
                 print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs),

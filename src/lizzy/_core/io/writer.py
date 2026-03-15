@@ -22,7 +22,7 @@ class Writer:
     def assign_mesh(self, mesh):
         self._mesh = mesh
 
-    def save_results(self, solution:Solution, result_name:str, **kwargs):
+    def save_results(self, result_name:str, solution:Solution, **kwargs):
         """Save the results contained in the solution dictionary into an XDMF file.
 
         Parameters

@@ -28,5 +28,5 @@ model.assign_vent("outlet", "outlet_zone")
 model.initialise_solver(SolverType.ITERATIVE_PETSC)
 solution = model.solve()
 
-model.save_results(solution, "rect_with_RT_Leon")
+model.save_results("rect_with_RT_Leon", solution)
 

@@ -118,7 +118,7 @@ class LizzyModel:
         self._reader.print_mesh_info()
     
     @postinit_only
-    def save_results(self, solution: Solution = None, result_name:str = None, **kwargs):
+    def save_results(self, result_name:str = None, solution: Solution = None, **kwargs):
         """Save the results contained in the solution dictionary into an XDMF file.
 
         Parameters
@@ -133,12 +133,12 @@ class LizzyModel:
                 "save_results() cannot be called when the model is in lightweight mode. "
                 "Set model.assign_simulation_parameters(lightweight=False) before solving to enable result serialisation."
             )
-        if solution is None:
-            solution = self._latest_solution
         if result_name is None:
             result_name = self._model_name + '_RES'
+        if solution is None:
+            solution = self._latest_solution
         self._writer.assign_mesh(self._mesh)
-        self._writer.save_results(solution, result_name, **kwargs)
+        self._writer.save_results(result_name, solution, **kwargs)
     
     # ===========================================================================
     # Mesh API

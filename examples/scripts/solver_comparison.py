@@ -113,4 +113,4 @@ print(f"{'DIRECT_DENSE':<20} {solution_dense.time[-1]:<15.4f} {time_dense:<15.2f
 print(f"{'ITERATIVE_PETSC':<20} {solution_petsc.time[-1]:<15.4f} {time_petsc:<15.2f}")
 
 # Save results from one of the solutions
-model.save_results(solution_sparse, "solver_comparison")
+model.save_results("solver_comparison", solution_sparse)
