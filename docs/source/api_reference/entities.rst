@@ -49,4 +49,3 @@ lizzy.entities
     .. autoattribute:: CV.node
     .. autoattribute:: CV.idx
     .. autoattribute:: CV.area
-    .. autoattribute:: CV.vol

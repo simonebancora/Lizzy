@@ -118,7 +118,7 @@ class LizzyModel:
         self._reader.print_mesh_info()
     
     @postinit_only
-    def save_results(self, result_name:str = None, solution: Solution = None, **kwargs):
+    def save_results(self, result_name:str = None, solution: Solution = None, save_permeability: bool = False, **kwargs):
         """Save the results contained in the solution dictionary into an XDMF file.
 
         Parameters
@@ -127,6 +127,8 @@ class LizzyModel:
             The solution that should be written to the XDMF file. If none passed, the latest solution present in the model will be used.
         result_name : str, optional
             The name of the solution file that will be created. If none passed, the name of the mesh file with appended '_RES' will be used.
+        save_permeability : bool, optional
+            If True, include the full 3x3 permeability tensor as a cell field in the output. Default is False.
         """
         if self._simulation_parameters.lightweight:
             raise ConfigurationError(
@@ -138,7 +140,7 @@ class LizzyModel:
         if solution is None:
             solution = self._latest_solution
         self._writer.assign_mesh(self._mesh)
-        self._writer.save_results(result_name, solution, **kwargs)
+        self._writer.save_results(result_name, solution, save_permeability=save_permeability, **kwargs)
     
     # ===========================================================================
     # Mesh API

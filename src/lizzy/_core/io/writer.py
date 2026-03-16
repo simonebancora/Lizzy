@@ -33,6 +33,7 @@ class Writer:
         """
         _format = kwargs.get("format", "xdmf")
         save_cv_mesh = kwargs.get("save_cv_mesh", False)
+        save_permeability = kwargs.get("save_permeability", False)
         print("\nSaving results...")
         destination_path = Path("results") / result_name
         if os.path.isdir(destination_path):
@@ -51,6 +52,9 @@ class Writer:
             )
             mesh_cv.write(destination_path / f"{result_name}_CV.vtk")
 
+        if save_permeability:
+            perm = np.array([self._mesh.triangles[i].k for i in range(len(cells))])
+
         if _format == "xdmf":
             filename = f"{result_name}.xdmf"
             with meshio.xdmf.TimeSeriesWriter(filename) as writer:
@@ -63,6 +67,8 @@ class Writer:
                                     "Velocity" : solution.v_nodal[i]
                                  }
                     cell_data = { "Velocity" : solution.v[i] }
+                    if save_permeability:
+                        cell_data["Permeability"] = perm
                     writer.write_data(time, point_data=point_data, cell_data=cell_data)
             shutil.move(filename, destination_path / filename)
             shutil.move(f"{result_name}.h5", destination_path / f"{result_name}.h5")
