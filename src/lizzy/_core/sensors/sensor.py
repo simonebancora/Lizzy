@@ -31,6 +31,7 @@ class Sensor:
         self._fvals = None   # fill factor
         self._tvals = None   # time
         self.resin_arrived = False
+        self.trigger_time = None
 
         # temporary quick implementation node-based
         self.child_node:Node = None

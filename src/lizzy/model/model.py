@@ -205,9 +205,9 @@ class LizzyModel:
     # ===========================================================================
 
     @preinit_only
-    def assign_simulation_parameters(self, *, output_interval:float = -1, fill_tolerance:float = 0.01, end_step_when_sensor_triggered:bool = False, lightweight:bool = False) -> None:
+    def set_simulation_parameters(self, *, output_interval:float = -1, fill_tolerance:float = 0.01, end_step_when_sensor_triggered:bool = False, lightweight:bool = False) -> None:
         r"""
-        Assigns new values to one or more simulation parameters using keyword arguments.
+        Set values to one or more simulation parameters using keyword arguments.
 
         Parameters
         ----------
@@ -222,7 +222,7 @@ class LizzyModel:
         
         Examples
         --------
-        >>> model.assign_simulation_parameters(output_interval=50)
+        >>> model.set_simulation_parameters(output_interval=50)
 
         Raises
         ------

@@ -74,13 +74,14 @@ class SensorManager:
                 sensor._reset()
         self.sensor_trigger_states = np.array([False for s in self.sensors])
 
-    def check_for_new_sensor_triggered(self, fill_factor_array) -> bool:
+    def check_for_new_sensor_triggered(self, fill_factor_array, current_time) -> bool:
         """Runs through all sensors and updates their :attr:`~lizzy.sensors.sensmanager.Sensor.resin_arrived` attribute based on the current fill factor. Then checks if any new sensor has been triggered compared to the previously recorded state. If so, returns True. This method is called automatically by the solver if needed (not meant for user).
         """
         triggered = False
         for sensor in self.sensors:
-            if fill_factor_array[sensor.child_node.idx] >= 0.5:
+            if fill_factor_array[sensor.child_node.idx] >= 0.5 and sensor.resin_arrived == False:
                 sensor.resin_arrived = True
+                sensor.trigger_time = current_time
         current_trigger_states = np.array([sensor.resin_arrived for sensor in self.sensors])
         diff = current_trigger_states != self.sensor_trigger_states
         if np.any(diff):

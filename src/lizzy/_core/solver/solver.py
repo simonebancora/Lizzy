@@ -163,7 +163,6 @@ class Solver:
         """
         return np.where(fill_factor < 1.0)[0]
 
-    # TODO:IMPORTANT this must be updated for neumann
     def fill_initial_cvs(self):
         """
         Must be called AFTER calling "update_bcs()"
@@ -227,7 +226,7 @@ class Solver:
             return dt, write_out
         
         if self.simulation_parameters.output_interval > 0.0:
-            if next_time > self.next_wo_time:
+            if next_time >= self.next_wo_time:
                 dt = self.next_wo_time - self.current_time
                 self.next_wo_time += self.simulation_parameters.output_interval
                 write_out = True
@@ -238,7 +237,7 @@ class Solver:
 
     def handle_wo_by_sensor_triggered(self, current_write_out, fill_factor_array):
         write_out = current_write_out
-        triggered = self._sensor_manager.check_for_new_sensor_triggered(fill_factor_array)
+        triggered = self._sensor_manager.check_for_new_sensor_triggered(fill_factor_array, self.current_time)
         if triggered:
             write_out = True
             self.step_completed = True
@@ -314,22 +313,9 @@ class Solver:
         while self.step_completed == False and self.n_empty_cvs > 0:
             self.update_bcs()
             if len(self.bcs.dirichlet_idx) == 0 and len(self.bcs.neumann_idx) == 0:
-                if not self.simulation_parameters.lightweight and self.simulation_parameters.output_interval > 0:
-                    fill_factor = self.solver_vars["fill_factor_array"]
-                    free_surface = self.solver_vars["free_surface_array"]
-                    p = np.zeros(self.N_nodes)
-                    v_array = np.zeros((len(self.mesh.triangles), 3))
-                    v_nodal_array = np.zeros((self.N_nodes, 3))
-                    while self.next_wo_time <= self.step_end_time:
-                        self.current_time = self.next_wo_time
-                        self.next_wo_time += self.simulation_parameters.output_interval
-                        self.time_step_manager.save_timestep(self.time_step_counter, self.current_time, 0.0, p, v_array, v_nodal_array, fill_factor, free_surface)
-                        self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
-                        self.time_step_counter += 1
-                self.current_time = self.step_end_time
-                self.step_completed = True
-                break
-            self.solve_time_step()
+                self.solve_closed_inlets_time_step()
+            else:
+                self.solve_time_step()
             if log == True:
                 print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs),
                       end='')
@@ -338,3 +324,23 @@ class Solver:
         solve_time_end = time.time()
         total_solve_time = solve_time_end - solve_time_start
         return solution
+    
+    def solve_closed_inlets_time_step(self):
+        dt = self.simulation_parameters.output_interval
+        dt, write_out = self.handle_wo_criterion(dt)
+        if dt == 0.0:
+            # skip this false time interval. TODO: There must be a better way to do this, but it works for now.
+            return
+        # Update the filling time
+        self.current_time += dt
+        # manually create (known) closed inlets solution
+        fill_factor = self.solver_vars["fill_factor_array"]
+        free_surface = self.solver_vars["free_surface_array"]
+        p = np.zeros(self.N_nodes)
+        v_array = np.zeros((len(self.mesh.triangles), 3))
+        v_nodal_array = np.zeros((self.N_nodes, 3))
+        if write_out:
+            if not self.simulation_parameters.lightweight:
+                self.time_step_manager.save_timestep(self.time_step_counter, self.current_time, dt, p, v_array, v_nodal_array, fill_factor, free_surface)
+            self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
+        self.time_step_counter += 1
