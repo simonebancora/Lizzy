@@ -11,8 +11,11 @@ if TYPE_CHECKING:
     from lizzy._core.cvmesh import Mesh
     from lizzy._core.materials import MaterialManager
 
+import logging
 import numpy as np
 from lizzy.exceptions import MeshError
+
+logger = logging.getLogger("lizzy.solver")
 from lizzy._core.gates.gates import InletType
 
 class SolverBCs:
@@ -63,7 +66,7 @@ class SolverBCs:
                     if inlet.is_open:
                         neumann_idxs_pairs.append(node_pairs_idxs)
                         neumann_vals_per_idx_pair.append(neumann_vals_pairs)
-                    print("Note: Flow rate BC is experimental.")
+                    logger.warning(" Flow rate BC is experimental.")
                 case _:
                     pass
         if len(dirichlet_idxs) > 0:

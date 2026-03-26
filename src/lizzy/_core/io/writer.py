@@ -4,6 +4,7 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import os
 import shutil
 from pathlib import Path
@@ -12,6 +13,8 @@ import numpy as np
 import meshio
 import textwrap
 from lizzy._core.datatypes import Solution
+
+logger = logging.getLogger("lizzy.io")
 
 
 class Writer:
@@ -34,7 +37,7 @@ class Writer:
         _format = kwargs.get("format", "xdmf")
         save_cv_mesh = kwargs.get("save_cv_mesh", False)
         save_permeability = kwargs.get("save_permeability", False)
-        print("\nSaving results...")
+        logger.info(" Saving results...")
         destination_path = Path("results") / result_name
         if os.path.isdir(destination_path):
             shutil.rmtree(destination_path)
@@ -73,4 +76,4 @@ class Writer:
             shutil.move(filename, destination_path / filename)
             shutil.move(f"{result_name}.h5", destination_path / f"{result_name}.h5")
 
-        print(f"Results saved in {destination_path}")
+        logger.info(f" Results saved in {destination_path}")

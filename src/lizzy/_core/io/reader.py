@@ -4,12 +4,15 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import os
 from pathlib import Path
 from enum import Enum, auto
 import numpy as np
 import meshio
 import textwrap
+
+logger = logging.getLogger("lizzy.io")
 
 def extract_unique_nodes(node_ids_list):
     """
@@ -41,7 +44,7 @@ class Reader:
     def read_mesh_file(self, mesh_path: str | os.PathLike) -> None:
         mesh_path = Path(mesh_path)
         self.case_name = self.__read_case_name(mesh_path)
-        print(f"Reading mesh file: {mesh_path}")
+        logger.info(f" Reading mesh file: {mesh_path}")
         _format = self._detect_format()
         match _format:
             case Format.MSH:

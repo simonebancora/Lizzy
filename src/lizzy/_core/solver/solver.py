@@ -13,9 +13,13 @@ if TYPE_CHECKING:
     from lizzy._core.materials import MaterialManager
 
 
-import numpy as np
+import logging
 import time
+import numpy as np
+from tqdm import tqdm
 from lizzy._core.solver import *
+
+logger = logging.getLogger("lizzy.solver")
 
 from .timestep_manager import TimeStepManager
 from .vsolvers import VelocitySolver
@@ -50,7 +54,7 @@ class Solver:
                 petsc4py.init()
                 from petsc4py import PETSc
             except ImportError:
-                print("Import Error: PETSc not available. Reverting to DIRECT_SPARSE builtin solver.")
+                logger.warning(" PETSc not available. Reverting to DIRECT_SPARSE builtin solver.")
                 self.solver_type = SolverType.DIRECT_SPARSE
         self.solver_tol = solver_tol
         self.solver_max_iter = solver_max_iter
@@ -150,10 +154,14 @@ class Solver:
         write_out = False
         next_time = self.current_time + dt
 
-        if next_time > self.step_end_time:
+        if next_time >= self.step_end_time:
             dt = self.step_end_time - self.current_time
             write_out = True
             self.step_completed = True
+            # Advance next_wo_time past step_end_time to avoid the duplicated Solution time bug that results in missing time step in Paraview. #TODO: this stuff is terrible: urge refactor of the whole write-out management. Works for now.
+            if self.simulation_parameters.output_interval > 0.0:
+                while self.next_wo_time <= self.step_end_time:
+                    self.next_wo_time += self.simulation_parameters.output_interval
             return dt, write_out
         
         if self.simulation_parameters.output_interval > 0.0:
@@ -218,42 +226,56 @@ class Solver:
             self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
         self.time_step_counter += 1
 
-    def solve(self, log=True):
+    def solve(self):
         solution = None
-        solve_time_start = time.time()
         self.step_end_time = np.inf  # reset step end time for full solve
-        print("SOLVE STARTED for mesh with {} elements".format(len(self.mesh.triangles)))
         self.bcs.update(self.mesh, self.material_manager, self.gates_manager) # TODO this is a bit hacky: need to update bcs before the first time step to correctly fill initial CVs and assign p0_idx. Should be more explicit or a cleaner way...
+        total_cvs = self.N_nodes
+        filled_cvs = total_cvs - self.n_empty_cvs
+        logger.info(" Solving...")
+        pbar = tqdm(total=total_cvs, initial=filled_cvs,
+                    desc="Fill progress",
+                    bar_format="{l_bar}{bar}| t={postfix[0]:.2f}s [{elapsed}<{remaining}]",
+                    postfix=[self.current_time],
+                    ncols=80, disable=not self.simulation_parameters.progress_bar)
+        solve_start = time.perf_counter()
         while self.n_empty_cvs > 0:
             self.solve_time_step()
-            if log == True:
-                print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs), end='')
+            new_filled = total_cvs - self.n_empty_cvs
+            pbar.update(new_filled - pbar.n)
+            if self.simulation_parameters.progress_bar:
+                pbar.postfix[0] = self.current_time
+        solve_time = time.perf_counter() - solve_start
+        pbar.close()
+        logger.info(f" Solve completed in {solve_time:.2f} seconds")
         if not self.simulation_parameters.lightweight:
             solution = self.time_step_manager.pack_solution()
-        # good night and good luck
-        solve_time_end = time.time()
-        total_solve_time = solve_time_end - solve_time_start
-        print("\nSOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
         return solution
 
-    def solve_time_interval(self, time_interval:float, log=False):
+    def solve_time_interval(self, time_interval:float):
         solution = None
         self.step_completed = False
         self.step_end_time = self.current_time + time_interval
-        solve_time_start = time.time()
+        total_cvs = self.N_nodes
+        filled_cvs = total_cvs - self.n_empty_cvs
+        pbar = tqdm(total=total_cvs, initial=filled_cvs,
+                    desc="Fill progress",
+                    bar_format="{l_bar}{bar}| t={postfix[0]:.2f}s [{elapsed}<{remaining}]",
+                    postfix=[self.current_time],
+                    ncols=80, disable=not self.simulation_parameters.progress_bar)
         while self.step_completed == False and self.n_empty_cvs > 0:
             self.bcs.update(self.mesh, self.material_manager, self.gates_manager)
             if len(self.bcs.dirichlet_idx) == 0 and len(self.bcs.neumann_idx) == 0:
                 self.solve_closed_inlets_time_step()
             else:
                 self.solve_time_step()
-            if log == True:
-                print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs),
-                      end='')
+            new_filled = total_cvs - self.n_empty_cvs
+            pbar.update(new_filled - pbar.n)
+            if self.simulation_parameters.progress_bar:
+                pbar.postfix[0] = self.current_time
+        pbar.close()
         if not self.simulation_parameters.lightweight:
             solution = self.time_step_manager.pack_solution()
-        solve_time_end = time.time()
-        total_solve_time = solve_time_end - solve_time_start
         return solution
     
     def solve_closed_inlets_time_step(self):

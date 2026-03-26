@@ -14,9 +14,12 @@ if TYPE_CHECKING:
     from lizzy._core.materials import MaterialManager, Rosette, PorousMaterial
     from lizzy._core.datatypes import SimulationParameters
 
+import logging
 import numpy as np
 from lizzy._core.solver import *
 from lizzy.exceptions import ConfigurationError
+
+logger = logging.getLogger("lizzy.solver")
 from .timestep_manager import TimeStepManager
 from .vsolvers import VelocitySolver
 from .fillsolver import FillSolver
@@ -37,7 +40,7 @@ class Preprocessor:
     # 1. check things were assigned
     def assignment_checks(self):
         if not self.simulation_parameters.has_been_assigned:
-            print(f"Warning: Simulation parameters were not assigned. Running with default values: output_interval={self.simulation_parameters.output_interval}")
+            logger.warning(f" Simulation parameters were not assigned. Running with default values: output_interval={self.simulation_parameters.output_interval}")
         if not self.material_manager._resin_was_assigned:
             raise ConfigurationError("No resin assigned to the model. Create a resin using LizzyModel.create_resin and assign it using LizzyModel.assign_resin.")
         self.gates_manager.assert_unique_boundary_assignments()
@@ -65,7 +68,7 @@ class Preprocessor:
         return K_sing, f_orig
 
     def run_preproc_sequence(self):
-        print("Preprocessing...")
+        logger.info(" Preprocessing...")
         self.setup_cvs()
         self.assign_fill_solver_maps()
         K_sing, f_orig = self.assemble_global_stiffnes_matrix()

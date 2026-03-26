@@ -243,8 +243,7 @@ class CV:
                 if self.node in line.nodes:
                     elem_side_lines.append(line) # here we get 2 lines
             if len(elem_side_lines) != 2:
-                print("ERROR: wrong lines fetching")
-                exit(0)
+                raise RuntimeError("CV construction error: expected 2 side lines per triangle, got {}".format(len(elem_side_lines)))
             
             # now we have the 2 side lines, we need to create new lines one by one by mid and cog
             x1 = elem_side_lines[0].midpoint

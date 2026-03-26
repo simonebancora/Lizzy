@@ -13,9 +13,12 @@ if TYPE_CHECKING:
     from lizzy._core.cvmesh.entities import Node, Triangle
     from lizzy.datatypes import Solution
 
+import logging
 import os
 from typing import Dict, Literal
 from types import MappingProxyType
+
+logger = logging.getLogger("lizzy.model")
 from lizzy._core.io import Reader, Writer
 from lizzy._core.cvmesh import Mesh
 from lizzy._core.gates import GatesManager
@@ -205,7 +208,7 @@ class LizzyModel:
     # ===========================================================================
 
     @preinit_only
-    def set_simulation_parameters(self, *, output_interval:float = -1, fill_tolerance:float = 0.01, end_step_when_sensor_triggered:bool = False, lightweight:bool = False) -> None:
+    def set_simulation_parameters(self, *, output_interval:float = -1, fill_tolerance:float = 0.01, end_step_when_sensor_triggered:bool = False, lightweight:bool = False, progress_bar:bool = False) -> None:
         r"""
         Set values to one or more simulation parameters using keyword arguments.
 
@@ -219,6 +222,7 @@ class LizzyModel:
             - ``fill_tolerance`` (float, optional): tolerance on the fill factor to consider a CV as filled. Default: 0.01
             - ``end_step_when_sensor_triggered`` (bool, optional): if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
             - ``lightweight`` (bool, optional): if True, disables Solution packing after each solve, saving memory and computation time. :meth:`~LizzyModel.save_results` cannot be used in lightweight mode. Default: False
+            - ``progress_bar`` (bool, optional): if True, shows a progress bar during the solution. Default: False
         
         Examples
         --------
@@ -473,6 +477,7 @@ class LizzyModel:
         inlet_selector : Inlet | str
             Either the inlet object reference, or the name of an existing inlet.
         """
+        logger.info(f"Opening inlet '{inlet_selector}'")
         self._gates_manager.open_inlet(inlet_selector)
 
     def close_inlet(self, inlet_selector:Inlet | str):
@@ -483,6 +488,7 @@ class LizzyModel:
         inlet_selector : Inlet | str
             Either the inlet object reference, or the name of an existing inlet.
         """
+        logger.info(f"Closing inlet '{inlet_selector}'")
         self._gates_manager.close_inlet(inlet_selector)
     
     # ===========================================================================
@@ -572,50 +578,43 @@ class LizzyModel:
     def _validate_configuration(self):
         """Run all configuration checks before solver construction."""
         if not self._simulation_parameters.has_been_assigned:
-            print(f"Warning: Simulation parameters were not assigned. Running with default values: output_interval={self._simulation_parameters.output_interval}")
+            logger.warning(f" Simulation parameters were not assigned. Running with default values: output_interval={self._simulation_parameters.output_interval}")
         if not self._material_manager._resin_was_assigned:
             raise ConfigurationError("No resin assigned to the model. Create a resin using LizzyModel.create_resin and assign it using LizzyModel.assign_resin.")
         if len(self._gates_manager.assigned_inlets) == 0:
             raise ConfigurationError("No inlets assigned to the model. Create and assign at least one inlet before initialising the solver.")
         if len(self._gates_manager.assigned_vents) == 0:
-            print("Warning: No vents assigned to the model. A default vent pressure of 0.0 Pa will be used.")
+            logger.warning(" No vents assigned to the model. A default vent pressure of 0.0 Pa will be used.")
         self._gates_manager.assert_unique_boundary_assignments()
         self._mesh.assert_all_elements_have_material()
 
     @postinit_only
-    def solve(self, log=True) -> Solution:
+    def solve(self) -> Solution:
         """Advance the filling simulation from the current time until the part is filled.
-
-        Parameters
-        ----------
-        log : bool, optional
-            Whether to print the progress of the solution, by default True
 
         Returns
         -------
         solution : :class:`~lizzy.datatypes.Solution`
             A Solution object storing the solution fields up to the time step reached
         """
-        self._latest_solution = self._solver.solve(log=log)
+        self._latest_solution = self._solver.solve()
         return self._latest_solution
 
     @postinit_only
-    def solve_time_interval(self, time_interval:float, log=False) -> Solution:
+    def solve_time_interval(self, time_interval:float) -> Solution:
         """Advance the filling simulation from the current time for the specified time interval.
 
         Parameters
         ----------
         time_interval : float
             The time period to advance the simulation for.
-        log : bool, optional
-            Whether to print the progress of the solution, by default False
 
         Returns
         -------
         solution : :class:`~lizzy.datatypes.Solution`
             A Solution object storing the solution fields up to the time step reached.
         """
-        self._latest_solution = self._solver.solve_time_interval(time_interval, log=log)
+        self._latest_solution = self._solver.solve_time_interval(time_interval)
         return self._latest_solution
     
     @postinit_only

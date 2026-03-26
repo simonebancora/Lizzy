@@ -4,10 +4,13 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import numpy as np
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import cg, bicgstab, gmres
 import warnings
+
+logger = logging.getLogger("lizzy.solver")
 
 # Optional imports with availability checks
 try:
@@ -173,8 +176,8 @@ def solve_pressure_pyamg(k: np.ndarray, f: np.ndarray, tol: float = 1e-8, max_it
     p = ml.solve(f, tol=tol, maxiter=max_iter, accel=accel, cycle=cycle, residuals=residuals)
     
     if verbose and len(residuals) > 0:
-        print(f"PyAMG converged in {len(residuals)} iterations")
-        print(f"Final residual: {residuals[-1]:.2e}")
+        logger.debug(f" PyAMG converged in {len(residuals)} iterations")
+        logger.debug(f" Final residual: {residuals[-1]:.2e}")
     
     return p
 
@@ -236,8 +239,8 @@ def solve_pressure_petsc(k: np.ndarray, f: np.ndarray, tol: float = 1e-8, max_it
     ksp.solve(b, x)
     
     if verbose:
-        print(f"\nPETSc solver converged in {ksp.getIterationNumber()} iterations "
-              f"to a tolerance of {ksp.getResidualNorm():.2e}")
+        logger.debug(f" PETSc solver converged in {ksp.getIterationNumber()} iterations "
+                     f"to a tolerance of {ksp.getResidualNorm():.2e}")
     
     # Convert solution back to numpy array
     solution = x.getArray().copy()
