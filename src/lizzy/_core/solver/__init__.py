@@ -8,3 +8,4 @@ from . import fem as fe
 from .psolvers import SolverType
 from .solver import Solver
 from .fillsolver import FillSolver
+from .solverbcs import SolverBCs
