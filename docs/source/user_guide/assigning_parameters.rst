@@ -17,11 +17,11 @@ Assigning simulation parameters
 
 The following operations are to be performed **before** the solver is initialised by calling :meth:`~lizzy.LizzyModel.initialise_solver`.
 
-Each simulation parameter can be assigned to the model by keyword, using the :meth:`~lizzy.LizzyModel.assign_simulation_parameters` method:
+Each simulation parameter can be assigned to the model by keyword, using the :meth:`~lizzy.LizzyModel.set_simulation_parameters` method:
 
 .. code-block::
 
-    model.assign_simulation_parameters(output_interval=100)
+    model.set_simulation_parameters(output_interval=100)
 
 In this example, we have told the solver to save a solution state every 100 seconds of simulation time.
 

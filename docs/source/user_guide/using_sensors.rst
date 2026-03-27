@@ -117,7 +117,7 @@ To enable this behaviour, set the parameter before initialising the solver:
 
 .. code-block::
 
-    model.assign_simulation_parameters(end_step_when_sensor_triggered=True)
+    model.set_simulation_parameters(end_step_when_sensor_triggered=True)
 
 See :ref:`assigning_parameters` for more details on simulation parameters.
 
@@ -132,7 +132,7 @@ Sensors become especially powerful when combined with the :meth:`~lizzy.LizzyMod
 
     .. code-block::
 
-        model.assign_simulation_parameters(end_step_when_sensor_triggered=True)
+        model.set_simulation_parameters(end_step_when_sensor_triggered=True)
         model.initialise_solver()
 
         # Fill until resin reaches sensor 0 (located at the mid-point of the part)

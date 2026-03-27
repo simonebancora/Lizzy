@@ -24,7 +24,7 @@ model = liz.LizzyModel()
 model.read_mesh_file("../meshes/Rect1M_R1.msh")
 
 # Set simulation parameters
-model.assign_simulation_parameters(
+model.set_simulation_parameters(
     output_interval=100,   # Interval between solution write-outs [s]
     fill_tolerance=0.00  # Fill fraction tolerance for CV to be considered full
 )

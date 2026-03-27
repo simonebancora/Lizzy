@@ -136,7 +136,7 @@ class LizzyModel:
         if self._simulation_parameters.lightweight:
             raise ConfigurationError(
                 "save_results() cannot be called when the model is in lightweight mode. "
-                "Set model.assign_simulation_parameters(lightweight=False) before solving to enable result serialisation."
+                "Set model.set_simulation_parameters(lightweight=False) before solving to enable result serialisation."
             )
         if result_name is None:
             result_name = self._model_name + '_RES'
@@ -208,7 +208,7 @@ class LizzyModel:
     # ===========================================================================
 
     @preinit_only
-    def set_simulation_parameters(self, *, output_interval:float = -1, fill_tolerance:float = 0.01, end_step_when_sensor_triggered:bool = False, lightweight:bool = False, progress_bar:bool = False) -> None:
+    def set_simulation_parameters(self, *, output_interval:float = 10, fill_tolerance:float = 0.01, end_step_when_sensor_triggered:bool = False, lightweight:bool = False, progress_bar:bool = False) -> None:
         r"""
         Set values to one or more simulation parameters using keyword arguments.
 
@@ -218,7 +218,7 @@ class LizzyModel:
             Keyword arguments corresponding to parameter names and their new values.
             Valid keywords are:
 
-            - ``output_interval`` (float, optional): interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
+            - ``output_interval`` (float, optional): interval of simulation time between solution write-outs [s]. A negative value will write-out every numerical time step (not recommended). Default: 10
             - ``fill_tolerance`` (float, optional): tolerance on the fill factor to consider a CV as filled. Default: 0.01
             - ``end_step_when_sensor_triggered`` (bool, optional): if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
             - ``lightweight`` (bool, optional): if True, disables Solution packing after each solve, saving memory and computation time. :meth:`~LizzyModel.save_results` cannot be used in lightweight mode. Default: False

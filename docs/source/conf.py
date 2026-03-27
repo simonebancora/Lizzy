@@ -21,8 +21,13 @@ author = 'Simone Bancora'
 extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
     'sphinxcontrib.bibtex',
 ]
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+}
 
 
 templates_path = ['_templates']

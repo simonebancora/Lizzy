@@ -1,5 +1,7 @@
 import lizzy
 
+import logging                                                                                                          
+logging.basicConfig(level=logging.INFO)
 
 model = lizzy.LizzyModel()
 model.read_mesh_file("../meshes/Rect1M_R2.msh")
