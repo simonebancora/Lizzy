@@ -7,7 +7,7 @@ lizzy.sensors
 
     .. rubric:: Properties
 
-    .. autoproperty:: Sensor.idx
+    .. autoproperty:: Sensor.name
     .. autoproperty:: Sensor.position
     .. autoproperty:: Sensor.pressure
     .. autoproperty:: Sensor.velocity
@@ -17,6 +17,7 @@ lizzy.sensors
     .. rubric:: Attributes
 
     .. autoattribute:: Sensor.resin_arrived
+    .. autoattribute:: Sensor.trigger_time
 
     .. rubric:: Methods
 

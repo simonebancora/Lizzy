@@ -17,30 +17,25 @@ Creating sensors
 .. note::
     The following operations are to be performed **before** the solver is initialised by calling :meth:`~lizzy.LizzyModel.initialise_solver`.
 
-To create a sensor, use the :meth:`~lizzy.LizzyModel.create_sensor` method, providing the (x, y, z) coordinates of the desired sensor location. For example, to place a sensor at position (0.5, 0.5, 0.0):
+To create a sensor, use the :meth:`~lizzy.LizzyModel.create_sensor` method, providing an name for the sensor and the (x, y, z) coordinates of the position where it will be placed. For example, to place a sensor called "sensor_01" at position (0.5, 0.5, 0.0):
 
 .. code-block::
 
-    model.create_sensor(0.5, 0.5, 0.0)
+    model.create_sensor("sensor_01", (0.5, 0.5, 0.0))
 
-You can create as many sensors as needed by calling this method multiple times. Each sensor is automatically assigned a unique integer index, starting from 0 in the order they were created:
+You can create as many sensors as needed.
 
-.. code-block::
-
-    model.create_sensor(x1, y1, z1)  # sensor ID: 0
-    model.create_sensor(x2, y2, z2)  # sensor ID: 1
-    model.create_sensor(x3, y3, z3)  # sensor ID: 2
 
 Fetching sensors from the model
 ---------------------------------
 
-To retrieve a sensor object from the model, use the :meth:`~lizzy.LizzyModel.get_sensor_by_id` method, providing the sensor's integer index:
+To retrieve a sensor object from the model, use the :meth:`~lizzy.LizzyModel.get_sensor_by_name` method, providing the sensor's name:
 
 .. code-block::
 
-    sensor = model.get_sensor_by_id(0)
+    sensor = model.get_sensor_by_name("sensor_01")
 
-This returns the :class:`~lizzy.sensors.Sensor` object with that index.
+This returns the :class:`~lizzy.sensors.Sensor` object with that name.
 
 .. note::
     This method can be called both before and after the solver has been initialised.
@@ -48,21 +43,24 @@ This returns the :class:`~lizzy.sensors.Sensor` object with that index.
 Reading sensor data at runtime
 --------------------------------
 
-Sensor data is only available **after** the solver has been initialised by calling :meth:`~lizzy.LizzyModel.initialise_solver`, and only once at least one solver step has been completed.
+Sensor data is only available **after** the solver has been initialised by calling :meth:`~lizzy.LizzyModel.initialise_solver`.
 The solver stores filed values at created sensors at the end of each write-out time period (specified in the :ref:`simulation parameters <assigning_parameters>`). The following read-only properties are available in a :class:`~lizzy.sensors.Sensor` object:
 
+- :attr:`~lizzy.sensors.Sensor.name`: the name of the sensor.
+- :attr:`~lizzy.sensors.Sensor.position`: the (x, y, z) coordinates of the sensor.
 - :attr:`~lizzy.sensors.Sensor.pressure`: the current resin pressure (Pa) at the sensor location.
 - :attr:`~lizzy.sensors.Sensor.velocity`: the current resin velocity (m/s) at the sensor location.
 - :attr:`~lizzy.sensors.Sensor.fill_factor`: the current fill factor at the sensor location (0 = empty, 1 = fully filled).
 - :attr:`~lizzy.sensors.Sensor.time`: the current simulation time (s).
-- :attr:`~lizzy.sensors.Sensor.position`: the (x, y, z) coordinates of the sensor.
+- :attr:`~lizzy.sensors.Sensor.resin_arrived`: boolean that is ``True`` if the resin front has reached the sensor location.
+- :attr:`~lizzy.sensors.Sensor.trigger_time`: the time at which the sensor was triggered by the resin arrival.
 
 For example, after advancing the simulation, we can read the sensor values as follows:
 
 .. code-block::
 
     model.solve_time_interval(300)
-    sensor = model.get_sensor_by_id(0)
+    sensor = model.get_sensor_by_name("sensor_01")
     print(sensor.time)
     print(sensor.pressure)
     print(sensor.fill_factor)
@@ -81,19 +79,19 @@ To print a summary of all sensor readings at a given instant, use the :meth:`~li
 
 .. code-block:: console
 
-    >>> {0: 'time: 300.0 s; resin pressure: 87432.5 Pa; fill factor: 0.73, resin velocity: [0.00012 0. 0.] m/s',
-         1: 'time: 300.0 s; resin pressure: 54210.1 Pa; fill factor: 1.0, resin velocity: [0.00009 0. 0.] m/s'}
+    >>> {0: 'time: 300.0 s; resin pressure: 87432.5 Pa; fill factor: 1.0, resin velocity: [0.00012 0. 0.] m/s, resin arrived: True, trigger time: 160.0 s',
+         1: 'time: 300.0 s; resin pressure: 54210.1 Pa; fill factor: 1.0, resin velocity: [0.00009 0. 0.] m/s, resin arrived: True, trigger time: 250.0 s'}
 
 Resin arrival detection
 ------------------------
 
-Each sensor has a :attr:`~lizzy.sensors.Sensor.resin_arrived` boolean attribute that becomes ``True`` as soon as the fill factor at the sensor location reaches or exceeds 0.5. This is a convenient way to check whether the resin front has passed a given point:
+Each sensor has a :attr:`~lizzy.sensors.Sensor.resin_arrived` boolean attribute that becomes ``True`` as soon as the fill factor at the sensor location reaches or exceeds 0.5, and a :attr:`~lizzy.sensors.Sensor.trigger_time` attribute that records the time at which the arrival happened. For example:
 
 .. code-block::
 
-    sensor = model.get_sensor_by_id(1)
+    sensor = model.get_sensor_by_name("sensor_01")
     if sensor.resin_arrived:
-        print("Resin has reached sensor 1!")
+        print(f"Resin has reached this sensor at time= {sensor.trigger_time} s")
 
 To get the trigger state of all sensors at once as a list of booleans, use the :meth:`~lizzy.LizzyModel.get_sensor_trigger_states` method:
 
@@ -104,9 +102,9 @@ To get the trigger state of all sensors at once as a list of booleans, use the :
 
 .. code-block:: console
 
-    >>> [False, True, True]
+    >>> [True, True, False]
 
-In this example, sensor 0 has not yet been reached by the resin, while sensors 1 and 2 have.
+In this example, the first 2 sensors have been reached by resin, the third one hasn't.
 
 Triggering write-outs on sensor events
 ----------------------------------------
@@ -124,7 +122,7 @@ See :ref:`assigning_parameters` for more details on simulation parameters.
 Building dynamic scenarios with sensors
 -----------------------------------------
 
-Sensors become especially powerful when combined with the :meth:`~lizzy.LizzyModel.solve_time_interval` method to create dynamic filling scenarios. For example, we can advance the simulation in short intervals, check the sensor state after each interval, and react accordingly:
+Sensors become useful when combined with the :meth:`~lizzy.LizzyModel.solve_time_interval` method to create dynamic filling scenarios. For example, we can advance the simulation in short intervals, check the sensor state after each interval, and react accordingly:
 
 .. tip::
 
@@ -135,11 +133,11 @@ Sensors become especially powerful when combined with the :meth:`~lizzy.LizzyMod
         model.set_simulation_parameters(end_step_when_sensor_triggered=True)
         model.initialise_solver()
 
-        # Fill until resin reaches sensor 0 (located at the mid-point of the part)
-        while not model.get_sensor_by_id(0).resin_arrived:
+        # Fill until resin reaches sensor 01 (located at the mid-point of the part)
+        while not model.get_sensor_by_name("sensor_01").resin_arrived:
             model.solve_time_interval(10)
 
-        # Resin has arrived at sensor 0: close inlet_1 and open inlet_2
+        # Resin has arrived at sensor 01: close inlet_1 and open inlet_2
         model.close_inlet("inlet_1")
         model.open_inlet("inlet_2")
 
