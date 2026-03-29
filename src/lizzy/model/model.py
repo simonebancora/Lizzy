@@ -497,19 +497,17 @@ class LizzyModel:
 
     #TODO: get coords arg as tuple or np array, then ids as int or string
     @preinit_only
-    def create_sensor(self, x:float, y:float, z:float) -> None:
+    def create_sensor(self, name:str, coords:tuple[float, float, float]) -> None:
         """Create a virtual sensor at the specified position and add it to the model.
 
         Parameters
         ----------
-        x : float
-            The x coordinate of the sensor
-        y : float
-            The y coordinate of the sensor
-        z : float
-            The z coordinate of the sensor
+        name : str
+            The name of the sensor
+        coords : tuple[float, float, float]
+            The coordinates of the sensor
         """
-        self._sensor_manager.add_sensor(x, y, z)
+        self._sensor_manager.add_sensor(name, coords)
 
     @postinit_only
     def print_sensor_readings(self):
@@ -522,20 +520,20 @@ class LizzyModel:
         """Returns a list of sensor trigger states: True if the sensor has been triggered, False otherwise."""
         return self._sensor_manager.sensor_trigger_states
     
-    def get_sensor_by_id(self, idx:int) -> Sensor:
-        """Fetches a sensor by its index.
+    def get_sensor_by_name(self, name:str) -> Sensor:
+        """Fetches a sensor by its name.
 
         Parameters
         ----------
-        idx : int
-            Index of the sensor to fetch. Sensors are indexed in the order they were created, starting from 0.
+        name : str
+            Name of the sensor to fetch.
 
         Returns
         -------
         :class:`~lizzy.sensors.Sensor`
             The fetched sensor object.
         """
-        return self._sensor_manager.get_sensor_by_id(idx)
+        return self._sensor_manager.get_sensor_by_name(name)
 
     # ===========================================================================
     # Solver API
