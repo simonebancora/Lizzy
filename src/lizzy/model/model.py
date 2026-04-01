@@ -13,8 +13,12 @@ if TYPE_CHECKING:
     from lizzy._core.cvmesh.entities import Node, Triangle
     from lizzy.datatypes import Solution
 
+import logging
+import os
 from typing import Dict, Literal
 from types import MappingProxyType
+
+logger = logging.getLogger("lizzy.model")
 from lizzy._core.io import Reader, Writer
 from lizzy._core.cvmesh import Mesh
 from lizzy._core.gates import GatesManager
@@ -42,7 +46,6 @@ class LizzyModel:
         self._mesh:Mesh = None
         self._solver:Solver = None
         self._latest_solution: Solution = None
-        self._lightweight:bool = False
         self._state:State = State.PRE_INIT
         self._create_components()
 
@@ -58,22 +61,6 @@ class LizzyModel:
     # ===========================================================================
     # Properties
     # ===========================================================================
-
-    @property
-    def lightweight(self):
-        r"""Set whether to run the model in lightweight mode. Default is False.
-
-        When the model is run in lighweight mode, solver results are not serialised at the end of steps into solution output format and :func:`~LizzyModel.save_results` cannot be called. Useful to speed up computation when saving results to an output file is not necessary
-        
-        Note
-        ----
-        This property can be both read and set.
-        """
-        return self._lightweight
-
-    @lightweight.setter
-    def lightweight(self, value):
-        self._lightweight = value
 
     @property
     def assigned_materials(self) -> Dict[str, PorousMaterial]:
@@ -107,16 +94,12 @@ class LizzyModel:
         """
         return self._latest_solution
     
-    @property
-    def gates_manager(self) -> GatesManager:
-        return self._gates_manager
-    
     # ===========================================================================
     # IO API
     # ===========================================================================
 
     @preinit_only
-    def read_mesh_file(self, mesh_file_path:str):
+    def read_mesh_file(self, mesh_file_path: str | os.PathLike) -> None:
         r"""
         Reads a mesh file and initialises the mesh. Currently only .MSH format is supported (Version 4 ASCII).
 
@@ -138,7 +121,7 @@ class LizzyModel:
         self._reader.print_mesh_info()
     
     @postinit_only
-    def save_results(self, solution: Solution = None, result_name:str = None, **kwargs):
+    def save_results(self, result_name:str = None, solution: Solution = None, save_permeability: bool = False, **kwargs):
         """Save the results contained in the solution dictionary into an XDMF file.
 
         Parameters
@@ -147,18 +130,20 @@ class LizzyModel:
             The solution that should be written to the XDMF file. If none passed, the latest solution present in the model will be used.
         result_name : str, optional
             The name of the solution file that will be created. If none passed, the name of the mesh file with appended '_RES' will be used.
+        save_permeability : bool, optional
+            If True, include the full 3x3 permeability tensor as a cell field in the output. Default is False.
         """
-        if self._lightweight:
+        if self._simulation_parameters.lightweight:
             raise ConfigurationError(
                 "save_results() cannot be called when the model is in lightweight mode. "
-                "Set model.lightweight = False before solving to enable result serialisation."
+                "Set model.set_simulation_parameters(lightweight=False) before solving to enable result serialisation."
             )
-        if solution == None:
-            solution = self._latest_solution
-        if result_name == None:
+        if result_name is None:
             result_name = self._model_name + '_RES'
+        if solution is None:
+            solution = self._latest_solution
         self._writer.assign_mesh(self._mesh)
-        self._writer.save_results(solution, result_name, **kwargs)
+        self._writer.save_results(result_name, solution, save_permeability=save_permeability, **kwargs)
     
     # ===========================================================================
     # Mesh API
@@ -223,9 +208,9 @@ class LizzyModel:
     # ===========================================================================
 
     @preinit_only
-    def assign_simulation_parameters(self, **kwargs):
+    def set_simulation_parameters(self, *, output_interval:float = 10, fill_tolerance:float = 0.01, end_step_when_sensor_triggered:bool = False, lightweight:bool = False, progress_bar:bool = False) -> None:
         r"""
-        Assigns new values to one or more simulation parameters using keyword arguments.
+        Set values to one or more simulation parameters using keyword arguments.
 
         Parameters
         ----------
@@ -233,19 +218,22 @@ class LizzyModel:
             Keyword arguments corresponding to parameter names and their new values.
             Valid keywords are:
 
-            - ``output_interval`` (float, optional): interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
+            - ``output_interval`` (float, optional): interval of simulation time between solution write-outs [s]. A negative value will write-out every numerical time step (not recommended). Default: 10
             - ``fill_tolerance`` (float, optional): tolerance on the fill factor to consider a CV as filled. Default: 0.01
             - ``end_step_when_sensor_triggered`` (bool, optional): if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
+            - ``lightweight`` (bool, optional): if True, disables Solution packing after each solve, saving memory and computation time. :meth:`~LizzyModel.save_results` cannot be used in lightweight mode. Default: False
+            - ``progress_bar`` (bool, optional): if True, shows a progress bar during the solution. Default: False
         
         Examples
         --------
-        >>> model.assign_simulation_parameters(output_interval=50)
+        >>> model.set_simulation_parameters(output_interval=50)
 
         Raises
         ------
         AttributeError
             If any key in `kwargs` does not correspond to a known attribute.
         """
+        kwargs = {key : value for key, value in locals().items() if key != "self"}
         self._simulation_parameters.assign(**kwargs)
 
     def print_simulation_parameters(self) -> None:
@@ -328,6 +316,10 @@ class LizzyModel:
         ----------
         resin_selector : Resin | str
             The resin object or name of the resin to assign. Must correspond to an existing resin created with :func:`~LizzyModel.create_resin`.
+        
+        Note
+        ----
+        Resin is a global property and does not need to be assigned to specific mesh regions. Only one resin can be assigned to the model, and it will be used for the entire simulation domain.
         """
         self._material_manager.assign_resin(resin_selector)
 
@@ -453,7 +445,7 @@ class LizzyModel:
         :class:`~lizzy.gates.Inlet`
             The fetched inlet object.
         """
-        selected_inlet = self._gates_manager._fetch_inlet(inlet_name)
+        selected_inlet = self._gates_manager.fetch_inlet(inlet_name)
         return selected_inlet
     
     def change_inlet_pressure(self, inlet_selector:Inlet | str, pressure_value:float, mode: Literal["set", "delta"] = "set"):
@@ -485,6 +477,7 @@ class LizzyModel:
         inlet_selector : Inlet | str
             Either the inlet object reference, or the name of an existing inlet.
         """
+        logger.info(f"Opening inlet '{inlet_selector}'")
         self._gates_manager.open_inlet(inlet_selector)
 
     def close_inlet(self, inlet_selector:Inlet | str):
@@ -495,6 +488,7 @@ class LizzyModel:
         inlet_selector : Inlet | str
             Either the inlet object reference, or the name of an existing inlet.
         """
+        logger.info(f"Closing inlet '{inlet_selector}'")
         self._gates_manager.close_inlet(inlet_selector)
     
     # ===========================================================================
@@ -503,19 +497,17 @@ class LizzyModel:
 
     #TODO: get coords arg as tuple or np array, then ids as int or string
     @preinit_only
-    def create_sensor(self, x:float, y:float, z:float) -> None:
+    def create_sensor(self, name:str, coords:tuple[float, float, float]) -> None:
         """Create a virtual sensor at the specified position and add it to the model.
 
         Parameters
         ----------
-        x : float
-            The x coordinate of the sensor
-        y : float
-            The y coordinate of the sensor
-        z : float
-            The z coordinate of the sensor
+        name : str
+            The name of the sensor
+        coords : tuple[float, float, float]
+            The coordinates of the sensor
         """
-        self._sensor_manager.add_sensor(x, y, z)
+        self._sensor_manager.add_sensor(name, coords)
 
     @postinit_only
     def print_sensor_readings(self):
@@ -528,20 +520,20 @@ class LizzyModel:
         """Returns a list of sensor trigger states: True if the sensor has been triggered, False otherwise."""
         return self._sensor_manager.sensor_trigger_states
     
-    def get_sensor_by_id(self, idx:int) -> Sensor:
-        """Fetches a sensor by its index.
+    def get_sensor_by_name(self, name:str) -> Sensor:
+        """Fetches a sensor by its name.
 
         Parameters
         ----------
-        idx : int
-            Index of the sensor to fetch. Sensors are indexed in the order they were created, starting from 0.
+        name : str
+            Name of the sensor to fetch.
 
         Returns
         -------
         :class:`~lizzy.sensors.Sensor`
             The fetched sensor object.
         """
-        return self._sensor_manager.get_sensor_by_id(idx)
+        return self._sensor_manager.get_sensor_by_name(name)
 
     # ===========================================================================
     # Solver API
@@ -584,50 +576,43 @@ class LizzyModel:
     def _validate_configuration(self):
         """Run all configuration checks before solver construction."""
         if not self._simulation_parameters.has_been_assigned:
-            print(f"Warning: Simulation parameters were not assigned. Running with default values: output_interval={self._simulation_parameters.output_interval}")
+            logger.warning(f" Simulation parameters were not assigned. Running with default values: output_interval={self._simulation_parameters.output_interval}")
         if not self._material_manager._resin_was_assigned:
             raise ConfigurationError("No resin assigned to the model. Create a resin using LizzyModel.create_resin and assign it using LizzyModel.assign_resin.")
         if len(self._gates_manager.assigned_inlets) == 0:
             raise ConfigurationError("No inlets assigned to the model. Create and assign at least one inlet before initialising the solver.")
         if len(self._gates_manager.assigned_vents) == 0:
-            print("Warning: No vents assigned to the model. A default vent pressure of 0.0 Pa will be used.")
+            logger.warning(" No vents assigned to the model. A default vent pressure of 0.0 Pa will be used.")
         self._gates_manager.assert_unique_boundary_assignments()
         self._mesh.assert_all_elements_have_material()
 
     @postinit_only
-    def solve(self, log="on") -> Solution:
+    def solve(self) -> Solution:
         """Advance the filling simulation from the current time until the part is filled.
-
-        Parameters
-        ----------
-        log : str, optional
-            Whether to print the progress of the solution, by default "on"
 
         Returns
         -------
         solution : :class:`~lizzy.datatypes.Solution`
             A Solution object storing the solution fields up to the time step reached
         """
-        self._latest_solution = self._solver.solve(log=log, lightweight=self._lightweight)
+        self._latest_solution = self._solver.solve()
         return self._latest_solution
 
     @postinit_only
-    def solve_time_interval(self, time_interval:float, log="off") -> Solution:
+    def solve_time_interval(self, time_interval:float) -> Solution:
         """Advance the filling simulation from the current time for the specified time interval.
 
         Parameters
         ----------
         time_interval : float
             The time period to advance the simulation for.
-        log : str, optional
-            Whether to print the progress of the solution, by default "off"
 
         Returns
         -------
         solution : :class:`~lizzy.datatypes.Solution`
             A Solution object storing the solution fields up to the time step reached.
         """
-        self._latest_solution = self._solver.solve_time_interval(time_interval, log=log, lightweight=self._lightweight)
+        self._latest_solution = self._solver.solve_time_interval(time_interval)
         return self._latest_solution
     
     @postinit_only

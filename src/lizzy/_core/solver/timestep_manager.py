@@ -15,6 +15,7 @@ class TimeStepManager:
         self.n_elements : int = n_elements
         self.time_step_buffer_size : int = None
         self.time_step_count : int = None
+        self.time_step_number_buffer : np.ndarray = None
         self.time_buffer : np.ndarray = None
         self.dt_buffer : np.ndarray = None
         self.p_buffer : np.ndarray = None
@@ -24,9 +25,10 @@ class TimeStepManager:
         self.flow_front_buffer : np.ndarray = None
         self.reset()
 
-    def save_timestep(self, time, dt, P, v_array, v_nodal_array, fill_factor, flow_front):
+    def save_timestep(self, time_step_number, time, dt, P, v_array, v_nodal_array, fill_factor, flow_front):
         if self.time_step_count >= self.time_step_buffer_size:
             self.grow_buffers()
+        self.time_step_number_buffer[self.time_step_count] = time_step_number
         self.time_buffer[self.time_step_count] = time
         self.dt_buffer[self.time_step_count] = dt
         self.p_buffer[self.time_step_count, :] = P
@@ -40,6 +42,7 @@ class TimeStepManager:
     def grow_buffers(self):
             new_size = self.time_step_buffer_size * 2
             self.time_buffer = np.resize(self.time_buffer, new_size)
+            self.time_step_number_buffer = np.resize(self.time_step_number_buffer, new_size)
             self.dt_buffer = np.resize(self.dt_buffer, new_size)
             self.p_buffer = np.resize(self.p_buffer, (new_size, self.p_buffer.shape[1]))
             self.v_buffer = np.resize(self.v_buffer, (new_size, self.v_buffer.shape[1], self.v_buffer.shape[2]))
@@ -52,7 +55,7 @@ class TimeStepManager:
     def pack_solution(self):
         n = self.time_step_count
         solution_obj = Solution(n,
-                                np.arange(n),
+                                self.time_step_number_buffer[:n],
                                 self.p_buffer[:n, :],
                                 self.v_buffer[:n, :, :],
                                 self.v_nodal_buffer[:n, :, :],
@@ -65,6 +68,7 @@ class TimeStepManager:
     def reset(self):
         self.time_step_buffer_size = 1000
         self.time_step_count = 0
+        self.time_step_number_buffer = np.empty(self.time_step_buffer_size, dtype=int)
         self.time_buffer = np.empty(self.time_step_buffer_size, dtype=float)
         self.dt_buffer = np.empty(self.time_step_buffer_size, dtype=float)
         self.p_buffer = np.empty((self.time_step_buffer_size, self.n_nodes), dtype=float)

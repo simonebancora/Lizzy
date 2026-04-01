@@ -7,8 +7,11 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
+import logging
 import numpy as np
 from lizzy._core.cvmesh.entities import Node, Line, BoundaryLine, Triangle, CV
+
+logger = logging.getLogger("lizzy.mesh")
 
 class MeshView:
     def __init__(self):
@@ -161,7 +164,7 @@ class MeshBuilder:
 
             
     def build_mesh(self, mesh_data):
-        print("Creating Mesh...")
+        logger.info(" Creating Mesh...")
         mesh_view = MeshView()
         tri_conn:np.ndarray = mesh_data['nodes_conn']
         node_coords:np.ndarray = mesh_data['all_nodes_coords']

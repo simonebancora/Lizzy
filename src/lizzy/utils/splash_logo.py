@@ -14,4 +14,7 @@ ____| _| ___| ___| \_, |
 """
 
 def print_logo():
-    print(logo)
+    import logging
+    logger = logging.getLogger("lizzy")
+    if logger.isEnabledFor(logging.INFO) and logging.root.handlers:
+        print(logo)

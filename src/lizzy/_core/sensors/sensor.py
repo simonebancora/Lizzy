@@ -16,21 +16,19 @@ class Sensor:
 
     Parameters
     ----------
-    x : float
-        x coordinate of the sensor.
-    y : float
-        y coordinate of the sensor.
-    z : float
-        z coordinate of the sensor.
+    position : tuple[float, float, float]
+            The position of the sensor.
     """
-    def __init__(self, x:float, y:float, z:float):
+    def __init__(self, name: str, position: tuple[float, float, float]):
         self._idx = 0
-        self._coords = np.array((x, y, z))
+        self._name = name
+        self._coords = np.array(position)
         self._pvals = None   # pressure
         self._vvals = None   # velocity
         self._fvals = None   # fill factor
         self._tvals = None   # time
         self.resin_arrived = False
+        self.trigger_time = None # time when resin arrived at the sensor. #TODO: Needs safeguarding because None default
 
         # temporary quick implementation node-based
         self.child_node:Node = None
@@ -49,6 +47,12 @@ class Sensor:
         """The unique index of the sensor.
         """
         return self._idx
+
+    @property
+    def name(self) -> str:
+        """The name of the sensor.
+        """
+        return self._name
     
     @property
     def position(self) -> np.ndarray:

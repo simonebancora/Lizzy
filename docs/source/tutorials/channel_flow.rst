@@ -56,17 +56,17 @@ Let's read the mesh file that we have copied:
 Make sure that the path given points to the mesh file that we have copied in the folder.
 In this example, both the script and the mesh are in the working folder. If your folder structure is different, adjust the mesh path accordingly.
 
-Now that the mesh is read, we need to define a few material and process properties. First, let's set the simulation output interval using the :meth:`~lizzy.LizzyModel.assign_simulation_parameters` method:
+Now that the mesh is read, we need to define a few material and process properties. First, let's set the simulation output interval using the :meth:`~lizzy.LizzyModel.set_simulation_parameters` method:
 
 .. code-block:: python
 
-    model.assign_simulation_parameters(output_interval=100)
+    model.set_simulation_parameters(output_interval=100)
 
 ``output_interval`` controls the interval of simulation time at which the result is saved to the output file. Omitting or assigning a negative value will save every single time step (usually undesired).
 
 .. note::
 
-    There is no particular order in the script as where the :meth:`~lizzy.LizzyModel.assign_simulation_parameters` method should be called, as long as it is done *before* the solver is initialised by the :meth:`~lizzy.LizzyModel.initialise_solver` method (further on). Failure to do so, or omitting the call entirely, will result in running the simulation with default values.
+    There is no particular order in the script as where the :meth:`~lizzy.LizzyModel.set_simulation_parameters` method should be called, as long as it is done *before* the solver is initialised by the :meth:`~lizzy.LizzyModel.initialise_solver` method (further on). Failure to do so, or omitting the call entirely, will result in running the simulation with default values.
 
 Next, define the resin (fluid) to be used in the simulation:
 
@@ -151,7 +151,7 @@ The full script
 
     model = liz.LizzyModel()
     model.read_mesh_file("Rect1M_R1.msh")
-    model.assign_simulation_parameters(output_interval=100)
+    model.set_simulation_parameters(output_interval=100)
     model.create_resin("resin", viscosity=0.1)
     model.assign_resin("resin")
     model.create_material("example_material", (1E-10, 1E-10, 1E-10), 0.5, 1.0)

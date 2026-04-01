@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from lizzy._core.sensors import SensorManager
     from lizzy._core.gates import GatesManager
@@ -14,28 +13,22 @@ if TYPE_CHECKING:
     from lizzy._core.materials import MaterialManager
 
 
-import numpy as np
+import logging
 import time
+import numpy as np
+from tqdm import tqdm
 from lizzy._core.solver import *
-from lizzy.exceptions import MeshError, ConfigurationError
+
+logger = logging.getLogger("lizzy.solver")
+
 from .timestep_manager import TimeStepManager
 from .vsolvers import VelocitySolver
 from .fillsolver import FillSolver
 from .psolvers import PressureSolver, SolverType
 from .preprocessor import Preprocessor
-from lizzy._core.gates.gates import InletType
+from .solverbcs import SolverBCs
 
 
-class SolverBCs:
-    __slots__ = ("dirichlet_idx", "dirichlet_vals", "neumann_idx", "neumann_vals", "p0_idx", "p0_val")
-
-    def __init__(self):
-        self.dirichlet_idx = np.empty(0, dtype=np.uint32)
-        self.dirichlet_vals = np.empty(0, dtype=np.float64)
-        self.neumann_idx = np.empty(0, dtype=np.uint32)
-        self.neumann_vals = np.empty(0, dtype=np.float64)
-        self.p0_idx = np.empty(0, dtype=np.uint32)
-        self.p0_val = 0.0
 
 class Solver:
     def __init__(self, mesh:Mesh, gates_manager, simulation_parameters, material_manager:MaterialManager, sensor_manager:SensorManager, 
@@ -44,9 +37,9 @@ class Solver:
         
         # create / assign all core components
         self.mesh : Mesh = mesh
-        self.fill_solver = FillSolver()
         self.material_manager = material_manager
         self.simulation_parameters = simulation_parameters
+        self.fill_solver = FillSolver()
         self.vsolver = VelocitySolver(self.mesh.triangles)
         self.preproc = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, gates_manager, simulation_parameters)
 
@@ -61,7 +54,7 @@ class Solver:
                 petsc4py.init()
                 from petsc4py import PETSc
             except ImportError:
-                print("Import Error: PETSc not available. Reverting to DIRECT_SPARSE builtin solver.")
+                logger.warning(" PETSc not available. Reverting to DIRECT_SPARSE builtin solver.")
                 self.solver_type = SolverType.DIRECT_SPARSE
         self.solver_tol = solver_tol
         self.solver_max_iter = solver_max_iter
@@ -71,13 +64,14 @@ class Solver:
         self.K_sing = None
         self.f_orig = None
         self.current_time = 0
+        self.time_step_counter = 0
         self.n_empty_cvs = np.inf
         self.next_wo_time = self.simulation_parameters.output_interval
         self.step_end_time = np.inf
         self.step_completed = False
-        self.solver_vars = {"fill_factor_array" : np.zeros(self.N_nodes, dtype=float),
-                            "free_surface_array" : np.empty(self.N_nodes),
-                            "cv_volumes_array" : np.empty(self.N_nodes),}
+        self.fill_factor_array: np.ndarray = np.zeros(self.N_nodes, dtype=float)
+        self.free_surface_array: np.ndarray = np.empty(self.N_nodes)
+        self.cv_volumes_array: np.ndarray = np.empty(self.N_nodes)
         self.cv_support_cvs_array = self.mesh.mesh_view.node_idx_to_node_idxs # TODO do cleaner
 
         self.perform_precalcs()
@@ -95,66 +89,8 @@ class Solver:
 
     def vectorize_solver_vars(self):
         # precalculate vectorised version of all variables
-        # TODO this part can go faster
-        cv_volumes_list = []
-        for cv in self.mesh.CVs:
-            cv_volumes_list.append(cv.vol)
-        self.solver_vars["cv_volumes_array"] = np.array(cv_volumes_list, dtype=float)
-        
+        self.cv_volumes_array = np.array([cv.vol for cv in self.mesh.CVs])
 
-    def update_bcs(self):
-        # TODO this is more "update inlet dirichlet bcs" since it only applies pressure (doesn't add empty 0 pressure). It can be faster, but it doesn't run often (only at beginning of time intervals) so it's not critical
-        dirichlet_idxs = []
-        dirichlet_vals = []
-        neumann_idxs_pairs = []
-        neumann_vals_per_idx_pair = []
-        dict_boundary_name_to_inlet_obj = self.gates_manager._assigned_inlets
-        phys_boundary_names_set = self.mesh.mesh_view.phys_boundary_names_set
-        viscosity = self.material_manager.assigned_resin.mu
-        for boundary_name, inlet in dict_boundary_name_to_inlet_obj.items():
-            if boundary_name not in phys_boundary_names_set:
-                raise MeshError(f"Mesh does not contain physical tag: '{boundary_name}'.")
-            match inlet.type:
-                case InletType.PRESSURE:
-                    node_idxs = self.mesh.mesh_view.phys_boundary_name_to_node_idxs[boundary_name]
-                    if inlet.is_open:
-                        # TODO: BUG: we will have a problem here if 2 different boundary edges with bcs applied share a common node...
-                        dirichlet_idxs.append(node_idxs)
-                        dirichlet_vals.append(np.full(len(node_idxs), inlet.p_value, dtype=np.float64))
-                case InletType.FLOW_RATE:
-                    boundary_line_idxs = self.mesh.mesh_view.phys_boundary_name_to_boundary_line_idxs[boundary_name]
-                    boundary_line_objs = [self.mesh.boundary_lines[i] for i in boundary_line_idxs]
-                    tri_objs = [self.mesh.triangles[line.idx] for line in boundary_line_objs]
-                    boundary_line_thicknesses = np.array([tri.h for tri in tri_objs])
-                    boundary_line_lengths = np.array([line.length for line in boundary_line_objs])
-                    boundary_flux_areas = boundary_line_thicknesses * boundary_line_lengths
-                    total_area = np.sum(boundary_flux_areas)
-                    node_pairs_idxs = self.mesh.mesh_view.boundary_line_idx_to_node_idxs[boundary_line_idxs] # gives 2 node idxs. At this point, node_pair_idxs (n_lines, 2) and line_lengths (n_lines, ) are in the same order - shape: (n_neumann_lines, 2)
-                    neumann_vals_pairs = np.repeat(boundary_flux_areas/2, 2) * (inlet.q_value/total_area)
-                    neumann_vals_pairs = neumann_vals_pairs.reshape(len(node_pairs_idxs), 2)
-                    if inlet.is_open:
-                        neumann_idxs_pairs.append(node_pairs_idxs)
-                        neumann_vals_per_idx_pair.append(neumann_vals_pairs)
-                    print("Note: Flow rate BC is experimental.")
-                case _:
-                    pass
-        # TODO: do this following assertion a little better...
-        try:
-            if len(dirichlet_idxs) > 0:
-                self.bcs.dirichlet_idx = np.concatenate(dirichlet_idxs)
-                self.bcs.dirichlet_vals = np.concatenate(dirichlet_vals)
-            if len(neumann_idxs_pairs) > 0:
-                self.bcs.neumann_idx = np.concatenate(neumann_idxs_pairs).flatten()
-                self.bcs.neumann_vals = np.concatenate(neumann_vals_per_idx_pair).flatten()
-        except ValueError:
-            raise ConfigurationError("No inlets are currently open. At least one inlet must be open at all times to allow resin to flow into the part.")
-        
-        # assign vacuum vent pressure if vent exists
-        if len(self.gates_manager._assigned_vents) > 0:
-            vent_obj = next(iter(self.gates_manager._assigned_vents.values()))
-            self.bcs.p0_val = vent_obj.vacuum_pressure
-        else:
-            self.bcs.p0_val = 0.0
 
     def get_empty_nodes_idx(self, fill_factor):
         """
@@ -162,19 +98,19 @@ class Solver:
         """
         return np.where(fill_factor < 1.0)[0]
 
-    # TODO:IMPORTANT this must be updated for neumann
     def fill_initial_cvs(self):
         """
         Must be called AFTER calling "update_bcs()"
         """
-        self.solver_vars["fill_factor_array"][self.bcs.dirichlet_idx] = 1
-        self.solver_vars["fill_factor_array"][self.bcs.neumann_idx] = 1
+        self.fill_factor_array[self.bcs.dirichlet_idx] = 1
+        self.fill_factor_array[self.bcs.neumann_idx] = 1
 
 
     
     def generate_initial_time_step(self):
         time_0 = 0
         dt_0 = 0
+        time_step_number = 0
         p_0 = np.full(len(self.mesh.nodes), self.bcs.p0_val, dtype=np.float64)
         fill_factor_0 = np.zeros(len(self.mesh.nodes))
         flow_front_0 = np.zeros(len(self.mesh.nodes))
@@ -184,7 +120,7 @@ class Solver:
             flow_front_0[idx] = 1
         v_0 = np.zeros((len(self.mesh.triangles), 3))
         v_nodal_0 = np.zeros((len(self.mesh.nodes), 3))
-        initial_time_step = (time_0, dt_0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0)
+        initial_time_step = (time_step_number, time_0, dt_0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0)
         return initial_time_step
         
 
@@ -193,37 +129,43 @@ class Solver:
         Initialises a new solution, resetting all simulation variables. It is sufficient to call this method to reset the simulation and run again.
         """
         self.current_time = 0
+        self.time_step_counter = 0
         self.next_wo_time = self.simulation_parameters.output_interval
-        self.solver_vars["fill_factor_array"] = np.zeros(self.N_nodes)
+        self.fill_factor_array = np.zeros(self.N_nodes)
         self.bcs = SolverBCs()
         self.mesh.empty_cvs()
         self.gates_manager.reset_inlets()
-        self.update_bcs()
+        self.bcs.update(self.mesh, self.material_manager, self.gates_manager)
         self.fill_initial_cvs()
-        p0_idxs = self.get_empty_nodes_idx(self.solver_vars["fill_factor_array"])
+        p0_idxs = self.get_empty_nodes_idx(self.fill_factor_array)
         self.n_empty_cvs = len(p0_idxs)
         self.bcs.p0_idx = p0_idxs
-        active_cvs_ids, self.solver_vars["free_surface_array"] = self.fill_solver.find_free_surface_cvs(
-            self.solver_vars["fill_factor_array"], self.cv_support_cvs_array)
+        active_cvs_ids, self.free_surface_array = self.fill_solver.find_free_surface_cvs(
+            self.fill_factor_array, self.cv_support_cvs_array)
         self.time_step_manager.reset()
         initial_time_step = self.generate_initial_time_step()
         self.time_step_manager.save_timestep(*initial_time_step)
         self._sensor_manager.reset_sensors()
         # TODO: this first probe is temporary and should be cleaner
         self._sensor_manager.probe_current_solution(self.time_step_manager.p_buffer[0], self.time_step_manager.v_nodal_buffer[0], self.time_step_manager.fill_factor_buffer[0], 0.0)
+        self.time_step_counter += 1
 
     def handle_wo_criterion(self, dt):
         write_out = False
         next_time = self.current_time + dt
 
-        if next_time > self.step_end_time:
+        if next_time >= self.step_end_time:
             dt = self.step_end_time - self.current_time
             write_out = True
             self.step_completed = True
+            # Advance next_wo_time past step_end_time to avoid the duplicated Solution time bug that results in missing time step in Paraview. #TODO: this stuff is terrible: urge refactor of the whole write-out management. Works for now.
+            if self.simulation_parameters.output_interval > 0.0:
+                while self.next_wo_time <= self.step_end_time:
+                    self.next_wo_time += self.simulation_parameters.output_interval
             return dt, write_out
         
         if self.simulation_parameters.output_interval > 0.0:
-            if next_time > self.next_wo_time:
+            if next_time >= self.next_wo_time:
                 dt = self.next_wo_time - self.current_time
                 self.next_wo_time += self.simulation_parameters.output_interval
                 write_out = True
@@ -234,16 +176,16 @@ class Solver:
 
     def handle_wo_by_sensor_triggered(self, current_write_out, fill_factor_array):
         write_out = current_write_out
-        triggered = self._sensor_manager.check_for_new_sensor_triggered(fill_factor_array)
+        triggered = self._sensor_manager.check_for_new_sensor_triggered(fill_factor_array, self.current_time)
         if triggered:
             write_out = True
             self.step_completed = True
         return write_out
 
-    def solve_time_step(self, lightweight=False):
-        fill_factor = self.solver_vars["fill_factor_array"]
-        free_surface = self.solver_vars["free_surface_array"]
-        cv_volumes = self.solver_vars["cv_volumes_array"]
+    def solve_time_step(self):
+        fill_factor = self.fill_factor_array
+        free_surface = self.free_surface_array
+        cv_volumes = self.cv_volumes_array
 
         neumann_idxs = self.bcs.neumann_idx
         neumann_vals = self.bcs.neumann_vals
@@ -260,6 +202,7 @@ class Solver:
         v_nodal_array = np.zeros((self.N_nodes, 3))
 
         active_cvs_ids, free_surface = self.fill_solver.find_free_surface_cvs(fill_factor, self.cv_support_cvs_array)
+        self.free_surface_array = free_surface
         dt = self.fill_solver.calculate_time_step(active_cvs_ids, fill_factor, cv_volumes, v_array)
         dt, write_out = self.handle_wo_criterion(dt)
 
@@ -278,41 +221,79 @@ class Solver:
         if self.n_empty_cvs == 0:
             write_out = True
         if write_out:
-            if not lightweight:
-                self.time_step_manager.save_timestep(self.current_time, dt, p, v_array, v_nodal_array, fill_factor, free_surface)
+            if not self.simulation_parameters.lightweight:
+                self.time_step_manager.save_timestep(self.time_step_counter, self.current_time, dt, p, v_array, v_nodal_array, fill_factor, free_surface)
             self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
+        self.time_step_counter += 1
 
-    def solve(self, log="on", lightweight=False):
+    def solve(self):
         solution = None
-        solve_time_start = time.time()
         self.step_end_time = np.inf  # reset step end time for full solve
-        print("SOLVE STARTED for mesh with {} elements".format(len(self.mesh.triangles)))
-        self.update_bcs()
+        self.bcs.update(self.mesh, self.material_manager, self.gates_manager) # TODO this is a bit hacky: need to update bcs before the first time step to correctly fill initial CVs and assign p0_idx. Should be more explicit or a cleaner way...
+        total_cvs = self.N_nodes
+        filled_cvs = total_cvs - self.n_empty_cvs
+        logger.info(" Solving...")
+        pbar = tqdm(total=total_cvs, initial=filled_cvs,
+                    desc="Fill progress",
+                    bar_format="{l_bar}{bar}| t={postfix[0]:.2f}s [{elapsed}<{remaining}]",
+                    postfix=[self.current_time],
+                    ncols=80, disable=not self.simulation_parameters.progress_bar)
+        solve_start = time.perf_counter()
         while self.n_empty_cvs > 0:
             self.solve_time_step()
-            if log == "on":
-                print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs), end='')
-        if not lightweight:
+            new_filled = total_cvs - self.n_empty_cvs
+            pbar.update(new_filled - pbar.n)
+            if self.simulation_parameters.progress_bar:
+                pbar.postfix[0] = self.current_time
+        solve_time = time.perf_counter() - solve_start
+        pbar.close()
+        logger.info(f" Solve completed in {solve_time:.2f} seconds")
+        if not self.simulation_parameters.lightweight:
             solution = self.time_step_manager.pack_solution()
-        # good night and good luck
-        solve_time_end = time.time()
-        total_solve_time = solve_time_end - solve_time_start
-        print("\nSOLVE COMPLETED in {:.2f} seconds".format(total_solve_time))
         return solution
 
-    def solve_time_interval(self, time_interval:float, log="off", lightweight=False):
+    def solve_time_interval(self, time_interval:float):
         solution = None
         self.step_completed = False
         self.step_end_time = self.current_time + time_interval
-        solve_time_start = time.time()
+        total_cvs = self.N_nodes
+        filled_cvs = total_cvs - self.n_empty_cvs
+        pbar = tqdm(total=total_cvs, initial=filled_cvs,
+                    desc="Fill progress",
+                    bar_format="{l_bar}{bar}| t={postfix[0]:.2f}s [{elapsed}<{remaining}]",
+                    postfix=[self.current_time],
+                    ncols=80, disable=not self.simulation_parameters.progress_bar)
         while self.step_completed == False and self.n_empty_cvs > 0:
-            self.update_bcs()
-            self.solve_time_step(lightweight=lightweight)
-            if log == "on":
-                print("\rFill time: {:.2f}".format(self.current_time) + "s, Empty CVs: {:4}".format(self.n_empty_cvs),
-                      end='')
-        if not lightweight:
+            self.bcs.update(self.mesh, self.material_manager, self.gates_manager)
+            if len(self.bcs.dirichlet_idx) == 0 and len(self.bcs.neumann_idx) == 0:
+                self.solve_closed_inlets_time_step()
+            else:
+                self.solve_time_step()
+            new_filled = total_cvs - self.n_empty_cvs
+            pbar.update(new_filled - pbar.n)
+            if self.simulation_parameters.progress_bar:
+                pbar.postfix[0] = self.current_time
+        pbar.close()
+        if not self.simulation_parameters.lightweight:
             solution = self.time_step_manager.pack_solution()
-        solve_time_end = time.time()
-        total_solve_time = solve_time_end - solve_time_start
         return solution
+    
+    def solve_closed_inlets_time_step(self):
+        dt = self.simulation_parameters.output_interval
+        dt, write_out = self.handle_wo_criterion(dt)
+        if dt == 0.0:
+            # skip this false time interval. TODO: There must be a better way to do this, but it works for now.
+            return
+        # Update the filling time
+        self.current_time += dt
+        # manually create (known) closed inlets solution
+        fill_factor = self.fill_factor_array
+        free_surface = self.free_surface_array
+        p = np.zeros(self.N_nodes)
+        v_array = np.zeros((len(self.mesh.triangles), 3))
+        v_nodal_array = np.zeros((self.N_nodes, 3))
+        if write_out:
+            if not self.simulation_parameters.lightweight:
+                self.time_step_manager.save_timestep(self.time_step_counter, self.current_time, dt, p, v_array, v_nodal_array, fill_factor, free_surface)
+            self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.current_time)
+        self.time_step_counter += 1

@@ -4,6 +4,7 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import os
 import shutil
 from pathlib import Path
@@ -12,6 +13,8 @@ import numpy as np
 import meshio
 import textwrap
 from lizzy._core.datatypes import Solution
+
+logger = logging.getLogger("lizzy.io")
 
 
 class Writer:
@@ -22,7 +25,7 @@ class Writer:
     def assign_mesh(self, mesh):
         self._mesh = mesh
 
-    def save_results(self, solution:Solution, result_name:str, **kwargs):
+    def save_results(self, result_name:str, solution:Solution, **kwargs):
         """Save the results contained in the solution dictionary into an XDMF file.
 
         Parameters
@@ -33,7 +36,8 @@ class Writer:
         """
         _format = kwargs.get("format", "xdmf")
         save_cv_mesh = kwargs.get("save_cv_mesh", False)
-        print("\nSaving results...")
+        save_permeability = kwargs.get("save_permeability", False)
+        logger.info(" Saving results...")
         destination_path = Path("results") / result_name
         if os.path.isdir(destination_path):
             shutil.rmtree(destination_path)
@@ -51,6 +55,9 @@ class Writer:
             )
             mesh_cv.write(destination_path / f"{result_name}_CV.vtk")
 
+        if save_permeability:
+            perm = np.array([self._mesh.triangles[i].k for i in range(len(cells))])
+
         if _format == "xdmf":
             filename = f"{result_name}.xdmf"
             with meshio.xdmf.TimeSeriesWriter(filename) as writer:
@@ -63,8 +70,10 @@ class Writer:
                                     "Velocity" : solution.v_nodal[i]
                                  }
                     cell_data = { "Velocity" : solution.v[i] }
+                    if save_permeability:
+                        cell_data["Permeability"] = perm
                     writer.write_data(time, point_data=point_data, cell_data=cell_data)
             shutil.move(filename, destination_path / filename)
             shutil.move(f"{result_name}.h5", destination_path / f"{result_name}.h5")
 
-        print(f"Results saved in {destination_path}")
+        logger.info(f" Results saved in {destination_path}")

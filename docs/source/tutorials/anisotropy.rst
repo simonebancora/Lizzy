@@ -22,7 +22,7 @@ The first steps are to import Lizzy, create a LizzyModel, read the mesh file and
 
     model = liz.LizzyModel()
     model.read_mesh_file("Radial.msh")
-    model.assign_simulation_parameters(output_interval=100)
+    model.set_simulation_parameters(output_interval=100)
     model.create_resin("resin", viscosity=0.1)
     model.assign_resin("resin")
 
@@ -82,7 +82,7 @@ The full script
 
     model = liz.LizzyModel()
     model.read_mesh_file("Radial.msh")
-    model.assign_simulation_parameters(output_interval=100)
+    model.set_simulation_parameters(output_interval=100)
     model.create_resin("resin", viscosity=0.1)
     model.assign_resin("resin")
 

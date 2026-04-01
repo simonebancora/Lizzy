@@ -10,17 +10,18 @@ The parameters that are stored in the class are the following:
 - :attr:`~lizzy.datatypes.SimulationParameters.output_interval`: The interval of simulation time between solution write-outs [s] if no other conditions trigger a write-out. Default: -1 (write-out every numerical time step, usually undesired)
 - :attr:`~lizzy.datatypes.SimulationParameters.fill_tolerance`: Tolerance on the fill factor to consider a CV as filled. A CV is considered filled when its fill factor reaches ``1 - fill_tolerance``. Default: 0.01 (i.e., filled when fill factor >= 0.99).
 - :attr:`~lizzy.datatypes.SimulationParameters.end_step_when_sensor_triggered`: If True, whenever a sensor is reached for the first time by the fluid, the current solution step is ended and a write-out is created. Default: False
+- :attr:`~lizzy.datatypes.SimulationParameters.lightweight`: If True, the solver will not pack fields into a :class:`~lizzy.datatypes.Solution` after each solve step, saving memory and computation time but making impossible to save results to file. :meth:`~lizzy.LizzyModel.save_results` cannot be used in lightweight mode. Default: False
 
 Assigning simulation parameters
 --------------------------------
 
 The following operations are to be performed **before** the solver is initialised by calling :meth:`~lizzy.LizzyModel.initialise_solver`.
 
-Each simulation parameter can be assigned to the model by keyword, using the :meth:`~lizzy.LizzyModel.assign_simulation_parameters` method:
+Each simulation parameter can be assigned to the model by keyword, using the :meth:`~lizzy.LizzyModel.set_simulation_parameters` method:
 
 .. code-block::
 
-    model.assign_simulation_parameters(output_interval=100)
+    model.set_simulation_parameters(output_interval=100)
 
 In this example, we have told the solver to save a solution state every 100 seconds of simulation time.
 

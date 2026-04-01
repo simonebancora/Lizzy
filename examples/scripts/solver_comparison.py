@@ -24,7 +24,7 @@ model = liz.LizzyModel()
 model.read_mesh_file("../meshes/Rect1M_R1.msh")
 
 # Set simulation parameters
-model.assign_simulation_parameters(
+model.set_simulation_parameters(
     output_interval=100,   # Interval between solution write-outs [s]
     fill_tolerance=0.00  # Fill fraction tolerance for CV to be considered full
 )
@@ -113,4 +113,4 @@ print(f"{'DIRECT_DENSE':<20} {solution_dense.time[-1]:<15.4f} {time_dense:<15.2f
 print(f"{'ITERATIVE_PETSC':<20} {solution_petsc.time[-1]:<15.4f} {time_petsc:<15.2f}")
 
 # Save results from one of the solutions
-model.save_results(solution_sparse, "solver_comparison")
+model.save_results("solver_comparison", solution_sparse)

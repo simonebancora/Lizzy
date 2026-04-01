@@ -9,6 +9,7 @@ In this section, we cover how to use Lizzy setting up and running simulations.
    :maxdepth: 1
 
    basics
+   logging
    reading_a_mesh
    assigning_parameters
    managing_materials

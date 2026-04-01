@@ -7,3 +7,5 @@ lizzy.materials
 
 
 .. autoclass:: lizzy.materials.Rosette
+
+.. autoclass:: lizzy.materials.Resin

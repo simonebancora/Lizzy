@@ -36,7 +36,7 @@ To begin with, we create a mesh and define some process parameters as usual:
 
     model = liz.LizzyModel()
     model.read_mesh_file("Complex_rotated.msh")
-    model.assign_simulation_parameters(output_interval=100)
+    model.set_simulation_parameters(output_interval=100)
     model.create_resin("resin", viscosity=0.1)
     model.assign_resin("resin")
 
@@ -117,7 +117,7 @@ The full script
     model = liz.LizzyModel()
     model.read_mesh_file("Complex_rotated.msh")
 
-    model.assign_simulation_parameters(output_interval=100)
+    model.set_simulation_parameters(output_interval=100)
     model.create_resin("resin", viscosity=0.1)
     model.assign_resin("resin")
 

@@ -24,23 +24,20 @@ class SensorManager:
         self.sensors_dict = {}
         self.sensor_trigger_states = []
 
-    def add_sensor(self, x:float, y:float, z:float):
-        """Creates a new :class:`~lizzy.sensors.sensmanager.Sensor` at the specified location and registers it in the sensor manager.
+    def add_sensor(self, name:str, position:tuple[float, float, float]):
+        """Creates a new :class:`~lizzy.sensors.Sensor` at the specified location and registers it in the sensor manager.
 
         Parameters
         ----------
-        x : float
-            x coordinate of the sensor.
-        y : float
-            y coordinate of the sensor.
-        z : float
-            z coordinate of the sensor.
+        name : str
+            The name of the sensor.
+        position : tuple[float, float, float]
+            The position of the sensor.
         """
-        new_sensor = Sensor(x, y, z)
-        idx = len(self.sensors)
-        new_sensor._idx = idx
+
+        new_sensor = Sensor(name, position)
         self.sensors.append(new_sensor)
-        self.sensors_dict[idx] = new_sensor
+        self.sensors_dict[name] = new_sensor
     
     def initialise(self, mesh:Mesh):
         """Perform some precalculations to initialise the manager. This method is called automatically by the solver when a new simulation is initialised (not meant for user).
@@ -74,13 +71,14 @@ class SensorManager:
                 sensor._reset()
         self.sensor_trigger_states = np.array([False for s in self.sensors])
 
-    def check_for_new_sensor_triggered(self, fill_factor_array) -> bool:
-        """Runs through all sensors and updates their :attr:`~lizzy.sensors.sensmanager.Sensor.resin_arrived` attribute based on the current fill factor. Then checks if any new sensor has been triggered compared to the previously recorded state. If so, returns True. This method is called automatically by the solver if needed (not meant for user).
+    def check_for_new_sensor_triggered(self, fill_factor_array, current_time) -> bool:
+        """Runs through all sensors and updates their :attr:`~lizzy.sensors.Sensor.resin_arrived` attribute based on the current fill factor. Then checks if any new sensor has been triggered compared to the previously recorded state. If so, returns True. This method is called automatically by the solver if needed (not meant for user).
         """
         triggered = False
         for sensor in self.sensors:
-            if fill_factor_array[sensor.child_node.idx] >= 0.5:
+            if fill_factor_array[sensor.child_node.idx] >= 0.5 and sensor.resin_arrived == False:
                 sensor.resin_arrived = True
+                sensor.trigger_time = current_time
         current_trigger_states = np.array([sensor.resin_arrived for sensor in self.sensors])
         diff = current_trigger_states != self.sensor_trigger_states
         if np.any(diff):
@@ -89,21 +87,21 @@ class SensorManager:
         return triggered
 
     def print_sensor_readings(self):
-        """Prints to the console the current values of :attr:`~lizzy.sensors.sensmanager.Sensor.time`, :attr:`~lizzy.sensors.sensmanager.Sensor.pressure`, :attr:`~lizzy.sensors.sensmanager.Sensor.fill_factor` and :attr:`~lizzy.sensors.sensmanager.Sensor.velocity` of each sensor.
+        """Prints to the console the current values of :attr:`~lizzy.sensors.Sensor.time`, :attr:`~lizzy.sensors.Sensor.pressure`, :attr:`~lizzy.sensors.Sensor.fill_factor` and :attr:`~lizzy.sensors.Sensor.velocity` of each sensor.
         """
         if len(self.sensors) == 0:
             print("Cannot read sensors: no sensors have been created.")
             return
         sensor_readings = {}
         for sensor in self.sensors:
-            sensor_readings[sensor.idx] = f"time: {sensor.time} s; resin pressure: {sensor.pressure} Pa; fill factor: {sensor.fill_factor}, resin velocity: {sensor.velocity} m/s"
+            sensor_readings[sensor.name] = f"time: {sensor.time} s; resin pressure: {sensor.pressure} Pa; fill factor: {sensor.fill_factor}, resin velocity: {sensor.velocity} m/s, resin arrived: {sensor.resin_arrived}, trigger time: {sensor.trigger_time} s"
         print(sensor_readings)
     
-    def get_sensor_by_id(self, idx:int) -> Sensor:
-        """Fetches a sensor by its index.
+    def get_sensor_by_name(self, name:str) -> Sensor:
+        """Fetches a sensor by its name.
         """
         try:
-            sensor = self.sensors_dict[idx]
+            sensor = self.sensors_dict[name]
         except KeyError:
-            raise KeyError(f"Could not find sensor with id: {idx}")
+            raise KeyError(f"Could not find sensor with name: {name}")
         return sensor
