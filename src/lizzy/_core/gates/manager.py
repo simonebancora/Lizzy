@@ -4,7 +4,7 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from .gates import Inlet, PressureInlet, FlowRateInlet, Vent
+from .gates import Inlet, PressureInlet, NodePressureInlet, FlowRateInlet, Vent
 from typing import Literal
 from lizzy.exceptions import ConfigurationError
 
@@ -40,6 +40,14 @@ class GatesManager:
         self._created_inlets[name] = new_inlet
         return new_inlet
     
+    def create_and_assign_node_pressure_inlet(self, node_id:int, initial_pressure_value:float) -> None:
+        new_inlet = NodePressureInlet(node_id, initial_pressure_value)
+        boundary_tag = f"INTERNAL"
+        self._assigned_inlets[boundary_tag] = new_inlet
+        new_inlet._assigned = True
+        
+        
+    
     def create_flowrate_inlet(self, name:str, initial_flowrate_value:float) -> Inlet:
         new_inlet = FlowRateInlet(name, initial_flowrate_value)
         self._created_inlets[name] = new_inlet
@@ -49,7 +57,6 @@ class GatesManager:
         new_vent = Vent(name, vacuum_pressure)
         self._created_vents[name] = new_vent
         return new_vent
-
 
 
     def fetch_inlet(self, inlet_selector:Inlet | str) -> Inlet:

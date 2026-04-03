@@ -10,6 +10,7 @@ from enum import Enum, auto
 class InletType(Enum):
     PRESSURE = auto()
     FLOW_RATE = auto()
+    NODEPRESSURE = auto()
 
 
 class Inlet(ABC):
@@ -81,7 +82,42 @@ class PressureInlet(Inlet):
         super().reset()
         self._p_value = self._p0
 
+class NodePressureInlet(Inlet):
+    """A custom version of the PressureInlet, experimental. Designed to facilitate quick node-based assignment of Dirichlet condition.
+    """
+    def __init__(self, node_id:int, p_value:float):
+        super().__init__(f"NodeInlet_{node_id}", InletType.NODEPRESSURE)
+        self._node_id = node_id
+        self._p_value = p_value
+        self._p0 = p_value
+    
+    @property
+    def node_id(self) -> int:
+        """ID of the node where the inlet is applied. (read-only)
+        """
+        return self._node_id
+    
+    @property
+    def p_value(self) -> float:
+        """Current pressure value [Pa].
+        """
+        return self._p_value
 
+    @p_value.setter
+    def p_value(self, value: float):
+        if value < 0:
+            raise ValueError("p_value must be non-negative")
+        self._p_value = value
+    
+    @property
+    def p0(self) -> float:
+        """Initial pressure value assigned at inlet creation time. (read-only)
+        """
+        return self._p0
+    
+    def reset(self):
+        super().reset()
+        self._p_value = self._p0
 
 class FlowRateInlet(Inlet):
     def __init__(self, name:str, q_value:float):

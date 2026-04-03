@@ -491,6 +491,18 @@ class LizzyModel:
         logger.info(f"Closing inlet '{inlet_selector}'")
         self._gates_manager.close_inlet(inlet_selector)
     
+    def assign_pressure_at_node(self, node_selector:Node | int, pressure_value:float):
+        """Assign a Dirichlet pressure boundary condition at the selected node. The node can be selected either by passing its reference, or by passing its index.
+
+        Parameters
+        ----------
+        node_selector : Node | int
+            Either the Node object reference, or the integer index of the node.
+        pressure_value : float
+            The pressure value to assign at the selected node.
+        """
+        self._gates_manager.create_and_assign_node_pressure_inlet(node_selector, pressure_value)
+    
     # ===========================================================================
     # Sensors API
     # ===========================================================================

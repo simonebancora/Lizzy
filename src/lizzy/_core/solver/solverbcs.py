@@ -43,7 +43,7 @@ class SolverBCs:
         phys_boundary_names_set = mesh.mesh_view.phys_boundary_names_set
         viscosity = material_manager.assigned_resin.mu
         for boundary_name, inlet in dict_boundary_name_to_inlet_obj.items():
-            if boundary_name not in phys_boundary_names_set:
+            if boundary_name != "INTERNAL" and boundary_name not in phys_boundary_names_set:
                 raise MeshError(f"Mesh does not contain physical tag: '{boundary_name}'.")
             match inlet.type:
                 case InletType.PRESSURE:
@@ -67,6 +67,12 @@ class SolverBCs:
                         neumann_idxs_pairs.append(node_pairs_idxs)
                         neumann_vals_per_idx_pair.append(neumann_vals_pairs)
                     logger.warning(" Flow rate BC is experimental.")
+                case InletType.NODEPRESSURE:
+                    # TODO: node pressure implement here
+                    node_idx = inlet.node_id
+                    if inlet.is_open:
+                        dirichlet_idxs.append(np.array([node_idx], dtype=np.uint32))
+                        dirichlet_vals.append(np.array([inlet.p_value], dtype=np.float64))
                 case _:
                     pass
         if len(dirichlet_idxs) > 0:
