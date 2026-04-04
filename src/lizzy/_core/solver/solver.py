@@ -232,7 +232,7 @@ class Solver:
         self.bcs.update(self.mesh, self.material_manager, self.gates_manager) # TODO this is a bit hacky: need to update bcs before the first time step to correctly fill initial CVs and assign p0_idx. Should be more explicit or a cleaner way...
         total_cvs = self.N_nodes
         filled_cvs = total_cvs - self.n_empty_cvs
-        logger.info(" Solving...")
+        logger.info(f" Solving started on {len(self.mesh.triangles)} elements and {self.N_nodes} nodes")
         pbar = tqdm(total=total_cvs, initial=filled_cvs,
                     desc="Fill progress",
                     bar_format="{l_bar}{bar}| t={postfix[0]:.2f}s [{elapsed}<{remaining}]",
@@ -248,6 +248,7 @@ class Solver:
         solve_time = time.perf_counter() - solve_start
         pbar.close()
         logger.info(f" Solve completed in {solve_time:.2f} seconds")
+        logger.info(f" Empty CVs: {self.n_empty_cvs}, fill time: {self.current_time:.2f} seconds")
         if not self.simulation_parameters.lightweight:
             solution = self.time_step_manager.pack_solution()
         return solution
