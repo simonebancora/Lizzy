@@ -4,6 +4,10 @@
 #  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from lizzy._core.datatypes.solverstate import SolverState
 import numpy as np
 
 
@@ -20,7 +24,9 @@ class VelocitySolver:
             self.darcy_operator[i] = triangles[i].k.T @ triangles[i].grad_N
         self.nodes_conn = tri_conn_table
 
-    def calculate_elem_velocities(self, p, mu):
+    def update_elem_velocities(self, state:SolverState):
+        p = state.p_array
+        mu = state.current_mu
         p_vector = p[self.nodes_conn]
         v_array = -(1/mu) * np.einsum('ijk,ik->ij', self.darcy_operator, p_vector) # not pretty
-        return v_array
+        state.v_array = v_array
