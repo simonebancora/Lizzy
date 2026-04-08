@@ -42,7 +42,7 @@ class GatesManager:
     
     def create_and_assign_node_pressure_inlet(self, node_id:int, initial_pressure_value:float) -> None:
         new_inlet = NodePressureInlet(node_id, initial_pressure_value)
-        boundary_tag = f"INTERNAL"
+        boundary_tag = f"INTERNAL_NODE_{node_id}"
         self._assigned_inlets[boundary_tag] = new_inlet
         new_inlet._assigned = True
         
