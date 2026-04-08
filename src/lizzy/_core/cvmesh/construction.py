@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import logging
 import numpy as np
-from .entities import Node, Line, BoundaryLine, Triangle, CV
+from lizzy._core.cvmesh.entities import Node, Line, BoundaryLine, Triangle, CV
 
 logger = logging.getLogger("lizzy.mesh")
 
@@ -76,9 +76,12 @@ class MeshBuilder:
                 node_id = local_conn[local_node_id_selector]
                 # check if we still have room for more ids
                 if tri_idxs_local_pointer[node_id] > capacity_tris_per_node - 1:
-                    # increase bufefr size
-                    capacity_tris_per_node *=2
-                    node_idx_to_tri_idxs_buffer = np.resize(node_idx_to_tri_idxs_buffer, (n_nodes, capacity_tris_per_node))
+                    # increase buffer size - properly expand without corrupting data
+                    old_capacity = capacity_tris_per_node
+                    capacity_tris_per_node *= 2
+                    new_buffer = np.full((n_nodes, capacity_tris_per_node), -1, dtype=np.int32)
+                    new_buffer[:, :old_capacity] = node_idx_to_tri_idxs_buffer
+                    node_idx_to_tri_idxs_buffer = new_buffer
                 # write the triangle id in the buffer (which is initially 5 tris per node)
                 node_idx_to_tri_idxs_buffer[node_id, tri_idxs_local_pointer[node_id]] = tri_id
                 # move local pointer
@@ -90,7 +93,6 @@ class MeshBuilder:
                 line_ids_set = set(physical_lines_conn[i])
                 if line_ids_set.issubset(tri_node_ids_set):
                     boundary_line_idx_to_tri_idx[i] = tri_id
-                    break
         
          
         # store
