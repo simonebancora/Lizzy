@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import logging
 import numpy as np
-from lizzy._core.cvmesh.entities import Node, Line, BoundaryLine, Triangle, CV
+from .entities import Node, Line, BoundaryLine, Triangle, CV
 
 logger = logging.getLogger("lizzy.mesh")
 
