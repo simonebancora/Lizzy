@@ -23,7 +23,7 @@ logger = logging.getLogger("lizzy.solver")
 from .timestep_manager import TimeStepManager
 from .vsolvers import VelocitySolver
 from .fillsolver import FillSolver
-from .psolvers import PressureSolver, SolverType
+from .psolvers import PressureSolver
 
 
 

@@ -7,7 +7,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from lizzy.entities import Node
+    from lizzy._core.cvmesh.entities import Node
 
 import numpy as np
 

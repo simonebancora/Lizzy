@@ -88,3 +88,11 @@ class SolverBCs:
             self.p0_val = vent_obj.vacuum_pressure
         else:
             self.p0_val = 0.0
+    
+    def reset(self):
+        self.dirichlet_idx = np.empty(0, dtype=np.uint32)
+        self.dirichlet_vals = np.empty(0, dtype=np.float64)
+        self.neumann_idx = np.empty(0, dtype=np.uint32)
+        self.neumann_vals = np.empty(0, dtype=np.float64)
+        self.p0_idx = np.empty(0, dtype=np.uint32)
+        self.p0_val = 0.0

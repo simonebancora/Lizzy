@@ -13,24 +13,22 @@ if TYPE_CHECKING:
     from lizzy._core.materials import MaterialManager
     from lizzy._core.datatypes.simparams import SimulationParameters
 
-
 import logging
 import time
 import numpy as np
 from tqdm import tqdm
+
 from lizzy._core.solver import *
-
-logger = logging.getLogger("lizzy.solver")
-
 from .timestep_manager import TimeStepManager
 from .vsolvers import VelocitySolver
 from .fillsolver import FillSolver
-from .psolvers import PressureSolver, SolverType
+from .psolvers import PressureSolver
+from lizzy._core.datatypes.solverdata import SolverType
 from .preprocessor import Preprocessor
 from .solverbcs import SolverBCs
 from lizzy._core.datatypes.solverdata import SolverState, SolverSettings
 
-
+logger = logging.getLogger("lizzy.solver")
 
 class Solver:
     def __init__(self, mesh:Mesh, gates_manager, simulation_parameters, material_manager:MaterialManager, sensor_manager:SensorManager, 
@@ -38,24 +36,23 @@ class Solver:
                  solver_verbose=False, **solver_kwargs):
         
         # create / assign all core components
-        self.mesh : Mesh = mesh
-        self.material_manager = material_manager
-        self.simulation_parameters : SimulationParameters = simulation_parameters
-        self.fill_solver = FillSolver()
-        self.vsolver = VelocitySolver(self.mesh.triangles)
-        self.gates_manager : GatesManager = gates_manager 
-        self.time_step_manager = TimeStepManager(mesh.mesh_view.n_nodes, mesh.mesh_view.n_triangles)
-        self.preproc = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, gates_manager, simulation_parameters)
-        self._sensor_manager = sensor_manager
-        self.bcs = SolverBCs()
-        self.K_sing = None
-        self.f_orig = None
-        self.state : SolverState = SolverState(self.mesh)
-        self.settings = SolverSettings(solver_type, solver_tol, solver_max_iter, solver_verbose, solver_kwargs)
+        self.mesh:Mesh                                      = mesh
+        self.material_manager:MaterialManager               = material_manager
+        self.simulation_parameters:SimulationParameters     = simulation_parameters
+        self.fill_solver:FillSolver                         = FillSolver()
+        self.vsolver:VelocitySolver                         = VelocitySolver()
+        self.gates_manager:GatesManager                     = gates_manager 
+        self.time_step_manager:TimeStepManager              = TimeStepManager(mesh.mesh_view.n_nodes, mesh.mesh_view.n_triangles)
+        self.preproc:Preprocessor                           = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, gates_manager, simulation_parameters)
+        self._sensor_manager:SensorManager                  = sensor_manager
+        self.bcs:SolverBCs                                  = SolverBCs()
+        self.K_sing:np.ndarray                              = None
+        self.f_orig:np.ndarray                              = None
+        self.state:SolverState                              = SolverState(self.mesh)
+        self.settings:SolverSettings                        = SolverSettings(solver_type, solver_tol, solver_max_iter, solver_verbose, solver_kwargs)
         self.perform_precalcs()
         self.initialise_new_solution()
     
-
     def perform_precalcs(self):
         self.K_sing, self.f_orig = self.preproc.run_preproc_sequence() # TODO: reorder nodes here to reduce bandwidth - then reorder the whole mesh and objects
         self.initialise_sensor_manager() # could move into preprocessor as this runs only once
@@ -103,11 +100,11 @@ class Solver:
         Initialises a new solution, resetting all simulation variables. It is sufficient to call this method to reset the simulation and run again.
         """
         self.state.reset()
-        self.state.next_wo_time = self.simulation_parameters.output_interval # TODO: this one and the next (current mu) are initialised manually... not pretty
-        self.state.current_mu = self.material_manager.assigned_resin.mu
-        self.bcs = SolverBCs()
+        self.bcs.reset()
         self.mesh.empty_cvs()
         self.gates_manager.reset_inlets()
+        self.state.next_wo_time = self.simulation_parameters.output_interval # TODO: this one and the next (current mu) are initialised manually... not pretty
+        self.state.current_mu = self.material_manager.assigned_resin.mu
         self.bcs.update(self.mesh, self.material_manager, self.gates_manager)
         self.fill_initial_cvs(self.state)
         p0_idxs = self.get_empty_nodes_idx(self.state.fill_factor_array)

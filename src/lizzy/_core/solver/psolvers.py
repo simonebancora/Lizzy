@@ -10,29 +10,11 @@ if TYPE_CHECKING:
     from lizzy._core.datatypes.solverdata import SolverSettings
 
 import numpy as np
-from enum import Enum, auto
 from .builtin.direct_solvers import solve_pressure_direct_dense, solve_pressure_direct_sparse
 from .builtin.iter_solvers import solve_pressure_petsc
 from scipy.sparse import csr_matrix, issparse
+from lizzy._core.datatypes.solverdata import SolverType
 
-
-
-class SolverType(Enum):
-    """
-    Enum representing the available pressure solver types.
-
-    Parameters
-    ----------
-    DIRECT_DENSE : SolverType
-        Direct solver using dense matrix factorization.
-    DIRECT_SPARSE : SolverType
-        Direct solver using sparse matrix factorization.
-    ITERATIVE_PETSC : SolverType
-        Iterative solver using PETSc.
-    """
-    DIRECT_DENSE = auto()
-    DIRECT_SPARSE = auto()
-    ITERATIVE_PETSC = auto()
 
 class PressureSolver:
     @staticmethod

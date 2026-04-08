@@ -11,9 +11,26 @@ if TYPE_CHECKING:
 
 import logging
 import numpy as np
-from lizzy._core.solver.psolvers import SolverType
+from enum import Enum, auto
 
 logger = logging.getLogger("lizzy.solver")
+
+class SolverType(Enum):
+    """
+    Enum representing the available pressure solver types.
+
+    Parameters
+    ----------
+    DIRECT_DENSE : SolverType
+        Direct solver using dense matrix factorization.
+    DIRECT_SPARSE : SolverType
+        Direct solver using sparse matrix factorization.
+    ITERATIVE_PETSC : SolverType
+        Iterative solver using PETSc.
+    """
+    DIRECT_DENSE = auto()
+    DIRECT_SPARSE = auto()
+    ITERATIVE_PETSC = auto()
 
 class SolverState:
     __slots__ = (                                     

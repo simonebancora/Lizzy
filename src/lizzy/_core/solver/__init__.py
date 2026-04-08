@@ -5,7 +5,7 @@
 #  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from . import fem as fe
-from .psolvers import SolverType
+from lizzy._core.datatypes import SolverType
 from .solver import Solver
 from .fillsolver import FillSolver
 from .solverbcs import SolverBCs
