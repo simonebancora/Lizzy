@@ -43,7 +43,7 @@ class SolverBCs:
         phys_boundary_names_set = mesh.mesh_view.phys_boundary_names_set
         viscosity = material_manager.assigned_resin.mu
         for boundary_name, inlet in dict_boundary_name_to_inlet_obj.items():
-            if boundary_name != "INTERNAL" and boundary_name not in phys_boundary_names_set:
+            if not boundary_name.startswith("INTERNAL") and boundary_name not in phys_boundary_names_set:
                 raise MeshError(f"Mesh does not contain physical tag: '{boundary_name}'.")
             match inlet.type:
                 case InletType.PRESSURE:
