@@ -7,7 +7,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from lizzy._core.datatypes.solverstate import SolverState
+    from lizzy._core.datatypes.solverdata import SolverState
 
 import numpy as np
 

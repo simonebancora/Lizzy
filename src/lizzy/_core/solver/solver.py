@@ -28,7 +28,7 @@ from .fillsolver import FillSolver
 from .psolvers import PressureSolver, SolverType
 from .preprocessor import Preprocessor
 from .solverbcs import SolverBCs
-from lizzy._core.datatypes.solverstate import SolverState
+from lizzy._core.datatypes.solverdata import SolverState, SolverSettings
 
 
 
@@ -46,28 +46,12 @@ class Solver:
         self.gates_manager : GatesManager = gates_manager 
         self.time_step_manager = TimeStepManager(mesh.mesh_view.n_nodes, mesh.mesh_view.n_triangles)
         self.preproc = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, gates_manager, simulation_parameters)
-
         self._sensor_manager = sensor_manager
         self.bcs = SolverBCs()
-        self.solver_type = solver_type
-        if solver_type == SolverType.ITERATIVE_PETSC:
-            try:
-                import petsc4py
-                petsc4py.init()
-                from petsc4py import PETSc
-            except ImportError:
-                logger.warning(" PETSc not available. Reverting to DIRECT_SPARSE builtin solver.")
-                self.solver_type = SolverType.DIRECT_SPARSE
-        self.solver_tol = solver_tol
-        self.solver_max_iter = solver_max_iter
-        self.solver_verbose = solver_verbose
-        self.solver_kwargs = solver_kwargs
-        self.N_nodes = mesh.mesh_view.n_nodes
         self.K_sing = None
         self.f_orig = None
         self.state : SolverState = SolverState(self.mesh)
-        
-
+        self.settings = SolverSettings(solver_type, solver_tol, solver_max_iter, solver_verbose, solver_kwargs)
         self.perform_precalcs()
         self.initialise_new_solution()
     
@@ -180,13 +164,10 @@ class Solver:
         for i in range(len(neumann_idxs)):
             f_neumann[neumann_idxs[i]] += neumann_vals[i]
         self.state.p_array = PressureSolver.solve_with_mask(
-            self.K_sing, f_neumann, self.bcs, 
-            self.solver_type, tol=self.solver_tol,
-            max_iter=self.solver_max_iter, verbose=self.solver_verbose,
-            **self.solver_kwargs)
+            self.K_sing, f_neumann, self.bcs, self.settings)
 
         self.vsolver.update_elem_velocities(self.state)
-        v_nodal_array = np.zeros((self.N_nodes, 3))
+        v_nodal_array = np.zeros((self.mesh.mesh_view.n_nodes, 3))
 
         self.fill_solver.update_active_cvs_and_free_surface(self.state)
         dt_candidate = self.fill_solver.calculate_time_step(self.state)
@@ -216,9 +197,9 @@ class Solver:
         solution = None
         self.state.step_end_time = np.inf  # reset step end time for full solve
         self.bcs.update(self.mesh, self.material_manager, self.gates_manager) # TODO this is a bit hacky: need to update bcs before the first time step to correctly fill initial CVs and assign p0_idx. Should be more explicit or a cleaner way...
-        total_cvs = self.N_nodes
+        total_cvs = self.mesh.mesh_view.n_nodes
         filled_cvs = total_cvs - self.state.n_empty_cvs
-        logger.info(f" Solving started on {len(self.mesh.triangles)} elements and {self.N_nodes} nodes")
+        logger.info(f" Solving started on {len(self.mesh.triangles)} elements and {self.mesh.mesh_view.n_nodes} nodes")
         pbar = tqdm(total=total_cvs, initial=filled_cvs,
                     desc="Fill progress",
                     bar_format="{l_bar}{bar}| t={postfix[0]:.2f}s [{elapsed}<{remaining}]",
@@ -243,7 +224,7 @@ class Solver:
         solution = None
         self.state.step_completed = False
         self.state.step_end_time = self.state.current_time + time_interval
-        total_cvs = self.N_nodes
+        total_cvs = self.mesh.mesh_view.n_nodes
         filled_cvs = total_cvs - self.state.n_empty_cvs
         pbar = tqdm(total=total_cvs, initial=filled_cvs,
                     desc="Fill progress",
@@ -276,9 +257,9 @@ class Solver:
         # manually create (known) closed inlets solution
         fill_factor = self.state.fill_factor_array
         free_surface = self.state.free_surface_array
-        p = np.zeros(self.N_nodes)
+        p = np.zeros(self.mesh.mesh_view.n_nodes)
         self.state.v_array = np.zeros((len(self.mesh.triangles), 3))
-        v_nodal_array = np.zeros((self.N_nodes, 3))
+        v_nodal_array = np.zeros((self.mesh.mesh_view.n_nodes, 3))
         if write_out:
             if not self.simulation_parameters.lightweight:
                 self.time_step_manager.save_timestep(self.state.time_step_counter, self.state.current_time, dt, p, self.state.v_array, v_nodal_array, fill_factor, free_surface)

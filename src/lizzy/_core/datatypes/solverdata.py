@@ -9,7 +9,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy._core.cvmesh import Mesh
 
+import logging
 import numpy as np
+from lizzy._core.solver.psolvers import SolverType
+
+logger = logging.getLogger("lizzy.solver")
 
 class SolverState:
     __slots__ = (                                     
@@ -56,3 +60,25 @@ class SolverState:
     
     def increment_time_step_counter(self):
         self.time_step_counter += 1
+
+class SolverSettings:
+    __slots__ = (
+        'solver_type', 'solver_tol', 'solver_max_iter', 'solver_verbose', 'solver_kwargs'
+    )
+    def __init__(self, solver_type:SolverType=None, solver_tol:float=None, solver_max_iter:int=None, solver_verbose:bool=None, solver_kwargs:dict=None):
+        self.solver_type = self.determine_solver_type(solver_type)
+        self.solver_tol = solver_tol
+        self.solver_max_iter = solver_max_iter
+        self.solver_verbose = solver_verbose
+        self.solver_kwargs = solver_kwargs
+    
+    def determine_solver_type(self, solver_type:SolverType):
+        if solver_type == SolverType.ITERATIVE_PETSC:
+            try:
+                import petsc4py
+                petsc4py.init()
+                from petsc4py import PETSc
+            except ImportError:
+                logger.warning(" PETSc not available. Reverting to DIRECT_SPARSE builtin solver.")
+                solver_type = SolverType.DIRECT_SPARSE
+        return solver_type

@@ -164,13 +164,13 @@ class MeshBuilder:
 
             
     def build_mesh(self, mesh_data):
-        logger.info(" Creating Mesh...")
         mesh_view = MeshView()
         tri_conn:np.ndarray = mesh_data['nodes_conn']
         node_coords:np.ndarray = mesh_data['all_nodes_coords']
         n_nodes = node_coords.shape[0]
         n_triangles = tri_conn.shape[0]
         n_lines = n_triangles*3
+        logger.info(f" Creating Mesh with {n_triangles} elements and {n_nodes} nodes...")
         mesh_view.n_nodes = n_nodes
         mesh_view.n_lines = n_lines
         mesh_view.n_triangles = n_triangles
