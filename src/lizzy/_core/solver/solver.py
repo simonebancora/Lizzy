@@ -27,6 +27,7 @@ from lizzy._core.datatypes.solverdata import SolverType
 from .preprocessor import Preprocessor
 from .solverbcs import SolverBCs
 from lizzy._core.datatypes.solverdata import SolverState, SolverSettings
+from lizzy._core.io.writer import StreamingWriter
 
 logger = logging.getLogger("lizzy.solver")
 
@@ -50,6 +51,12 @@ class Solver:
         self.f_orig:np.ndarray                              = None
         self.state:SolverState                              = SolverState(self.mesh)
         self.settings:SolverSettings                        = SolverSettings(solver_type, solver_tol, solver_max_iter, solver_verbose, solver_kwargs)
+        
+        # Streaming writer for in_memory_solve=False mode
+        self._streaming_writer:StreamingWriter              = None
+        if not simulation_parameters.in_memory_solve and not simulation_parameters.lightweight:
+            self._streaming_writer = StreamingWriter()
+        
         self.perform_precalcs()
         self.initialise_new_solution()
     
@@ -113,11 +120,36 @@ class Solver:
         self.fill_solver.update_active_cvs_and_free_surface(self.state)
         self.time_step_manager.reset()
         initial_time_step = self.generate_initial_time_step()
+        # Always save to time_step_manager for sensor probing
         self.time_step_manager.save_timestep(*initial_time_step)
         self._sensor_manager.reset_sensors()
         # TODO: this first probe is temporary and should be cleaner
         self._sensor_manager.probe_current_solution(self.time_step_manager.p_buffer[0], self.time_step_manager.v_nodal_buffer[0], self.time_step_manager.fill_factor_buffer[0], 0.0)
         self.state.increment_time_step_counter()
+    
+    def initialize_streaming_writer(self, result_name: str, save_permeability: bool = False):
+        """Initialize the streaming writer for incremental file output.
+        
+        Must be called before solve() when in_memory_solve=False.
+        
+        Parameters
+        ----------
+        result_name : str
+            Base name for the output files.
+        save_permeability : bool, optional
+            If True, include permeability as a cell field. Default: False.
+        """
+        if self._streaming_writer is not None:
+            self._streaming_writer.initialize(self.mesh, result_name, save_permeability)
+            # Write initial timestep to file
+            initial_ts = self.generate_initial_time_step()
+            _, time_0, _, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0 = initial_ts
+            self._streaming_writer.append_timestep(time_0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0)
+    
+    @property
+    def streaming_writer(self) -> StreamingWriter:
+        """Returns the streaming writer instance, or None if in_memory_solve=True."""
+        return self._streaming_writer
 
     def handle_wo_criterion(self, dt):
         write_out = False
@@ -186,7 +218,12 @@ class Solver:
             write_out = True
         if write_out:
             if not self.simulation_parameters.lightweight:
-                self.time_step_manager.save_timestep(self.state.time_step_counter, self.state.current_time, dt, self.state.p_array, self.state.v_array, v_nodal_array, fill_factor, free_surface)
+                if self.simulation_parameters.in_memory_solve:
+                    # Store in memory for later serialization
+                    self.time_step_manager.save_timestep(self.state.time_step_counter, self.state.current_time, dt, self.state.p_array, self.state.v_array, v_nodal_array, fill_factor, free_surface)
+                elif self._streaming_writer is not None and self._streaming_writer.is_initialized:
+                    # Write directly to file
+                    self._streaming_writer.append_timestep(self.state.current_time, self.state.p_array, self.state.v_array, v_nodal_array, fill_factor, free_surface)
             self._sensor_manager.probe_current_solution(self.state.p_array, v_nodal_array, fill_factor, self.state.current_time)
         self.state.increment_time_step_counter()
 
@@ -213,7 +250,7 @@ class Solver:
         pbar.close()
         logger.info(f" Solve completed in {solve_time:.2f} seconds")
         logger.info(f" Empty CVs: {self.state.n_empty_cvs}, fill time: {self.state.current_time:.2f} seconds")
-        if not self.simulation_parameters.lightweight:
+        if not self.simulation_parameters.lightweight and self.simulation_parameters.in_memory_solve:
             solution = self.time_step_manager.pack_solution()
         return solution
 
@@ -239,7 +276,7 @@ class Solver:
             if self.simulation_parameters.progress_bar:
                 pbar.postfix[0] = self.state.current_time
         pbar.close()
-        if not self.simulation_parameters.lightweight:
+        if not self.simulation_parameters.lightweight and self.simulation_parameters.in_memory_solve:
             solution = self.time_step_manager.pack_solution()
         return solution
     
@@ -259,6 +296,9 @@ class Solver:
         v_nodal_array = np.zeros((self.mesh.mesh_view.n_nodes, 3))
         if write_out:
             if not self.simulation_parameters.lightweight:
-                self.time_step_manager.save_timestep(self.state.time_step_counter, self.state.current_time, dt, p, self.state.v_array, v_nodal_array, fill_factor, free_surface)
+                if self.simulation_parameters.in_memory_solve:
+                    self.time_step_manager.save_timestep(self.state.time_step_counter, self.state.current_time, dt, p, self.state.v_array, v_nodal_array, fill_factor, free_surface)
+                elif self._streaming_writer is not None and self._streaming_writer.is_initialized:
+                    self._streaming_writer.append_timestep(self.state.current_time, p, self.state.v_array, v_nodal_array, fill_factor, free_surface)
             self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.state.current_time)
         self.state.increment_time_step_counter()

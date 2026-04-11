@@ -19,6 +19,10 @@ class SimulationParameters:
         Tolerance on the fill factor to consider a CV as filled. Default: 0.01
     end_step_when_sensor_triggered : bool
         If True, ends current solution step and creates a write-out when a sensor changes state. Default: False
+    in_memory_solve : bool
+        If True, solution data is accumulated in memory and written at the end via save_results().
+        If False (default), solution data is written incrementally to disk during the solve, reducing memory footprint
+        for large simulations. Default: False
 
 
     """
@@ -27,6 +31,7 @@ class SimulationParameters:
     has_been_assigned : bool = False
     end_step_when_sensor_triggered : bool = False
     lightweight : bool = False
+    in_memory_solve : bool = False
     progress_bar : bool = False
 
     generate_fill_image :bool = False
@@ -41,6 +46,7 @@ class SimulationParameters:
         - "fill_tolerance": {self.fill_tolerance},
         - "end_step_when_sensor_triggered": {self.end_step_when_sensor_triggered},
         - "lightweight": {self.lightweight},
+        - "in_memory_solve": {self.in_memory_solve},
         - "progress_bar": {self.progress_bar},
         """)
         print(params)
