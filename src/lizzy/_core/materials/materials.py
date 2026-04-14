@@ -24,7 +24,7 @@ class PorousMaterial:
     def __init__(self, name:str, k_vals : tuple[float, float, float], porosity:float, thickness:float):
         if any(k <= 0 for k in k_vals):
             raise ValueError(f"Material '{name}': all permeability values must be positive, got {k_vals}.")
-        if not (0 < porosity < 1):
+        if not (0 < porosity <= 1):
             raise ValueError(f"Material '{name}': porosity must be between 0 and 1 (exclusive), got {porosity}.")
         if thickness <= 0:
             raise ValueError(f"Material '{name}': thickness must be positive, got {thickness}.")
