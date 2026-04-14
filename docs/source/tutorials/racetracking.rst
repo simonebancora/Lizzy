@@ -8,7 +8,9 @@ This case demonstrates how to set up a simulation with multiple material domains
 
 All files used in this tutorial are available in the `tutorials/racetracking <../../../tutorials/racetracking/>`_ folder. We recommend you download the :download:`mesh alone <../../../tutorials/racetracking/ChannelRacetrack.msh>` and create the script yourself following the tutorial.
 
-If you have not yet completed the :ref:`channel_flow` tutorial, we advise to do that first because here we will not cover in detail the steps that were already introduced.
+.. note::
+
+    If you have not yet completed the :ref:`channel_flow` tutorial, we advise to do that first because here we will not cover in detail the steps that were already introduced.
 
 The mesh
 --------

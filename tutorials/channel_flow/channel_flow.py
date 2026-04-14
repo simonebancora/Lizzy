@@ -13,7 +13,7 @@ model.assign_resin("resin_01")
 model.create_material("domain_material", (1E-10, 1E-10, 1E-10), 0.5, 0.005)
 model.assign_material("domain_material", 'domain')
 
-model.create_pressure_inlet("inlet_left", 100000)
+model.create_pressure_inlet("inlet_left", 1E+05)
 model.assign_inlet("inlet_left", "left_edge")
 
 model.create_vent("vent_right", 0.0)
