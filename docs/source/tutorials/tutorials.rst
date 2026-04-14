@@ -9,5 +9,6 @@ We provide here a few tutorials to learn the basics of Lizzy. It is recommended 
     :maxdepth: 1
 
     channel_flow
+    racetracking
     anisotropy
     complex
