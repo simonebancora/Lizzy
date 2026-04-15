@@ -1,8 +1,8 @@
 #  Copyright 2025-2026 Simone Bancora, Paris Mulye
 #
-#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-#  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+#  You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
 import textwrap
@@ -19,6 +19,10 @@ class SimulationParameters:
         Tolerance on the fill factor to consider a CV as filled. Default: 0.01
     end_step_when_sensor_triggered : bool
         If True, ends current solution step and creates a write-out when a sensor changes state. Default: False
+    in_memory_solve : bool
+        If True, solution data is accumulated in memory and written at the end via save_results().
+        If False (default), solution data is written incrementally to disk during the solve, reducing memory footprint
+        for large simulations. Default: False
 
 
     """
@@ -27,6 +31,7 @@ class SimulationParameters:
     has_been_assigned : bool = False
     end_step_when_sensor_triggered : bool = False
     lightweight : bool = False
+    in_memory_solve : bool = False
     progress_bar : bool = False
 
     generate_fill_image :bool = False
@@ -41,6 +46,7 @@ class SimulationParameters:
         - "fill_tolerance": {self.fill_tolerance},
         - "end_step_when_sensor_triggered": {self.end_step_when_sensor_triggered},
         - "lightweight": {self.lightweight},
+        - "in_memory_solve": {self.in_memory_solve},
         - "progress_bar": {self.progress_bar},
         """)
         print(params)

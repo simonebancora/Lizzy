@@ -1,8 +1,8 @@
 #  Copyright 2025-2026 Simone Bancora, Paris Mulye
 #
-#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-#  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+#  You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
@@ -140,10 +140,23 @@ class LizzyModel:
             )
         if result_name is None:
             result_name = self._model_name + '_RES'
-        if solution is None:
-            solution = self._latest_solution
-        self._writer.assign_mesh(self._mesh)
-        self._writer.save_results(result_name, solution, save_permeability=save_permeability, **kwargs)
+        
+        if not self._simulation_parameters.in_memory_solve:
+            # Streaming mode: finalize the streaming writer
+            streaming_writer = self._solver.streaming_writer
+            if streaming_writer is not None and streaming_writer.is_initialized:
+                streaming_writer.finalize(destination_folder=result_name)
+            else:
+                raise ConfigurationError(
+                    "save_results() called in streaming mode but no data was written. "
+                    "Ensure solve() or solve_time_interval() was called before save_results()."
+                )
+        else:
+            # In-memory mode: use standard Writer
+            if solution is None:
+                solution = self._latest_solution
+            self._writer.assign_mesh(self._mesh)
+            self._writer.save_results(result_name, solution, save_permeability=save_permeability, **kwargs)
     
     # ===========================================================================
     # Mesh API
@@ -208,7 +221,7 @@ class LizzyModel:
     # ===========================================================================
 
     @preinit_only
-    def set_simulation_parameters(self, *, output_interval:float = 10, fill_tolerance:float = 0.01, end_step_when_sensor_triggered:bool = False, lightweight:bool = False, progress_bar:bool = False) -> None:
+    def set_simulation_parameters(self, *, output_interval:float = 10, fill_tolerance:float = 0.01, end_step_when_sensor_triggered:bool = False, lightweight:bool = False, in_memory_solve:bool = False, progress_bar:bool = False) -> None:
         r"""
         Set values to one or more simulation parameters using keyword arguments.
 
@@ -222,6 +235,7 @@ class LizzyModel:
             - ``fill_tolerance`` (float, optional): tolerance on the fill factor to consider a CV as filled. Default: 0.01
             - ``end_step_when_sensor_triggered`` (bool, optional): if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
             - ``lightweight`` (bool, optional): if True, disables Solution packing after each solve, saving memory and computation time. :meth:`~LizzyModel.save_results` cannot be used in lightweight mode. Default: False
+            - ``in_memory_solve`` (bool, optional): if False (default), solution data is written incrementally to disk during the solve, reducing memory footprint for large simulations. If True, solution data is accumulated in memory and written at the end via :meth:`~LizzyModel.save_results`. Default: False
             - ``progress_bar`` (bool, optional): if True, shows a progress bar during the solution. Default: False
         
         Examples
@@ -491,6 +505,18 @@ class LizzyModel:
         logger.info(f"Closing inlet '{inlet_selector}'")
         self._gates_manager.close_inlet(inlet_selector)
     
+    def assign_pressure_at_node(self, node_selector:Node | int, pressure_value:float):
+        """Assign a Dirichlet pressure boundary condition at the selected node. The node can be selected either by passing its reference, or by passing its index.
+
+        Parameters
+        ----------
+        node_selector : Node | int
+            Either the Node object reference, or the integer index of the node.
+        pressure_value : float
+            The pressure value to assign at the selected node.
+        """
+        self._gates_manager.create_and_assign_node_pressure_inlet(node_selector, pressure_value)
+    
     # ===========================================================================
     # Sensors API
     # ===========================================================================
@@ -583,6 +609,12 @@ class LizzyModel:
             raise ConfigurationError("No inlets assigned to the model. Create and assign at least one inlet before initialising the solver.")
         if len(self._gates_manager.assigned_vents) == 0:
             logger.warning(" No vents assigned to the model. A default vent pressure of 0.0 Pa will be used.")
+        # Check for conflicting simulation parameters
+        if self._simulation_parameters.lightweight and not self._simulation_parameters.in_memory_solve:
+            raise ConfigurationError(
+                "Conflicting simulation parameters: 'lightweight=True' and 'in_memory_solve=False' cannot be used together. "
+                "Lightweight mode disables all result storage, while streaming mode requires writing results to disk."
+            )
         self._gates_manager.assert_unique_boundary_assignments()
         self._mesh.assert_all_elements_have_material()
 
@@ -593,8 +625,16 @@ class LizzyModel:
         Returns
         -------
         solution : :class:`~lizzy.datatypes.Solution`
-            A Solution object storing the solution fields up to the time step reached
+            A Solution object storing the solution fields up to the time step reached.
+            Returns None if in_memory_solve=False (streaming mode).
         """
+        # Initialize streaming writer if needed (streaming mode)
+        if not self._simulation_parameters.in_memory_solve and not self._simulation_parameters.lightweight:
+            streaming_writer = self._solver.streaming_writer
+            if streaming_writer is not None and not streaming_writer.is_initialized:
+                default_result_name = self._model_name + '_RES'
+                self._solver.initialize_streaming_writer(default_result_name)
+        
         self._latest_solution = self._solver.solve()
         return self._latest_solution
 
@@ -611,7 +651,15 @@ class LizzyModel:
         -------
         solution : :class:`~lizzy.datatypes.Solution`
             A Solution object storing the solution fields up to the time step reached.
+            Returns None if in_memory_solve=False (streaming mode).
         """
+        # Initialize streaming writer if needed (streaming mode) - only on first call
+        if not self._simulation_parameters.in_memory_solve and not self._simulation_parameters.lightweight:
+            streaming_writer = self._solver.streaming_writer
+            if streaming_writer is not None and not streaming_writer.is_initialized:
+                default_result_name = self._model_name + '_RES'
+                self._solver.initialize_streaming_writer(default_result_name)
+        
         self._latest_solution = self._solver.solve_time_interval(time_interval)
         return self._latest_solution
     

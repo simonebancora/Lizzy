@@ -39,3 +39,14 @@ The following fields are saved at each write-out time step:
 .. note::
 
     If the model is run in "Lighweight mode", Lizzy does not create any :class:`~lizzy.datatypes.Solution` object and :meth:`~lizzy.LizzyModel.save_results` cannot be called (will throw a ConfigurationError).
+
+Viewing results in Paraview
+----------------------------
+
+To open the results from the ``.xdmf`` file in Paraview, it is necessary to select the reader **Xdmf3 Reader S**. This will be normally prompted for selection when the file is opened.
+
+.. figure:: ../../images/paraview_result_example.png
+   :width: 80%
+   :align: center
+
+   Example of simulation results visualised in Paraview

@@ -1,8 +1,8 @@
 #  Copyright 2025-2026 Simone Bancora, Paris Mulye
 #
-#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-#  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+#  You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
@@ -43,7 +43,7 @@ class SolverBCs:
         phys_boundary_names_set = mesh.mesh_view.phys_boundary_names_set
         viscosity = material_manager.assigned_resin.mu
         for boundary_name, inlet in dict_boundary_name_to_inlet_obj.items():
-            if boundary_name not in phys_boundary_names_set:
+            if not boundary_name.startswith("INTERNAL") and boundary_name not in phys_boundary_names_set:
                 raise MeshError(f"Mesh does not contain physical tag: '{boundary_name}'.")
             match inlet.type:
                 case InletType.PRESSURE:
@@ -67,6 +67,12 @@ class SolverBCs:
                         neumann_idxs_pairs.append(node_pairs_idxs)
                         neumann_vals_per_idx_pair.append(neumann_vals_pairs)
                     logger.warning(" Flow rate BC is experimental.")
+                case InletType.NODEPRESSURE:
+                    # TODO: node pressure implement here
+                    node_idx = inlet.node_id
+                    if inlet.is_open:
+                        dirichlet_idxs.append(np.array([node_idx], dtype=np.uint32))
+                        dirichlet_vals.append(np.array([inlet.p_value], dtype=np.float64))
                 case _:
                     pass
         if len(dirichlet_idxs) > 0:
@@ -82,3 +88,11 @@ class SolverBCs:
             self.p0_val = vent_obj.vacuum_pressure
         else:
             self.p0_val = 0.0
+    
+    def reset(self):
+        self.dirichlet_idx = np.empty(0, dtype=np.uint32)
+        self.dirichlet_vals = np.empty(0, dtype=np.float64)
+        self.neumann_idx = np.empty(0, dtype=np.uint32)
+        self.neumann_vals = np.empty(0, dtype=np.float64)
+        self.p0_idx = np.empty(0, dtype=np.uint32)
+        self.p0_val = 0.0

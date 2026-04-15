@@ -1,15 +1,15 @@
 #  Copyright 2025-2026 Simone Bancora, Paris Mulye
 #
-#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-#  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+#  You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import logging
 import numpy as np
-from lizzy._core.cvmesh.entities import Node, Line, BoundaryLine, Triangle, CV
+from .entities import Node, Line, BoundaryLine, Triangle, CV
 
 logger = logging.getLogger("lizzy.mesh")
 
@@ -76,9 +76,12 @@ class MeshBuilder:
                 node_id = local_conn[local_node_id_selector]
                 # check if we still have room for more ids
                 if tri_idxs_local_pointer[node_id] > capacity_tris_per_node - 1:
-                    # increase bufefr size
-                    capacity_tris_per_node *=2
-                    node_idx_to_tri_idxs_buffer = np.resize(node_idx_to_tri_idxs_buffer, (n_nodes, capacity_tris_per_node))
+                    # increase buffer size - properly expand without corrupting data
+                    old_capacity = capacity_tris_per_node
+                    capacity_tris_per_node *= 2
+                    new_buffer = np.full((n_nodes, capacity_tris_per_node), -1, dtype=np.int32)
+                    new_buffer[:, :old_capacity] = node_idx_to_tri_idxs_buffer
+                    node_idx_to_tri_idxs_buffer = new_buffer
                 # write the triangle id in the buffer (which is initially 5 tris per node)
                 node_idx_to_tri_idxs_buffer[node_id, tri_idxs_local_pointer[node_id]] = tri_id
                 # move local pointer
@@ -90,7 +93,6 @@ class MeshBuilder:
                 line_ids_set = set(physical_lines_conn[i])
                 if line_ids_set.issubset(tri_node_ids_set):
                     boundary_line_idx_to_tri_idx[i] = tri_id
-                    break
         
          
         # store
@@ -164,13 +166,13 @@ class MeshBuilder:
 
             
     def build_mesh(self, mesh_data):
-        logger.info(" Creating Mesh...")
         mesh_view = MeshView()
         tri_conn:np.ndarray = mesh_data['nodes_conn']
         node_coords:np.ndarray = mesh_data['all_nodes_coords']
         n_nodes = node_coords.shape[0]
         n_triangles = tri_conn.shape[0]
         n_lines = n_triangles*3
+        logger.info(f" Creating Mesh with {n_triangles} elements and {n_nodes} nodes...")
         mesh_view.n_nodes = n_nodes
         mesh_view.n_lines = n_lines
         mesh_view.n_triangles = n_triangles

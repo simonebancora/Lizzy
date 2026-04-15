@@ -65,7 +65,7 @@ The LIZZY namespace exposes the :class:`~lizzy.LizzyModel` class, which provides
     .. automethod:: lizzy.LizzyModel.create_sensor
     .. automethod:: lizzy.LizzyModel.print_sensor_readings
     .. automethod:: lizzy.LizzyModel.get_sensor_trigger_states
-    .. automethod:: lizzy.LizzyModel.get_sensor_by_id
+    .. automethod:: lizzy.LizzyModel.get_sensor_by_name
 
     Solver methods
     --------------

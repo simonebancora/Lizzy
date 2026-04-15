@@ -1,36 +1,24 @@
 #  Copyright 2025-2026 Simone Bancora, Paris Mulye
 #
-#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-#  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+#  You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from lizzy._core.datatypes.solverdata import SolverSettings
 
 import numpy as np
-from enum import Enum, auto
 from .builtin.direct_solvers import solve_pressure_direct_dense, solve_pressure_direct_sparse
 from .builtin.iter_solvers import solve_pressure_petsc
 from scipy.sparse import csr_matrix, issparse
+from lizzy._core.datatypes.solverdata import SolverType
 
-class SolverType(Enum):
-    """
-    Enum representing the available pressure solver types.
-
-    Parameters
-    ----------
-    DIRECT_DENSE : SolverType
-        Direct solver using dense matrix factorization.
-    DIRECT_SPARSE : SolverType
-        Direct solver using sparse matrix factorization.
-    ITERATIVE_PETSC : SolverType
-        Iterative solver using PETSc.
-    """
-    DIRECT_DENSE = auto()
-    DIRECT_SPARSE = auto()
-    ITERATIVE_PETSC = auto()
 
 class PressureSolver:
     @staticmethod
-    def solve(k:np.ndarray, f:np.ndarray, method:SolverType, 
-              tol:float = 1e-8, max_iter:int = 1000, verbose:bool = False, **solver_kwargs):
+    def solve(k:np.ndarray, f:np.ndarray, settings:SolverSettings):
         """
         Solve the system `K p = f`.
 
@@ -51,6 +39,11 @@ class PressureSolver:
         **solver_kwargs
             Additional keyword arguments passed to specific solvers.
         """
+        method = settings.solver_type
+        tol = settings.solver_tol
+        max_iter = settings.solver_max_iter
+        verbose = settings.solver_verbose
+        solver_kwargs = settings.solver_kwargs
         match method:
             case SolverType.DIRECT_DENSE:
                 p = solve_pressure_direct_dense(k, f)
@@ -67,8 +60,7 @@ class PressureSolver:
         return p
 
     @staticmethod
-    def solve_with_mask(k_original, f_original, bcs, method:SolverType = SolverType.DIRECT_SPARSE,
-                       tol:float = 1e-8, max_iter:int = 1000, verbose:bool = False, **solver_kwargs):
+    def solve_with_mask(k_original, f_original, bcs, settings:SolverSettings):
         """
         Optimized solver that extracts and solves only the free DOFs (submatrix approach).
         
@@ -102,6 +94,7 @@ class PressureSolver:
         np.ndarray
             Full pressure solution vector with all DOFs
         """
+        method = settings.solver_type
         # Combine all Dirichlet DOFs (inlet pressures + empty node p=0 conditions)
         dirichlet_idx = np.concatenate([bcs.dirichlet_idx, bcs.p0_idx])
         dirichlet_vals = np.concatenate([bcs.dirichlet_vals, np.full(len(bcs.p0_idx), bcs.p0_val)])
@@ -132,8 +125,7 @@ class PressureSolver:
             K_free = K_free.toarray()
         
         # Solve the reduced system (much smaller!)
-        p_free = PressureSolver.solve(K_free, f_free, method, tol=tol, 
-                                     max_iter=max_iter, verbose=verbose, **solver_kwargs)
+        p_free = PressureSolver.solve(K_free, f_free, settings)
         
         # Reconstruct full solution vector
         p_full = np.zeros(N)

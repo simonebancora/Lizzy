@@ -1,8 +1,8 @@
 #  Copyright 2025-2026 Simone Bancora, Paris Mulye
 #
-#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-#  You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+#  This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+#  This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+#  You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import numpy as np
 
@@ -24,7 +24,7 @@ class PorousMaterial:
     def __init__(self, name:str, k_vals : tuple[float, float, float], porosity:float, thickness:float):
         if any(k <= 0 for k in k_vals):
             raise ValueError(f"Material '{name}': all permeability values must be positive, got {k_vals}.")
-        if not (0 < porosity < 1):
+        if not (0 < porosity <= 1):
             raise ValueError(f"Material '{name}': porosity must be between 0 and 1 (exclusive), got {porosity}.")
         if thickness <= 0:
             raise ValueError(f"Material '{name}': thickness must be positive, got {thickness}.")
