@@ -33,17 +33,18 @@ class SolverType(Enum):
     ITERATIVE_PETSC = auto()
 
 class SolverState:
-    __slots__ = (                                     
-        'mesh', 'fill_factor_array', 'p_array', 'v_array', 'free_surface_array',                                                                                                                                                                   
+    __slots__ = (
+        'mesh', 'fill_factor_array', 'p_array', 'v_array', 'v_nodal_array', 'free_surface_array',
         'cv_volumes_array', 'cv_idx_to_support_cv_idxs', 'active_cv_ids', 'current_mu',
-        'current_time', 'time_step_counter', 'n_empty_cvs',                                                                                                                                                          
-        'next_wo_time', 'step_end_time', 'step_completed',                                                                                                                                                           
+        'current_time', 'time_step_counter', 'n_empty_cvs',
+        'next_wo_time', 'step_end_time', 'step_completed',
     )
     def __init__(self, mesh:Mesh):
         self.mesh = mesh
         self.fill_factor_array: np.ndarray = None
         self.p_array: np.ndarray = None
         self.v_array: np.ndarray = None
+        self.v_nodal_array: np.ndarray = None
         self.free_surface_array: np.ndarray = None
         self.cv_volumes_array = None
         self.cv_idx_to_support_cv_idxs = None
@@ -61,6 +62,7 @@ class SolverState:
     def reset(self):
         self.fill_factor_array: np.ndarray = np.zeros(len(self.mesh.nodes), dtype=float)
         self.v_array: np.ndarray = np.zeros((len(self.mesh.triangles), 3), dtype=float)
+        self.v_nodal_array: np.ndarray = np.zeros((len(self.mesh.nodes), 3), dtype=float)
         self.p_array: np.ndarray = np.zeros(len(self.mesh.nodes), dtype=float)
         self.free_surface_array: np.ndarray = np.empty(len(self.mesh.nodes))
         self.cv_volumes_array = np.array([cv.vol for cv in self.mesh.CVs])

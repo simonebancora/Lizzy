@@ -44,7 +44,7 @@ class Solver:
         self.vsolver:VelocitySolver                         = VelocitySolver()
         self.gates_manager:GatesManager                     = gates_manager 
         self.time_step_manager:TimeStepManager              = TimeStepManager(mesh.mesh_view.n_nodes, mesh.mesh_view.n_triangles)
-        self.preproc:Preprocessor                           = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, gates_manager, simulation_parameters)
+        self.preproc:Preprocessor                           = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, gates_manager, simulation_parameters, sensor_manager)
         self._sensor_manager:SensorManager                  = sensor_manager
         self.bcs:SolverBCs                                  = SolverBCs()
         self.K_sing:np.ndarray                              = None
@@ -195,8 +195,7 @@ class Solver:
         self.state.p_array = PressureSolver.solve_with_mask(
             self.K_sing, f_neumann, self.bcs, self.settings)
 
-        self.vsolver.update_elem_velocities(self.state)
-        v_nodal_array = np.zeros((self.mesh.mesh_view.n_nodes, 3))
+        self.vsolver.update_velocities(self.state)
 
         self.fill_solver.update_active_cvs_and_free_surface(self.state)
         dt_candidate = self.fill_solver.calculate_time_step(self.state)
@@ -220,11 +219,11 @@ class Solver:
             if not self.simulation_parameters.lightweight:
                 if self.simulation_parameters.in_memory_solve:
                     # Store in memory for later serialization
-                    self.time_step_manager.save_timestep(self.state.time_step_counter, self.state.current_time, dt, self.state.p_array, self.state.v_array, v_nodal_array, fill_factor, free_surface)
+                    self.time_step_manager.save_timestep(self.state.time_step_counter, self.state.current_time, dt, self.state.p_array, self.state.v_array, self.state.v_nodal_array, fill_factor, free_surface)
                 elif self._streaming_writer is not None and self._streaming_writer.is_initialized:
                     # Write directly to file
-                    self._streaming_writer.append_timestep(self.state.current_time, self.state.p_array, self.state.v_array, v_nodal_array, fill_factor, free_surface)
-            self._sensor_manager.probe_current_solution(self.state.p_array, v_nodal_array, fill_factor, self.state.current_time)
+                    self._streaming_writer.append_timestep(self.state.current_time, self.state.p_array, self.state.v_array, self.state.v_nodal_array, fill_factor, free_surface)
+            self._sensor_manager.probe_current_solution(self.state.p_array, self.state.v_nodal_array, fill_factor, self.state.current_time)
         self.state.increment_time_step_counter()
 
     def solve(self):
@@ -289,16 +288,14 @@ class Solver:
         # Update the filling time
         self.state.current_time += dt
         # manually create (known) closed inlets solution
-        fill_factor = self.state.fill_factor_array
-        free_surface = self.state.free_surface_array
         p = np.zeros(self.mesh.mesh_view.n_nodes)
         self.state.v_array = np.zeros((len(self.mesh.triangles), 3))
-        v_nodal_array = np.zeros((self.mesh.mesh_view.n_nodes, 3))
+        self.state.v_nodal_array = np.zeros((self.mesh.mesh_view.n_nodes, 3))
         if write_out:
             if not self.simulation_parameters.lightweight:
                 if self.simulation_parameters.in_memory_solve:
-                    self.time_step_manager.save_timestep(self.state.time_step_counter, self.state.current_time, dt, p, self.state.v_array, v_nodal_array, fill_factor, free_surface)
+                    self.time_step_manager.save_timestep(self.state.time_step_counter, self.state.current_time, dt, p, self.state.v_array, self.state.v_nodal_array, self.state.fill_factor_array, self.state.free_surface_array)
                 elif self._streaming_writer is not None and self._streaming_writer.is_initialized:
-                    self._streaming_writer.append_timestep(self.state.current_time, p, self.state.v_array, v_nodal_array, fill_factor, free_surface)
-            self._sensor_manager.probe_current_solution(p, v_nodal_array, fill_factor, self.state.current_time)
+                    self._streaming_writer.append_timestep(self.state.current_time, p, self.state.v_array, self.state.v_nodal_array, self.state.fill_factor_array, self.state.free_surface_array)
+            self._sensor_manager.probe_current_solution(p, self.state.v_nodal_array, self.state.fill_factor_array, self.state.current_time)
         self.state.increment_time_step_counter()
