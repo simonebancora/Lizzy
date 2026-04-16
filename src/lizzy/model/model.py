@@ -75,18 +75,20 @@ class LizzyModel:
         return MappingProxyType(self._material_manager.existing_materials)
 
     @property
+    @postinit_only
     def n_empty_cvs(self) -> int:
         """
         Number of currently empty control volumes in the mesh (read-only).
         """
-        return self._solver.n_empty_cvs
+        return self._solver.state.n_empty_cvs
 
     @property
+    @postinit_only
     def current_time(self) -> float:
         """
         Current simulation time from the start of the infusion (read-only).
         """
-        return self._solver.current_time
+        return self._solver.state.current_time
     
     @property
     def latest_solution(self) -> Solution:
