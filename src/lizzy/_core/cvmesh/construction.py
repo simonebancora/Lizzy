@@ -20,6 +20,7 @@ class MeshView:
         self.n_triangles:int=0
         self.node_idx_to_node_idxs: list[np.ndarray] = []
         self.node_idx_to_tri_idxs: list[np.ndarray] = []
+        self.node_idx_to_n_tris: np.ndarray = None
         self.node_idx_to_flux_ndarray: list[np.ndarray] = []
         self.phys_boundary_names_set:set[str] = set()
         self.phys_boundary_name_to_node_idxs:dict = {} #for dirichlet mostly
@@ -145,12 +146,14 @@ class MeshBuilder:
     def assign_varying_number_references(self, nodes:list[Node], triangles):
         node_idx_to_node_idxs = [None]*len(nodes)
         node_idx_to_tri_idxs = [None]*len(nodes)
+        node_idx_to_n_tris = np.zeros(len(nodes), dtype=np.uint16)
         
         for i in range(len(nodes)):
             # assign triangles to nodes (varying number)
             tri_ids_buffer = self.node_idx_to_tri_idxs_buffer[i]
             tri_ids = tri_ids_buffer[tri_ids_buffer >= 0]
             node_idx_to_tri_idxs[i] = np.array(tri_ids)
+            node_idx_to_n_tris[i] = len(tri_ids)
             nodes[i].triangle_ids = tri_ids
             triangle_objs = [triangles[idx] for idx in tri_ids]
             nodes[i].triangles = triangle_objs
@@ -162,7 +165,7 @@ class MeshBuilder:
             node_idx_to_node_idxs[i] = np.array(connected_node_idxs)
         self.node_idx_to_node_idxs = node_idx_to_node_idxs
         self.node_idx_to_tri_idxs = node_idx_to_tri_idxs
-        return node_idx_to_node_idxs, node_idx_to_tri_idxs
+        return node_idx_to_node_idxs, node_idx_to_tri_idxs, node_idx_to_n_tris
 
             
     def build_mesh(self, mesh_data):
@@ -184,9 +187,10 @@ class MeshBuilder:
         mesh_view.phys_boundary_name_to_boundary_line_idxs = phys_boundary_name_to_boundary_line_idxs
         mesh_view.boundary_line_idx_to_node_idxs = physical_lines_conn
         new_nodes, new_lines, new_triangles, new_boundary_lines = self.create_entities(n_nodes, n_triangles, n_lines, node_coords, tri_conn, physical_lines_conn, boundary_line_idx_to_tri_idx)
-        node_idx_to_node_idxs, node_idx_to_tri_idxs = self.assign_varying_number_references(new_nodes, new_triangles)
+        node_idx_to_node_idxs, node_idx_to_tri_idxs, node_idx_to_n_tris = self.assign_varying_number_references(new_nodes, new_triangles)
         mesh_view.node_idx_to_node_idxs = node_idx_to_node_idxs
         mesh_view.node_idx_to_tri_idxs = node_idx_to_tri_idxs
+        mesh_view.node_idx_to_n_tris = node_idx_to_n_tris
         mesh_view.boundary_line_idx_to_tri_idx = boundary_line_idx_to_tri_idx
         cvs = self.create_control_volumes(new_nodes)
 

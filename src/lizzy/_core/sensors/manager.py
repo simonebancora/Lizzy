@@ -6,14 +6,20 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from lizzy._core.sensors.sensor import Sensor
 if TYPE_CHECKING:
-    from lizzy._core.cvmesh.mesh import Mesh
-    
-    
+    from lizzy._core.cvmesh.mesh import Mesh, Node, Triangle
+
 import numpy as np
+from lizzy._core.sensors.sensor import Sensor
+from dataclasses import dataclass
 
 
+# TODO: began implementing kdtrees in the preprocessor to sample from the sensors. We need a "query_point" method that takes a point in space and returns whether a node (if on a node within a tol) or an element (if in an element). Then we take the velocity of that entity rather than snapping on a close node (as now)
+
+@dataclass
+class PointQueryResult:
+    node: Node | None
+    triangle: Triangle | None
 
 class SensorManager:
     """Manager for all sensor operations.
@@ -34,7 +40,6 @@ class SensorManager:
         position : tuple[float, float, float]
             The position of the sensor.
         """
-
         new_sensor = Sensor(name, position)
         self.sensors.append(new_sensor)
         self.sensors_dict[name] = new_sensor

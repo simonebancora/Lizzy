@@ -6,35 +6,41 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from lizzy.exceptions import LizzyError
 
 if TYPE_CHECKING:
     from lizzy._core.sensors import SensorManager
     from lizzy._core.gates import GatesManager
     from lizzy._core.cvmesh import Mesh
+    from lizzy._core.cvmesh.entities import Node, Triangle
     from lizzy._core.materials import MaterialManager, Rosette, PorousMaterial
     from lizzy._core.datatypes import SimulationParameters
 
 import logging
 import numpy as np
+from scipy.spatial import KDTree
 from lizzy._core.solver import *
 from lizzy.exceptions import ConfigurationError
+
 
 logger = logging.getLogger("lizzy.solver")
 from .timestep_manager import TimeStepManager
 from .vsolvers import VelocitySolver
 from .fillsolver import FillSolver
-from .psolvers import PressureSolver
-
 
 
 class Preprocessor:
-    def __init__(self, mesh:Mesh, fill_solver:FillSolver, vsolver:VelocitySolver, material_manager:MaterialManager, gates_manager:GatesManager, simulation_parameters:SimulationParameters):
+    def __init__(self, mesh:Mesh, fill_solver:FillSolver, vsolver:VelocitySolver, material_manager:MaterialManager, gates_manager:GatesManager, simulation_parameters:SimulationParameters, sensor_manager:SensorManager):
         self.mesh = mesh
         self.fill_solver = fill_solver
         self.vsolver = vsolver
         self.material_manager = material_manager
         self.gates_manager = gates_manager
         self.simulation_parameters = simulation_parameters
+        self.sensor_manager = sensor_manager
+        self._node_tree: KDTree | None = None
+        self._element_tree: KDTree | None = None
 
 
     # 1. check things were assigned
@@ -67,12 +73,28 @@ class Preprocessor:
         K_sing, f_orig = fe.Assembly(self.mesh, mu, sparse=True)
         return K_sing, f_orig
 
+    def build_kdtrees(self):
+        self._node_tree = KDTree(self.mesh.node_coords)
+        elem_centroids = np.array([t.centroid for t in self.mesh.triangles])
+        self._element_tree = KDTree(elem_centroids)
+    
+    def assign_nodes_to_sensors(self):
+        for sensor in self.sensor_manager.sensors:
+            pos = sensor.position
+            dist, node_idx = self._node_tree.query(pos)
+            sensor.child_node = self.mesh.nodes[node_idx]
+            logger.info(f" Sensor '{sensor.name}' snapped to node {sensor.child_node.idx} at distance {dist:.3e} from query position.")
+
+
     def run_preproc_sequence(self):
         logger.info(" Preprocessing...")
         self.setup_cvs()
         self.assign_fill_solver_maps()
         K_sing, f_orig = self.assemble_global_stiffnes_matrix()
-        self.vsolver.precalculate_darcy_operator(self.mesh.triangles, self.mesh.tri_conn_table)
+        self.vsolver.precalculate_darcy_operator_and_nodal_v_operator(self.mesh.triangles, self.mesh.tri_conn_table, self.mesh.mesh_view.node_idx_to_n_tris)
+        if self.sensor_manager.sensors:
+            self.build_kdtrees()
+            self.assign_nodes_to_sensors()
         return K_sing, f_orig
     
     
