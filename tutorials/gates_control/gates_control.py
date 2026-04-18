@@ -14,7 +14,7 @@ model.create_resin("resin_01", 0.1)
 model.assign_resin("resin_01")
 
 # Materials
-model.create_material("inlet_material", (1E-8, 1E-8, 1E-8), 0.5, 0.005)
+model.create_material("inlet_material", (1E-8, 1E-8, 1E-8), 1.0, 0.010)
 model.assign_material("inlet_material", 'inlet')
 
 model.create_material("domain_material", (1E-10, 1E-10, 1E-10), 0.5, 0.005)

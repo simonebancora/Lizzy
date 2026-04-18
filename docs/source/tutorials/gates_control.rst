@@ -68,7 +68,7 @@ This mesh has two surface domains, so we must assign a material to each of them.
 
 .. code-block:: python
 
-    model.create_material("inlet_material", (1E-8, 1E-8, 1E-8), 0.5, 0.005)
+    model.create_material("inlet_material", (1E-8, 1E-8, 1E-8), 1.0, 0.010)
     model.assign_material("inlet_material", 'inlet')
 
     model.create_material("domain_material", (1E-10, 1E-10, 1E-10), 0.5, 0.005)
@@ -182,7 +182,7 @@ The full script
     model.assign_resin("resin_01")
 
     # Materials
-    model.create_material("inlet_material", (1E-8, 1E-8, 1E-8), 0.5, 0.005)
+    model.create_material("inlet_material", (1E-8, 1E-8, 1E-8), 1.0, 0.010)
     model.assign_material("inlet_material", 'inlet')
 
     model.create_material("domain_material", (1E-10, 1E-10, 1E-10), 0.5, 0.005)
