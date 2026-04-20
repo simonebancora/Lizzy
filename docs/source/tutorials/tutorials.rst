@@ -12,3 +12,4 @@ We provide here a few tutorials to learn the basics of Lizzy. It is recommended 
     racetracking
     anisotropy
     complex
+    gates_control
