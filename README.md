@@ -1,9 +1,9 @@
 <!--
 Copyright 2025-2026 Simone Bancora, Paris Mulye
 
-This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
-You should have received a copy of the GNU General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 -->
 
 [![Tests](https://github.com/simonebancora/Lizzy/actions/workflows/tests.yaml/badge.svg)](https://github.com/simonebancora/Lizzy/actions/workflows/tests.yaml)
@@ -17,13 +17,13 @@ Introducing Lizzy, a Liquid Composite Molding (LCM) simulation package written i
 </div>
 
 ---
-This project is still under development. Version 1.0 is on track for release in early 2026. Stay tuned!
+This project is still under development. Version 1.0 is on track for release in May 2026. Stay tuned!
 ---
 
 Lizzy uses the FE/CV method to simulate a macro-scale infusion problem in porous media. The solver is mainly designed to simulate composite resin infusion processes, but can be generalised to any porous media.
 The name "Lizzy" was inspired by the character of Elizabeth Bennet, companion of Mr Darcy in Jane Austen's novel _Pride and Prejudice_.
 
-This project is licensed under the GNU General Public License v3.0 - see the LICENSE file for details.
+This project is licensed under the GNU Affero General Public License v3.0 - see the LICENSE file for details.
 
 ### Development stage
 This project is still in development stage and has **not reached a release version** yet.
