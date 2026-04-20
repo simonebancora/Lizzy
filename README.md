@@ -17,7 +17,7 @@ Introducing Lizzy, a Liquid Composite Molding (LCM) simulation package written i
 </div>
 
 ---
-This project is still under development. Version 1.0 is on track for release in early 2026. Stay tuned!
+This project is still under development. Version 1.0 is on track for release in May 2026. Stay tuned!
 ---
 
 Lizzy uses the FE/CV method to simulate a macro-scale infusion problem in porous media. The solver is mainly designed to simulate composite resin infusion processes, but can be generalised to any porous media.
