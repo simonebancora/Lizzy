@@ -229,3 +229,7 @@ Solution visualisation
 Load the file ``GatesControl_RES.xdmf`` into Paraview to visualise the results. When prompted, make sure to select **`Xdmf3 Reader S`** to avoid formatting issues.
 
 The sequential opening of the inlets should be clearly visible in the flow front progression. More so if we plot the velocity field (which will spike when inlets open) or the pressure field (which will explicitely show the pressure firing at the inlets when they open). Is is worth noting how, as expected, the total fill time is significantly reduced from the :ref:`channel_flow` tutorial, even though the part has the same geometry.
+
+.. image:: ../../images/control_gates_video.gif
+   :width: 70%
+   :align: center
