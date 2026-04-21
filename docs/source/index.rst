@@ -23,6 +23,7 @@ The name "Lizzy" was inspired by the character of Elizabeth Bennet, companion of
    tutorials/tutorials
    user_guide/using_lizzy
    api_reference/api_reference_index
+   validation/validation
 
 .. raw:: html
 
@@ -62,6 +63,11 @@ Some of the features of Lizzy are:
 - Support for any number of material regions and anisotropic permeability.
 - Design complex infusion strategies using virtual sensors and dynamic boundary conditions.
 
+Validation
+----------
+
+For validation cases with reference solutions, see :doc:`validation/validation`.
+
 Current limitations
 -------------------
 
@@ -76,6 +82,8 @@ Consult our :ref:`Roadmap <roadmap>` for planned feature implementations.
    :hidden:
 
    roadmap
+
+
 
 .. note::
 

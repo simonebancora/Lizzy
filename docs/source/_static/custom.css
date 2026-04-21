@@ -1,3 +1,15 @@
+div.math {
+  position: relative;
+  text-align: center;
+}
+
+div.math span.eqno {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 .doc-cards {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
