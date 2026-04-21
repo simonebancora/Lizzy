@@ -23,6 +23,7 @@ The name "Lizzy" was inspired by the character of Elizabeth Bennet, companion of
    tutorials/tutorials
    user_guide/using_lizzy
    api_reference/api_reference_index
+   validation/validation
 
 .. raw:: html
 
@@ -30,22 +31,22 @@ The name "Lizzy" was inspired by the character of Elizabeth Bennet, companion of
 
      <a class="doc-card" href="installation/installation.html">
        <h3>Installation</h3>
-       <p>Instructions on how to install Lizzy.</p>
+       <p>Instructions on how to install Lizzy</p>
      </a>
 
      <a class="doc-card" href="tutorials/tutorials.html">
        <h3>Tutorials</h3>
-       <p>A few tutorials to learn the basics of Lizzy.</p>
+       <p>A few tutorials to learn the basics of Lizzy</p>
      </a>
 
      <a class="doc-card" href="user_guide/using_lizzy.html">
        <h3>User Guide</h3>
-       <p>Learn how to run simulations with Lizzy.</p>
+       <p>Learn how to run simulations with Lizzy</p>
      </a>
 
      <a class="doc-card" href="api_reference/api_reference_index.html">
        <h3>API Reference</h3>
-       <p>In-depth API documentation (under construction).</p>
+       <p>In-depth API documentation</p>
      </a>
 
    </div>
@@ -62,6 +63,11 @@ Some of the features of Lizzy are:
 - Support for any number of material regions and anisotropic permeability.
 - Design complex infusion strategies using virtual sensors and dynamic boundary conditions.
 
+Validation
+----------
+
+For validation cases with reference solutions, see :doc:`validation/validation`.
+
 Current limitations
 -------------------
 
@@ -76,6 +82,8 @@ Consult our :ref:`Roadmap <roadmap>` for planned feature implementations.
    :hidden:
 
    roadmap
+
+
 
 .. note::
 

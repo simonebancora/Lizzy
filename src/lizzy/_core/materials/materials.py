@@ -37,7 +37,6 @@ class PorousMaterial:
 
 
 class Resin:
-    __slots__ = ("name", "mu")
     """Resin defined by dynamic viscosity (constant).
 
     Parameters
@@ -47,6 +46,7 @@ class Resin:
     mu: float
         Dynamic viscosity of the resin [Pa.s]
     """
+    __slots__ = ("name", "mu")
     def __init__(self, name:str, mu:float):
         if mu <= 0:
             raise ValueError(f"Resin '{name}': viscosity must be positive, got {mu}.")

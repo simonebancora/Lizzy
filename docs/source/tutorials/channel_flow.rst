@@ -17,7 +17,7 @@ Copy the mesh file into the working folder. Create a new python script in the wo
 The mesh
 --------
 
-The mesh contains 3 domain tags ("physical groups" in msh format):
+The mesh represents a rectangular domain 1 m wide and 0.5 m tall. The mesh contains 3 domain tags ("physical groups" in msh format):
 
 * *left_edge*: line tag assigned to the left edge of the mesh
 * *right_edge*: line tag assigned to the right edge of the mesh
@@ -102,7 +102,7 @@ Now we can define the properties of the material in the mesh and assign it to a 
 
 .. code-block:: python
 
-    model.create_material("test_material", (1E-10, 1E-10, 1E-10), 0.5, 1.0)
+    model.create_material("test_material", (1E-10, 1E-10, 1E-10), 0.5, 0.005)
     model.assign_material("test_material", 'domain')
 
 The method :meth:`~lizzy.LizzyModel.create_material` instantiates a ``PorousMaterial`` object which is stored in the model. The arguments of :meth:`~lizzy.LizzyModel.create_material` are:

@@ -31,13 +31,10 @@ Contributions and Issues reporting are not open yet.
 
 ### Documentation
 
-https://lizzy.readthedocs.io/en/latest/
+The full [Documentation](https://lizzy.readthedocs.io/en/latest/) is available, though some parts may still be under construction.
 
 ### Visualisation
-The recommended software to visualise results from Lizzy is Paraview:
-https://www.paraview.org
+The recommended software to visualise results from Lizzy is [Paraview](https://www.paraview.org).
 
-### Validation
-Validation of the solver can be found [here](docs/github/validation.md). This section will expand as more features are added.
 
 

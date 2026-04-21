@@ -55,6 +55,15 @@ class Inlet(ABC):
         self._open = open_state
 
 class PressureInlet(Inlet):
+    """A class representing an inlet gate where a pressure boundary condition is imposed (Dirichlet boundary condition).
+
+    Parameters
+    ----------
+    name : str
+        Unique name of the inlet.
+    p_value : float
+        Pressure value assigned [Pa].
+    """
     def __init__(self, name:str, p_value:float):
         super().__init__(name, InletType.PRESSURE)
         self._p_value = p_value
@@ -120,6 +129,15 @@ class NodePressureInlet(Inlet):
         self._p_value = self._p0
 
 class FlowRateInlet(Inlet):
+    """A class representing an inlet gate where a volumetric flow rate boundary condition is imposed (Neumann boundary condition).
+
+    Parameters
+    ----------
+    name : str
+        Unique name of the inlet.
+    q_value : float
+        Flow rate value assigned [m³/s].
+    """
     def __init__(self, name:str, q_value:float):
         super().__init__(name, InletType.FLOW_RATE)
         self._q_value = q_value
@@ -149,14 +167,16 @@ class FlowRateInlet(Inlet):
 
 
 class Vent:
-    def __init__(self, name:str, vacuum_pressure:float=0.0):
-        """A class respresenting a vent boundary. Vent vacuum pressure will be applied to all non-filled regions in the domain.
+    """A class respresenting a vent boundary. Vent vacuum pressure will be applied to all non-filled regions in the domain.
 
-        Parameters
-        ----------
-        name : str
-            Unique name of the vent.
-        """
+    Parameters
+    ----------
+    name : str
+        Unique name of the vent.
+    vacuum_pressure : float, optional
+        Vacuum pressure value assigned [Pa]. Default is 0.0.
+    """
+    def __init__(self, name:str, vacuum_pressure:float=0.0):
         self.name = name
         self._assigned = False
         self._vacuum_pressure = vacuum_pressure # Vacuum pressure value at the vent [Pa]
