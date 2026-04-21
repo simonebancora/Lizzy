@@ -21,7 +21,7 @@ The GMSH `.msh` file has some requirements to be compatible with Lizzy:
 
     An example of a GMSH mesh, where a physical boundary is being defined.
 
-As an example, we provide a :download:`GMSH script <../../../examples/meshes/Rect.geo>` (.geo) that demonstrated how to create a simple rectangular mesh with physical groups for Lizzy.
+As an example, we provide a :download:`GMSH script <../../../tutorials/channel_flow/ChannelFlow.geo>` (.geo) that demonstrated how to create a simple rectangular mesh with physical groups for Lizzy.
 The file can be opened in GMSH and exported as a `.msh` file.
 To learn more about how to prepare mesh files and tag physical entities using GMSH, refer to the `GMSH documentation <https://gmsh.info/doc/texinfo/gmsh.html#Elementary-entities-vs-physical-groups>`_ .
 

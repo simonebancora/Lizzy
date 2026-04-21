@@ -14,7 +14,27 @@ import numpy as np
 
 
 class Node:
-    """Class representing a mesh node."""
+    """Class representing a mesh node.
+
+    Attributes
+    ----------
+    idx : int
+        Unique index of the node.
+    coords : np.ndarray
+        (x, y, z) coordinates of the node in 3D space [m].
+    triangles : list
+        Triangular elements connected to this node.
+    triangle_ids : list
+        Indices of triangular elements connected to this node.
+    lines : list
+        Lines connected to this node.
+    line_ids : list
+        Indices of lines connected to this node.
+    nodes : list
+        Neighbouring nodes connected to this node by an edge.
+    node_ids : list
+        Indices of neighbouring nodes.
+    """
 
     __slots__ = (
         "coords",
@@ -78,6 +98,33 @@ class Element2D:
 
 class Triangle(Element2D):
     """Class representing a triangular element.
+
+    Attributes
+    ----------
+    idx : int
+        Unique index of the element.
+    material_tag : str
+        Name of the material assigned to this element.
+    A : float
+        Area of the triangular element [m²].
+    h : float
+        Thickness of the element in the out-of-plane direction [m].
+    k : np.ndarray
+        Permeability tensor of the element [m²].
+    porosity : float
+        Porosity of the element.
+    nodes : tuple
+        The three nodes of the triangle.
+    node_ids : tuple
+        Indices of the three nodes.
+    lines : tuple
+        The three edges of the triangle.
+    line_ids : tuple
+        Indices of the three edges.
+    centroid : np.ndarray
+        Centroid coordinates of the triangle [m].
+    n : np.ndarray
+        Unit normal vector of the triangle plane.
     """
     ### Triangle element stuff
     # xi is 'xchi'
@@ -177,6 +224,15 @@ class Tetrahedron(Element3D):
 
 class Line:
     """Class representing a line between two nodes in the mesh.
+
+    Attributes
+    ----------
+    idx : int
+        Unique index of the line.
+    nodes : tuple
+        The two nodes at the endpoints of the line.
+    midpoint : np.ndarray
+        Midpoint coordinates of the line [m].
     """
 
     __slots__ = (
@@ -212,6 +268,15 @@ class BoundaryLine(Line):
 
 class CV:
     """Class representing a control volume in the mesh.
+
+    Attributes
+    ----------
+    node : Node
+        The mesh node at the centre of this control volume.
+    idx : int
+        Unique index of the control volume (matches the node index).
+    area : float
+        Area of the control volume [m²].
     """
     def __init__(self, node:Node):
         self.node : Node = node

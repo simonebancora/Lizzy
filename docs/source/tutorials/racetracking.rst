@@ -4,7 +4,7 @@
 Racetracking
 ============
 
-This case demonstrates how to set up a simulation with multiple material domains. We will simulate the filling of a rectangular panel that has a side racetrack: a thin, highly-permeable channel running along one edge of the part. Racetracks can occur when the laminate is laid up in the mold and can disrupt the flow front.
+This tutorial demonstrates how to set up a simulation with multiple material domains. We will simulate the filling of a rectangular panel that has a side racetrack: a thin, highly-permeable channel running along one edge of the part. Racetracks can occur when the laminate is laid up in the mold and can disrupt the flow front.
 
 All files used in this tutorial are available in the `tutorials/racetracking <../../../tutorials/racetracking/>`_ folder. We recommend you download the :download:`mesh alone <../../../tutorials/racetracking/ChannelRacetrack.msh>` and create the script yourself following the tutorial.
 

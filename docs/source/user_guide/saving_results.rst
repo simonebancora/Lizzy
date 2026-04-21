@@ -29,6 +29,8 @@ By default, ``<name>`` is taken from the mesh file name. A custom name can be pr
 
     model.save_results(result_name="my_simulation")
 
+
+
 The following fields are saved at each write-out time step:
 
 - **FillFactor**: fill factor at each node (0 = empty, 1 = filled).
@@ -36,6 +38,11 @@ The following fields are saved at each write-out time step:
 - **Pressure**: pressure field [Pa].
 - **Velocity**: Darcy velocity field [m/s].
 
+To these, we can also add optionally the full 3×3 permeability tensor for each element as a cell field, by passing ``save_permeability=True``:
+
+.. code-block::
+
+    model.save_results(save_permeability=True)
 .. note::
 
     If the model is run in "Lighweight mode", Lizzy does not create any :class:`~lizzy.datatypes.Solution` object and :meth:`~lizzy.LizzyModel.save_results` cannot be called (will throw a ConfigurationError).

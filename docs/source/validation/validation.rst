@@ -1,7 +1,8 @@
-oValidation cases
-================
+Validation
+==========
 
-We can identify some cases that have a reference solution (either analytical or established) and solve the same with Lizzy to compare results.
+We can identify some cases that have a reference solution (either analytical or established experimentally) and solve the same with Lizzy to compare results.
+In the following, we present a collection of validation cases, with the aim of seeing it grow over time.
 
 Channel flow experiment
 -----------------------

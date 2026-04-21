@@ -11,5 +11,5 @@ We provide here a few tutorials to learn the basics of Lizzy. It is recommended 
     channel_flow
     racetracking
     anisotropy
-    complex
     gates_control
+    complex
