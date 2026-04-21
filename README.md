@@ -34,7 +34,7 @@ Contributions and Issues reporting are not open yet.
 The full [Documentation](https://lizzy.readthedocs.io/en/latest/) is available, though some parts may still be under construction.
 
 ### Visualisation
-The recommended software to visualise results from Lizzy is Paraview:
-https://www.paraview.org
+The recommended software to visualise results from Lizzy is [Paraview](https://www.paraview.org).
+
 
 
