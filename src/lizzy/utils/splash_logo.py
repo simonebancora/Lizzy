@@ -18,3 +18,6 @@ def print_logo():
     logger = logging.getLogger("lizzy")
     if logger.isEnabledFor(logging.INFO) and logging.root.handlers:
         print(logo)
+
+def print_logo_nologger():
+    print(logo)
