@@ -6,9 +6,10 @@
 
 import sys
 import argparse
+import textwrap
+from importlib.metadata import version
 from lizzy.utils.splash_logo import print_logo
 from lizzy.exceptions import LizzyError
-import textwrap
 
 def main():
     try:
@@ -52,7 +53,7 @@ def display_info():
     except ImportError:
         petsc_installed = "not installed"
     info_text = rf"""
-        Lizzy solver - v0.1.0
+        Lizzy solver - v{version("lizzy")}
 
         Developed by S. Bancora and P. Mulye, Copyright 2025-2026
         Licensed under the GNU General Public License v3.0
