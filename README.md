@@ -13,7 +13,7 @@ You should have received a copy of the GNU Affero General Public License along w
 Introducing Lizzy, a Liquid Composite Molding (LCM) simulation package written in Python.
 
 <div style="display: flex; justify-content: left;">
-<img src="docs/images/lizzy_logo_alpha_80.gif" alt="Lizzy logo" width="400">
+<img src="https://raw.githubusercontent.com/simonebancora/Lizzy/main/docs/images/lizzy_logo_alpha_80.gif" alt="Lizzy logo" width="400">
 </div>
 
 Lizzy uses the FE/CV method to simulate a macro-scale infusion problem in porous media. The solver is mainly designed to simulate composite resin infusion processes, but can be generalised to any porous media.

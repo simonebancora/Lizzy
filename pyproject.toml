@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "lizzy"
+name = "lizzy-lib"
 version = "0.1.0"
 authors = [
     {name = "Simone Bancora", email = "simone.bancora@gmail.com" },
@@ -23,6 +23,18 @@ dependencies = [
 description = "A filling simulation solver for Liquid Composite Molding (LCM) processes"
 readme = "README.md"
 keywords = ["rtm", "resin infusion", "finite elements", "solver", "simulation", "lcm"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
 
 [tool.setuptools.packages.find]
 where = ["src"]
