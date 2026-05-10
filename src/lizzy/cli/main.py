@@ -8,7 +8,7 @@ import sys
 import argparse
 import textwrap
 from importlib.metadata import version
-from lizzy.utils.splash_logo import print_logo
+from lizzy.utils.splash_logo import print_logo_nologger
 from lizzy.exceptions import LizzyError
 
 def main():
@@ -32,7 +32,7 @@ def _main():
 
     # Default: print available commands if no subcommand
     if args.command is None:
-        print_logo()
+        print_logo_nologger()
         print("Available commands:")
         for cmd in subparsers.choices.keys():
             print(f"  {cmd}")
@@ -53,7 +53,7 @@ def display_info():
     except ImportError:
         petsc_installed = "not installed"
     info_text = rf"""
-        Lizzy solver - v{version("lizzy")}
+        Lizzy LCM simulation library - v{version("lizzy")}
 
         Developed by S. Bancora and P. Mulye, Copyright 2025-2026
         Licensed under the GNU General Public License v3.0
@@ -61,4 +61,5 @@ def display_info():
         Optional dependencies:
         PETSc solvers: {petsc_installed}
         """
+    print_logo_nologger()
     print(textwrap.dedent(info_text))
