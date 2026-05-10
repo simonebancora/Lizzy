@@ -14,7 +14,7 @@ maintainers = [
 license = {file = "LICENSE"}
 requires-python = ">=3.10"
 dependencies = [
-    "meshio==5.3.5",
+    "meshio>=5.3.5",
     "numpy",
     "scipy",
     "h5py",
@@ -27,6 +27,12 @@ keywords = ["rtm", "resin infusion", "finite elements", "solver", "simulation", 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["lizzy*"]
+
+[project.urls]
+Homepage = "https://github.com/simonebancora/Lizzy"
+Documentation = "https://lizzy.readthedocs.io/en/latest/"
+Repository = "https://github.com/simonebancora/Lizzy"
+"Bug Tracker" = "https://github.com/simonebancora/Lizzy/issues"
 
 [project.optional-dependencies]
 dev = ["pytest"]

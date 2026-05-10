@@ -5,12 +5,21 @@
 #  You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+from importlib.metadata import version, PackageNotFoundError
+
 logging.getLogger("lizzy").addHandler(logging.NullHandler())
+
+try:
+    __version__ = version("lizzy")
+except PackageNotFoundError:
+    __version__ = "unknown"
+
 from lizzy.model import LizzyModel
 from lizzy._core.solver import SolverType
 from lizzy.exceptions import LizzyError, StateError, ConfigurationError, MeshError
 
 __all__ = [
+    "__version__",
     "LizzyModel",
     "SolverType",
     "LizzyError",
