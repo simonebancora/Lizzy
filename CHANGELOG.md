@@ -8,5 +8,12 @@ First versioned release.
 
 ### Added
 
-- FE/CV filling simulation for Liquid Composite Molding (LCM) processes
-- Documentation and tutorials
+- FE/CV simulation library for Liquid Composite Molding (LCM) processes
+- Support for .msh mesh format (v4 ASCII)
+- Support for standard Python logging module
+- Pressure boundary conditions
+- Isotropic and anisotropic materials with custom orientations
+- Volumetric Flow Rate boundary conditions (experimental)
+- Runtime modification of boundary conditions
+- Creation of virtual sensors
+- Saving results in XDMF + HF5 format
