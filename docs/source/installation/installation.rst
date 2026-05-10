@@ -3,18 +3,11 @@
 Installation
 ============
 
-Lizzy is provided as a package. To install using pip, navigate inside the cloned `Lizzy` folder and run:
+Lizzy is available on PyPI. To install:
 
 .. code-block:: console
 
-   (.venv) $ pip install .
-
-.. tip::
-    Since Lizzy is still in early development, package versioning is not adopted yet. Therefore, it is recommended to install the package in `editable mode <https://packaging.python.org/en/latest/guides/distributing-packages-using-setuptools/#working-in-development-mode>`_:
-
-    .. code-block:: console
-
-      (.venv) $ pip install -e .
+   (.venv) $ pip install lizzy-lib
 
 You can check that the installation was successful by typing:
 
@@ -43,8 +36,13 @@ You can check at any time if PETSc is installed correctly by typing:
 
    (.venv) $ lizzy info
    >>>
-
-   Lizzy solver - v0.1.0
+          |    _)                
+          |     | _  / _  /  |  |
+         ____| _| ___| ___| \_, |
+                            ___/ 
+                  v0.1.0
+                  
+   Lizzy LCM simulation library - v0.1.0
 
    Developed by S. Bancora and P. Mulye, Copyright 2025-2026
    Licensed under the GNU General Public License v3.0

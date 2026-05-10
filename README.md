@@ -23,6 +23,20 @@ This project is licensed under the GNU Affero General Public License v3.0 - see 
 
 > **Note:** Lizzy is still in early release stage. While we strive to maintain backwards API compatibility from now on, functionalities are still being added and API may still be subject to change. Contributions are not open yet.
 
+### Installation
+
+```bash
+pip install lizzy-lib
+```
+
+#### Optional: PETSc solvers
+
+Lizzy can use the PETSc library to achieve faster calculation times. To install:
+
+```bash
+pip install petsc petsc4py
+```
+
 ### Documentation
 
 The full [Documentation](https://lizzy.readthedocs.io/en/latest/) is available, though some parts may still be under construction.
