@@ -53,7 +53,7 @@ def display_info():
     except ImportError:
         petsc_installed = "not installed"
     info_text = rf"""
-        Lizzy LCM simulation library - v{version("lizzy")}
+        Lizzy LCM simulation library - v{version("lizzy-lib")}
 
         Developed by S. Bancora and P. Mulye, Copyright 2025-2026
         Licensed under the GNU General Public License v3.0
