@@ -139,6 +139,10 @@ The same approach applies to permeability. The ``elem.k`` attribute stores the f
         k_val = 1e-10 + 9e-10 * (x / L)  # varies from 1E-10 to 1E-9 m²
         elem.k = np.diag([k_val, k_val, k_val])
 
+.. figure:: ../../images/linear_permeability.png
+   :height: 300px
+   :align: center
+
 .. note::
     Element-wise manipulation must be performed **before** calling :meth:`~lizzy.LizzyModel.initialise_solver`. Modifying element properties after solver initialisation is not supported, as it would imply non-trivial physical implications during an ongoing filling (e.g. changing the thickness of an already-filled element).
 
