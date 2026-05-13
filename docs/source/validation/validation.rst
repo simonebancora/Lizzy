@@ -7,12 +7,12 @@ In the following, we present a collection of validation cases, with the aim of s
 Channel flow experiment
 -----------------------
 
-The channel flow experiment, as described in the well-known work by Weitzenbock :cite:`weitzenbock1999`, has an analytical solution. For a constant inlet pressure and a perfectly one-dimensional flow, the time of arrival of the flow front at a distance L from the inlet is expressed as:
+The channel flow experiment, as described in the well-known work by Weitzenbock :cite:`weitzenbock1999`, has an analytical solution. For a constant inlet pressure and a perfectly one-dimensional flow, the time of arrival of the flow front at a distance :math:`x=L` from the inlet is expressed as:
 
 .. math::
    :label: eq_channel_flow
 
-   t = \frac{\phi \mu L^2}{2 \Delta p \mathbf{K}}
+   t = \frac{\phi \mu L^2}{2 \Delta p K_{xx}}
 
 Case definition
 ~~~~~~~~~~~~~~~
@@ -22,7 +22,7 @@ To conduct the channel flow experiment, we will use the following values:
 - :math:`\phi` = 0.5
 - :math:`\mu = 0.1` Pa·s
 - :math:`\Delta p =` 1.0E+05 Pa
-- :math:`\mathbf{K}` = 1.0E-10 :math:`\cdot I` m²
+- :math:`K_{xx}` = 1.0E-10 m²
 
 By plugging the values in Eq. :eq:`eq_channel_flow`, and considering a distance L = 1m, we obtain a theoretical arrival time of: :math:`t_{ref}` = **2500s** seconds. This shall be considered as the reference solution.
 
@@ -77,7 +77,7 @@ In presence of constant viscosity :math:`\mu`, constant inlet pressure different
 .. math::
    :label: eq_radial_flow
 
-   t(r) = \frac{\mu r^2 \phi}{2 K \Delta p } \left( \ln \left( \frac{r}{r_0} \right) - \frac{1}{2} \left( 1 - \left( \frac{r_0}{r} \right)^2  \right) \right)
+   t(r) = \frac{\mu r^2 \phi}{2 K_{rr} \Delta p } \left( \ln \left( \frac{r}{r_0} \right) - \frac{1}{2} \left( 1 - \left( \frac{r_0}{r} \right)^2  \right) \right)
 
 Case definition
 ~~~~~~~~~~~~~~~
@@ -89,7 +89,7 @@ To conduct the radial flow experiment, we will use the following values:
 - :math:`\mu = 0.1` Pa·s
 - :math:`\phi` = 0.6
 - :math:`\Delta p =` 1.0E+05 Pa
-- :math:`\mathbf{K}` = 1.0E-10 :math:`\cdot I` m²
+- :math:`K_{rr}` = 1.0E-10 m²
 
 By plugging the values in Eq. :eq:`eq_radial_flow`, and considering a distance :math:`r = R`, we obtain a theoretical arrival time of: :math:`t_{ref}(R)` = **3817.77** seconds (let's round up to 3818 seconds). This shall be considered as the reference solution.
 
