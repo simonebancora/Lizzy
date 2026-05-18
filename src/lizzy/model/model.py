@@ -621,7 +621,7 @@ class LizzyModel:
         self._mesh.assert_all_elements_have_material()
 
     @postinit_only
-    def solve(self) -> Solution:
+    def solve(self, time_interval:float = None) -> Solution:
         """Advance the filling simulation from the current time until the part is filled.
 
         Returns
@@ -637,7 +637,10 @@ class LizzyModel:
                 default_result_name = self._model_name + '_RES'
                 self._solver.initialize_streaming_writer(default_result_name)
         
-        self._latest_solution = self._solver.solve()
+        if time_interval is not None:
+            self._latest_solution = self._solver.solve_time_interval(time_interval)
+        else:
+            self._latest_solution = self._solver.solve()
         return self._latest_solution
 
     @postinit_only
