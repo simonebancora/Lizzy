@@ -62,13 +62,6 @@ class Solver:
     
     def perform_precalcs(self):
         self.K_sing, self.f_orig = self.preproc.run_preproc_sequence() # TODO: reorder nodes here to reduce bandwidth - then reorder the whole mesh and objects
-        self.initialise_sensor_manager() # could move into preprocessor as this runs only once
-    
-    def initialise_sensor_manager(self):
-        # assign sensors
-        self._sensor_manager.initialise(self.mesh)
-
-
 
     def get_empty_nodes_idx(self, fill_factor):
         """
@@ -82,8 +75,6 @@ class Solver:
         """
         state.fill_factor_array[self.bcs.dirichlet_idx] = 1
         state.fill_factor_array[self.bcs.neumann_idx] = 1
-
-
     
     def generate_initial_time_step(self):
         time_0 = 0
@@ -100,7 +91,6 @@ class Solver:
         v_nodal_0 = np.zeros((len(self.mesh.nodes), 3))
         initial_time_step = (time_step_number, time_0, dt_0, p_0, v_0, v_nodal_0, fill_factor_0, flow_front_0)
         return initial_time_step
-        
 
     def initialise_new_solution(self):
         """

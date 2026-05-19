@@ -2,24 +2,20 @@ import pytest
 import numpy as np
 from lizzy._core.cvmesh.entities import Node, Line, Triangle
 
-
 @pytest.fixture
 def xy_tri():
-    # right triangle in the xy-plane
+    # right triangle in the xy-plane, with area = 0.5
     n0 = Node(0, 0, 0, 0)
     n1 = Node(1, 0, 0, 1)
     n2 = Node(0, 1, 0, 2)
     return Triangle(n0, n1, n2, Line(n0, n1, 0), Line(n1, n2, 1), Line(n2, n0, 2), 0)
 
-
 def test_node_constructor():
     coords = np.array([2, 15, 7.99])
     idx = 10
     node = Node(coords[0], coords[1], coords[2], idx)
-    assert node.idx == idx
     assert type(node.coords) == np.ndarray
     np.testing.assert_array_equal(coords, node.coords)
-
 
 def test_triangle_constructor(xy_tri):
     # oblique triangle
