@@ -362,6 +362,13 @@ class LizzyModel:
     # Gates API
     # ===========================================================================
 
+    def _assert_boundary_tag_exists_in_mesh(self, boundary_tag:str) -> bool:
+        if self._mesh.mesh_view is None:
+            raise ConfigurationError("No mesh loaded. Call read_mesh_file() before assigning vents.")
+        known = self._mesh.mesh_view.phys_boundary_names_set
+        if boundary_tag not in known:
+            raise ConfigurationError(f"Boundary tag '{boundary_tag}' not found in mesh. \nAvailable boundary tags: {sorted(known)}")
+
     @preinit_only
     def create_pressure_inlet(self, name:str, initial_pressure_value:float) -> PressureInlet:
         """Creates a new inlet where a pressure boundary condition is applied.
@@ -411,6 +418,7 @@ class LizzyModel:
         boundary_tag : str
             An existing mesh boundary tag where to assign the inlet.
         """
+        self._assert_boundary_tag_exists_in_mesh(boundary_tag)
         self._gates_manager.assign_inlet(inlet_selector, boundary_tag)
     
     @preinit_only
@@ -446,6 +454,7 @@ class LizzyModel:
         boundary_tag : str
             An existing mesh boundary tag where to assign the vent.
         """
+        self._assert_boundary_tag_exists_in_mesh(boundary_tag)
         self._gates_manager.assign_vent(vent_selector, boundary_tag)
     
     def fetch_inlet_by_name(self, inlet_name: str) -> Inlet:

@@ -34,10 +34,6 @@ class SimulationParameters:
     in_memory_solve : bool = False
     progress_bar : bool = False
 
-    generate_fill_image :bool = False
-    fill_image_resolution : int = 250
-    display_fill : bool = False
-
     def print_current(self):
         """Prints the currently assigned simulation parameters to the console."""
         params = textwrap.dedent(rf"""

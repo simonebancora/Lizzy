@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from lizzy._core.cvmesh.entities import Node, Line, BoundaryLine, Triangle, CV, CVLine
+from lizzy._core.cvmesh.entities import Node, Line, Triangle, CV, CVLine
 
 @pytest.fixture
 def xy_tri():
