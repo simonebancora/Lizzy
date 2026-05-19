@@ -230,17 +230,20 @@ class Line:
         The two nodes at the endpoints of the line.
     midpoint : np.ndarray
         Midpoint coordinates of the line [m].
+    length : float
+        Length of the line [m].
     """
 
     __slots__ = (
         "idx",
         "nodes",
         "midpoint",
-        "n"
+        "length"
     )
     def __init__(self, node_1:Node, node_2:Node, idx:int):
         self.nodes = (node_1, node_2)
         self.idx : int = idx
+        self.length = np.linalg.norm(self.nodes[0].coords - self.nodes[1].coords)
         self.midpoint : np.ndarray = self._compute_midpoint()
 
     def _compute_midpoint(self):
@@ -249,10 +252,9 @@ class Line:
         return np.array((x1, x2)).mean(0)
 
 class BoundaryLine(Line):
-    __slots__ = ("length", "tri_idx")
+    __slots__ = ("tri_idx", "n")
     def __init__(self, node_1:Node, node_2:Node, idx:int, tri_obj:Triangle):
         super().__init__(node_1, node_2, idx)
-        self.length = np.linalg.norm(self.nodes[0].coords - self.nodes[1].coords)
         self.tri_idx = tri_obj.idx
         self.n = np.cross(np.array([node_1.coords - node_2.coords]), tri_obj.n)
         test_point_outer = self.midpoint + self.n
