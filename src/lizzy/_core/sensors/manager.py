@@ -43,19 +43,7 @@ class SensorManager:
         new_sensor = Sensor(name, position)
         self.sensors.append(new_sensor)
         self.sensors_dict[name] = new_sensor
-    
-    def initialise(self, mesh:Mesh):
-        """Perform some precalculations to initialise the manager. This method is called automatically by the solver when a new simulation is initialised (not meant for user).
-        """
-        if len(self.sensors) > 0:
-            all_node_coords = mesh.node_coords
-            for sensor in self.sensors:
-                distances = []
-                for node_coords in all_node_coords:
-                    distances.append(np.linalg.norm(sensor.position - node_coords))
-                id_closest_node = np.argmin(np.array(distances))
-                sensor.child_node = mesh.nodes[id_closest_node]
-            self.sensor_trigger_states = np.array([False for s in self.sensors])
+
     
     def probe_current_solution(self, p_array, v_array, f_array, current_time):
         """This method updates the existing sensors with the current solution values. This method is called automatically by the solver (not meant for user)."""

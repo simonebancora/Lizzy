@@ -11,8 +11,8 @@ tol_err = 0.01
 @pytest.fixture()
 def model():
     model = liz.LizzyModel()
-    model.read_mesh_file("tests/test_meshes/Rect_1M_R1.msh")
-    model.set_simulation_parameters(output_interval=100, fill_tolerance=0.00, in_memory_solve=True)
+    model.read_mesh_file("tests/test_meshes/Rect_1M_64elem.msh")
+    model.set_simulation_parameters(output_interval=10000, in_memory_solve=True)
     model.create_resin("resin", 0.1)
     model.assign_resin("resin")
     model.create_material("test_material", (1E-10, 1E-10, 1E-10), 0.5, 0.005)

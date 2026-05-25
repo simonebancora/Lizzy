@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.INFO)
 # Set up the model: notice ``end_step_when_sensor_triggered=True`` because we want to use sensors to control the process.
 model = lizzy.LizzyModel()
 model.read_mesh_file("GatesControl.msh")
-model.set_simulation_parameters(output_interval=10, progress_bar=False, end_step_when_sensor_triggered=True)
+model.set_simulation_parameters(output_interval=10, progress_bar=False, end_step_when_sensor_triggered=True, in_memory_solve=True)
 
 # Resin
 model.create_resin("resin_01", 0.1)

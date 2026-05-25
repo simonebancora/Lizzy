@@ -70,7 +70,6 @@ class GatesManager:
             return selected_inlet
 
     def assign_inlet(self, inlet_selector:Inlet | str, boundary_tag:str):
-        #TODO: I dont like that the boundary tag is not checked against existing here. The check only happens at runtime by solver.
         """Selects an inlet from existing ones and assigns it to the indicated mesh boundary.
 
         Parameters

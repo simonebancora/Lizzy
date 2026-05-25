@@ -17,3 +17,8 @@ First versioned release.
 - Runtime modification of boundary conditions
 - Creation of virtual sensors
 - Saving results in XDMF + HF5 format
+
+
+## [0.1.1] - 2026-05-14
+
+Minor bug fix to version number
