@@ -7,13 +7,15 @@ from lizzy.exceptions import MeshError
 @pytest.fixture
 def mesh():
     model = lizzy.LizzyModel()
-    model.read_mesh_file("tests/test_meshes/Rect_1M_64elem.msh")
+    model.read_mesh_file("tests/test_meshes/Rect_1M_16elem.msh")
     model.set_simulation_parameters(output_interval=10000, in_memory_solve=True)
-    model.create_resin("resin", 0.1)
+    model.create_resin("resin", 1)
     model.assign_resin("resin")
-    model.create_material("test_material", (1E-10, 1E-10, 1E-10), 0.5, 0.005)
-    model.assign_material("test_material", 'domain')
-    model.create_pressure_inlet("inlet_left", 1E+05)
+    model.create_material("test_material", (1E-3, 5E-3, 1E-3), 0.5, 0.005)
+    angle = np.pi/6 # 30 deg
+    model.create_rosette("rosette", (np.cos(angle), np.sin(angle), 0))
+    model.assign_material("test_material", 'domain', "rosette")
+    model.create_pressure_inlet("inlet_left", 1)
     model.assign_inlet("inlet_left", "left_edge")
     model.initialise_solver()
     return model._mesh
@@ -84,4 +86,19 @@ def test_assert_all_elements_have_material_raises(mesh: Mesh):
     mesh.triangles[0].material_assigned = False
     with pytest.raises(MeshError):
         mesh.assert_all_elements_have_material()
+
+# test that the permeability eigenvectors are at 30 deg from global and that the eigenvalues are the ones assigned
+def test_permeability_tensor_orientation(mesh: Mesh):
+    angle = np.pi/6
+    for tri in mesh.triangles:
+        k = tri.k
+        eigenvalues, eigenvectors = np.linalg.eig(k)
+        # test eigenvalues
+        np.testing.assert_allclose(eigenvalues, np.array([1E-3, 5E-3, 1E-3]), rtol=1e-15)
+        # first vector on xy plane
+        np.testing.assert_allclose( np.abs(np.dot((eigenvectors[:,0]), np.array([np.cos(angle), np.sin(angle), 0]))), 1, rtol=1e-12)
+        # second vector on xy plane
+        np.testing.assert_allclose( np.abs(np.dot((eigenvectors[:,1]), np.array([-np.sin(angle), np.cos(angle), 0]))), 1, rtol=1e-12)
+        # third vector nprmal to xy plane
+        np.testing.assert_allclose( np.abs(np.dot((eigenvectors[:,2]), np.array([0, 0, 1]))), 1, rtol=1e-12)
 
