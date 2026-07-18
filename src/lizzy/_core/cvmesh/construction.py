@@ -106,11 +106,10 @@ class MeshBuilder:
         assert np.all(boundary_line_idx_to_tri_idx >= 0) # TODO: add some logging here 
         return boundary_line_idx_to_tri_idx
 
-    def create_entities(self, n_nodes, n_triangles, n_lines, node_coords, tri_conn, physical_lines_conn, boundary_line_idx_to_tri_idx):
+    def create_entities(self, n_nodes, n_triangles, n_lines, node_coords):
         # preallocate lists
         new_nodes = [None]*n_nodes
         new_lines = [None]*n_lines
-        new_boundary_lines = [None]*len(physical_lines_conn)
         new_triangles = [None]*n_triangles
         # create nodes
         for i in range(n_nodes):
@@ -127,13 +126,17 @@ class MeshBuilder:
             local_lines_conn = self.triangle_idx_to_line_idxs[i]
             local_line_objs = [new_lines[idx] for idx in local_lines_conn]
             new_triangles[i] = Triangle(*local_node_objs, *local_line_objs, i)
-        # create boundary lines:
+        return new_nodes, new_lines, new_triangles
+
+    def create_boundary_lines(self, physical_lines_conn, boundary_line_idx_to_tri_idx, nodes, triangles):
+        """Create BoundaryLine objects from physical line connectivity. Returns an empty
+        list when the mesh has no named physical lines"""
+        new_boundary_lines = [None]*len(physical_lines_conn)
         for i in range(len(physical_lines_conn)):
             local_conn = physical_lines_conn[i]
-            local_node_objs = [new_nodes[idx] for idx in local_conn]
-            new_boundary_lines[i] = BoundaryLine(*local_node_objs, i, new_triangles[boundary_line_idx_to_tri_idx[i]])
-        
-        return new_nodes, new_lines, new_triangles, new_boundary_lines
+            local_node_objs = [nodes[idx] for idx in local_conn]
+            new_boundary_lines[i] = BoundaryLine(*local_node_objs, i, triangles[boundary_line_idx_to_tri_idx[i]])
+        return new_boundary_lines
 
     def assign_material_tags_to_elements(self, mesh_data, triangles:list[Triangle]):
         # assign material_tag tag. key is a string (name of physical group)
@@ -186,7 +189,14 @@ class MeshBuilder:
         mesh_view.phys_boundary_name_to_node_idxs = mesh_data['physical_nodes']
         mesh_view.phys_boundary_name_to_boundary_line_idxs = phys_boundary_name_to_boundary_line_idxs
         mesh_view.boundary_line_idx_to_node_idxs = physical_lines_conn
-        new_nodes, new_lines, new_triangles, new_boundary_lines = self.create_entities(n_nodes, n_triangles, n_lines, node_coords, tri_conn, physical_lines_conn, boundary_line_idx_to_tri_idx)
+        new_nodes, new_lines, new_triangles = self.create_entities(n_nodes, n_triangles, n_lines, node_coords)
+
+        # create boundary lines (only for meshes with named physical lines, e.g. gmsh)
+        if mesh_data.get("physical_line_names"):
+            new_boundary_lines = self.create_boundary_lines(physical_lines_conn, boundary_line_idx_to_tri_idx, new_nodes, new_triangles)
+        else:
+            new_boundary_lines = []
+
         node_idx_to_node_idxs, node_idx_to_tri_idxs, node_idx_to_n_tris = self.assign_varying_number_references(new_nodes, new_triangles)
         mesh_view.node_idx_to_node_idxs = node_idx_to_node_idxs
         mesh_view.node_idx_to_tri_idxs = node_idx_to_tri_idxs

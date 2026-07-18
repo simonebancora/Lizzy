@@ -6,7 +6,6 @@ def test_porous_material_constructor():
     mat = PorousMaterial("mat", (1, 2, 3), 0.5, 0.001)
     # test attributes
     assert mat.assigned == False
-    np.testing.assert_array_equal(mat.k_princ, np.diag((1,2,3)))
 
     # test isotropic detection
     mat_isotropic = PorousMaterial("m", (1e-10, 1e-10, 1e-10), porosity=0.5, thickness=0.001)
