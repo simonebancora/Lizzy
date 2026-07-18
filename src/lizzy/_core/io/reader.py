@@ -24,7 +24,28 @@ def extract_unique_nodes(node_ids_list):
     non_repeated_nodes = np.unique(repeated_nodes)
     return non_repeated_nodes
 
-# class syntax
+def populate_mesh_data(all_nodes_coords,
+                    nodes_conn,
+                    *,
+                    physical_lines_conn=None,
+                    physical_domains=None,
+                    physical_lines=None,
+                    physical_nodes_ids=None,
+                    physical_domain_names=None,
+                    physical_line_names=None) -> dict:
+    mesh_data = {
+        'all_nodes_coords'      : all_nodes_coords,
+        'nodes_conn'            : nodes_conn,
+        'physical_lines_conn'   : {} if physical_lines_conn is None else physical_lines_conn,
+        'physical_domains'      : {} if physical_domains is None else physical_domains,
+        'physical_lines'        : {} if physical_lines is None else physical_lines,
+        'physical_nodes'        : {} if physical_nodes_ids is None else physical_nodes_ids,
+        'physical_domain_names' : [] if physical_domain_names is None else physical_domain_names,
+        'physical_line_names'   : [] if physical_line_names is None else physical_line_names,
+        }
+
+    return mesh_data
+
 class Format(Enum):
     MSH = auto()
     INP = auto()
@@ -103,23 +124,20 @@ class Reader:
         # get node ids for nodes in the physical lines
         for key in physical_lines:
             physical_nodes_ids[key] = extract_unique_nodes(mesh_file.cells_dict["line"][physical_lines[key]])
-
-        mesh_data = {
-            'all_nodes_coords'      : all_nodes_coords,
-            'nodes_conn'            : nodes_conn,
-            'physical_lines_conn'   : physical_lines_conn,
-            'physical_domains'      : physical_domains,
-            'physical_lines'        : physical_lines,
-            'physical_nodes'        : physical_nodes_ids,
-            'physical_domain_names': physical_domain_names,
-            'physical_line_names'  : physical_line_names,
-            }
-        return mesh_data
+        
+        return populate_mesh_data(all_nodes_coords,
+                                nodes_conn,
+                                physical_lines_conn=physical_lines_conn,
+                                physical_domains=physical_domains,
+                                physical_lines=physical_lines,
+                                physical_nodes_ids=physical_nodes_ids,
+                                physical_domain_names=physical_domain_names,
+                                physical_line_names=physical_line_names)
 
     def _read_stl_file(self, mesh_path:Path) -> dict:
         """
-        Reads a mesh file in .stl format. STL files carry no named regions, so all
-        triangles are placed in a single physical domain named 'stl_domain'. There are no physical lines.
+        Reads a mesh file in .stl format. STL format carry no named regions, so all
+        triangles are placed in a single physical domain named 'STL_DOMAIN'. There are no physical lines.
         """
         try:
             mesh_file = meshio.read(mesh_path, file_format="stl")
@@ -130,20 +148,13 @@ class Reader:
         nodes_conn = mesh_file.cells_dict["triangle"]
 
         # single default domain covering all triangles
-        physical_domains = {"stl_domain": np.arange(len(nodes_conn))}
-        physical_domain_names = ["stl_domain"]
+        physical_domains = {"STL_DOMAIN": np.arange(len(nodes_conn))}
+        physical_domain_names = ["STL_DOMAIN"]
 
-        mesh_data = {
-            'all_nodes_coords'      : all_nodes_coords,
-            'nodes_conn'            : nodes_conn,
-            'physical_lines_conn'   : {},
-            'physical_domains'      : physical_domains,
-            'physical_lines'        : {},
-            'physical_nodes'        : {},
-            'physical_domain_names' : physical_domain_names,
-            'physical_line_names'   : [],
-            }
-        return mesh_data
+        return populate_mesh_data(all_nodes_coords,
+                                nodes_conn,
+                                physical_domains=physical_domains,
+                                physical_domain_names=physical_domain_names)
 
     def print_mesh_info(self) -> None:
         """Returns some information about the mesh.
