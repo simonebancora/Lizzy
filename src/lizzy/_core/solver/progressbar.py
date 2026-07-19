@@ -13,15 +13,14 @@ from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 class ProgressBar:
-    def __init__(self, state:SolverState, total_cvs:int, display:bool):
-        self.shows = display
+    def __init__(self, state:SolverState, total_cvs:int):
         self.total_cvs = total_cvs
         self.state = state
         self.pbar = None
         self._log_redirect = None
 
     def show(self):
-        if self.shows and self.pbar is None:
+        if self.pbar is None:
             self._log_redirect = logging_redirect_tqdm()
             self._log_redirect.__enter__()
             self.pbar = tqdm(total=self.total_cvs, initial=self.total_cvs - self.state.n_empty_cvs,
@@ -31,7 +30,7 @@ class ProgressBar:
                         ncols=80)
 
     def update(self, state:SolverState):
-        if self.shows and self.pbar is not None:
+        if self.pbar is not None:
             new_filled = self.total_cvs - state.n_empty_cvs
             self.pbar.update(new_filled - self.pbar.n)
             self.pbar.postfix[0] = state.current_time

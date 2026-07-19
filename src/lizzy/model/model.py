@@ -647,10 +647,7 @@ class LizzyModel:
                 default_result_name = self._model_name + '_RES'
                 self._solver.initialize_streaming_writer(default_result_name)
         
-        if time_interval is not None:
-            self._latest_solution = self._solver.solve_time_interval(time_interval)
-        else:
-            self._latest_solution = self._solver.solve()
+        self._latest_solution = self._solver.solve(time_interval)
         return self._latest_solution
 
     @postinit_only
@@ -675,7 +672,7 @@ class LizzyModel:
                 default_result_name = self._model_name + '_RES'
                 self._solver.initialize_streaming_writer(default_result_name)
         
-        self._latest_solution = self._solver.solve_time_interval(time_interval)
+        self._latest_solution = self._solver.solve(time_interval)
         return self._latest_solution
     
     @postinit_only

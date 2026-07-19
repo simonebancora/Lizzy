@@ -118,7 +118,7 @@ class Solver:
         # TODO: this first probe is temporary and should be cleaner
         self._sensor_manager.probe_current_solution(self.time_step_manager.p_buffer[0], self.time_step_manager.v_nodal_buffer[0], self.time_step_manager.fill_factor_buffer[0], 0.0)
         self.state.increment_time_step_counter()
-        self.progress_bar = ProgressBar(self.state, self.mesh.mesh_view.n_nodes, self.simulation_parameters.progress_bar)
+        self.progress_bar = ProgressBar(self.state, self.mesh.mesh_view.n_nodes)
     
     def initialize_streaming_writer(self, result_name: str, save_permeability: bool = False):
         """Initialize the streaming writer for incremental file output.
@@ -213,43 +213,38 @@ class Solver:
             self._sensor_manager.probe_current_solution(self.state.p_array, self.state.v_nodal_array, fill_factor, self.state.current_time)
         self.state.increment_time_step_counter()
 
-    def solve(self):
+    def solve(self, time_interval:float = None):
+        """Advance the simulation. If ``time_interval`` is None, runs until part filled;
+        otherwise it solves for ``time_interval`` seconds and returns"""
         solution = None
-        self.state.step_end_time = np.inf  # reset step end time for full solve
+        bounded = time_interval is not None
+        if bounded:
+            self.state.step_completed = False
+            self.state.step_end_time = self.state.current_time + time_interval
+        else:
+            self.state.step_end_time = np.inf  # reset step end time for full solve
+            logger.info(f" Solving started on {len(self.mesh.triangles)} elements and {self.mesh.mesh_view.n_nodes} nodes")
         self.bcs.update(self.mesh, self.f_orig, self.material_manager, self.gates_manager) # TODO this is a bit hacky: need to update bcs before the first time step to correctly fill initial CVs and assign p0_idx. Should be more explicit or a cleaner way...
-        logger.info(f" Solving started on {len(self.mesh.triangles)} elements and {self.mesh.mesh_view.n_nodes} nodes")
-        # 
-        self.progress_bar.show()
+        if self.simulation_parameters.progress_bar:
+            self.progress_bar.show()
         solve_start = time.perf_counter()
-        while self.state.n_empty_cvs > 0:
-            self.solve_time_step()
-            self.progress_bar.update(self.state)
-        solve_time = time.perf_counter() - solve_start
-        self.progress_bar.close()
-        logger.info(f" Solve completed in {solve_time:.2f} seconds")
-        logger.info(f" Empty CVs: {self.state.n_empty_cvs}, fill time: {self.state.current_time:.2f} seconds")
-        if not self.simulation_parameters.lightweight and self.simulation_parameters.in_memory_solve:
-            solution = self.time_step_manager.pack_solution()
-        return solution
-
-    def solve_time_interval(self, time_interval:float):
-        solution = None
-        self.state.step_completed = False
-        self.state.step_end_time = self.state.current_time + time_interval
-        total_cvs = self.mesh.mesh_view.n_nodes
-        self.progress_bar.show()
-        while self.state.step_completed == False and self.state.n_empty_cvs > 0:
-            self.bcs.update(self.mesh, self.f_orig, self.material_manager, self.gates_manager)
+        while self.state.n_empty_cvs > 0 and not (bounded and self.state.step_completed):
             if len(self.bcs.dirichlet_idx) == 0 and len(self.bcs.neumann_idx) == 0:
                 self.solve_closed_inlets_time_step()
             else:
                 self.solve_time_step()
-            self.progress_bar.update(self.state)
-        # self.progress_bar.close()
+            if self.simulation_parameters.progress_bar:
+                self.progress_bar.update(self.state)
+        solve_time = time.perf_counter() - solve_start
+        if not bounded:
+            if self.simulation_parameters.progress_bar:
+                self.progress_bar.close()
+            logger.info(f" Solve completed in {solve_time:.2f} seconds")
+            logger.info(f" Empty CVs: {self.state.n_empty_cvs}, fill time: {self.state.current_time:.2f} seconds")
         if not self.simulation_parameters.lightweight and self.simulation_parameters.in_memory_solve:
             solution = self.time_step_manager.pack_solution()
         return solution
-    
+
     def solve_closed_inlets_time_step(self):
         dt = self.simulation_parameters.output_interval
         dt, write_out = self.handle_wo_criterion(dt)
