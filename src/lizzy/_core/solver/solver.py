@@ -12,6 +12,7 @@ if TYPE_CHECKING:
     from lizzy._core.cvmesh import Mesh
     from lizzy._core.materials import MaterialManager
     from lizzy._core.datatypes.simparams import SimulationParameters
+    
 
 import logging
 import time
@@ -28,6 +29,7 @@ from .preprocessor import Preprocessor
 from .solverbcs import SolverBCs
 from lizzy._core.datatypes.solverdata import SolverState, SolverSettings
 from lizzy._core.io.writer import StreamingWriter
+from lizzy._core.solver.progressbar import ProgressBar
 
 logger = logging.getLogger("lizzy.solver")
 
@@ -44,24 +46,24 @@ class Solver:
         self.vsolver:VelocitySolver                         = VelocitySolver()
         self.gates_manager:GatesManager                     = gates_manager 
         self.time_step_manager:TimeStepManager              = TimeStepManager(mesh.mesh_view.n_nodes, mesh.mesh_view.n_triangles)
-        self.preproc:Preprocessor                           = Preprocessor(mesh, self.fill_solver, self.vsolver, material_manager, gates_manager, simulation_parameters, sensor_manager)
         self._sensor_manager:SensorManager                  = sensor_manager
         self.bcs:SolverBCs                                  = SolverBCs()
         self.K_sing:np.ndarray                              = None
         self.f_orig:np.ndarray                              = None
         self.state:SolverState                              = SolverState(self.mesh)
         self.settings:SolverSettings                        = SolverSettings(solver_type, solver_tol, solver_max_iter, solver_verbose, solver_kwargs)
+        self.progress_bar:ProgressBar                       = None
         
         # Streaming writer for in_memory_solve=False mode
         self._streaming_writer:StreamingWriter              = None
         if not simulation_parameters.in_memory_solve and not simulation_parameters.lightweight:
             self._streaming_writer = StreamingWriter()
-        
-        self.perform_precalcs()
-        self.initialise_new_solution()
     
-    def perform_precalcs(self):
-        self.K_sing, self.f_orig = self.preproc.run_preproc_sequence() # TODO: reorder nodes here to reduce bandwidth - then reorder the whole mesh and objects
+    def initialise(self):
+        preproc = Preprocessor(self.mesh, self.fill_solver, self.vsolver, self._sensor_manager)
+        preproc.run_preproc_sequence()
+        self.K_sing, self.f_orig = fe.assemble_global(self.mesh.nodes, self.mesh.triangles, self.material_manager.assigned_resin.mu, sparse=True)
+    
 
     def get_empty_nodes_idx(self, fill_factor):
         """
@@ -102,7 +104,7 @@ class Solver:
         self.gates_manager.reset_inlets()
         self.state.next_wo_time = self.simulation_parameters.output_interval # TODO: this one and the next (current mu) are initialised manually... not pretty
         self.state.current_mu = self.material_manager.assigned_resin.mu
-        self.bcs.update(self.mesh, self.material_manager, self.gates_manager)
+        self.bcs.update(self.mesh, self.f_orig, self.material_manager, self.gates_manager)
         self.fill_initial_cvs(self.state)
         p0_idxs = self.get_empty_nodes_idx(self.state.fill_factor_array)
         self.state.n_empty_cvs = len(p0_idxs)
@@ -116,6 +118,7 @@ class Solver:
         # TODO: this first probe is temporary and should be cleaner
         self._sensor_manager.probe_current_solution(self.time_step_manager.p_buffer[0], self.time_step_manager.v_nodal_buffer[0], self.time_step_manager.fill_factor_buffer[0], 0.0)
         self.state.increment_time_step_counter()
+        self.progress_bar = ProgressBar(self.state, self.mesh.mesh_view.n_nodes, self.simulation_parameters.progress_bar)
     
     def initialize_streaming_writer(self, result_name: str, save_permeability: bool = False):
         """Initialize the streaming writer for incremental file output.
@@ -177,13 +180,7 @@ class Solver:
         fill_factor = self.state.fill_factor_array
         free_surface = self.state.free_surface_array
 
-        neumann_idxs = self.bcs.neumann_idx
-        neumann_vals = self.bcs.neumann_vals
-        f_neumann = self.f_orig.copy()
-        for i in range(len(neumann_idxs)):
-            f_neumann[neumann_idxs[i]] += neumann_vals[i]
-        self.state.p_array = PressureSolver.solve_with_mask(
-            self.K_sing, f_neumann, self.bcs, self.settings)
+        self.state.p_array = PressureSolver.solve_with_mask(self.K_sing, self.bcs, self.settings)
 
         self.vsolver.update_velocities(self.state)
 
@@ -219,24 +216,16 @@ class Solver:
     def solve(self):
         solution = None
         self.state.step_end_time = np.inf  # reset step end time for full solve
-        self.bcs.update(self.mesh, self.material_manager, self.gates_manager) # TODO this is a bit hacky: need to update bcs before the first time step to correctly fill initial CVs and assign p0_idx. Should be more explicit or a cleaner way...
-        total_cvs = self.mesh.mesh_view.n_nodes
-        filled_cvs = total_cvs - self.state.n_empty_cvs
+        self.bcs.update(self.mesh, self.f_orig, self.material_manager, self.gates_manager) # TODO this is a bit hacky: need to update bcs before the first time step to correctly fill initial CVs and assign p0_idx. Should be more explicit or a cleaner way...
         logger.info(f" Solving started on {len(self.mesh.triangles)} elements and {self.mesh.mesh_view.n_nodes} nodes")
-        pbar = tqdm(total=total_cvs, initial=filled_cvs,
-                    desc="Fill progress",
-                    bar_format="{l_bar}{bar}| t={postfix[0]:.2f}s [{elapsed}<{remaining}]",
-                    postfix=[self.state.current_time],
-                    ncols=80, disable=not self.simulation_parameters.progress_bar)
+        # 
+        self.progress_bar.show()
         solve_start = time.perf_counter()
         while self.state.n_empty_cvs > 0:
             self.solve_time_step()
-            new_filled = total_cvs - self.state.n_empty_cvs
-            pbar.update(new_filled - pbar.n)
-            if self.simulation_parameters.progress_bar:
-                pbar.postfix[0] = self.state.current_time
+            self.progress_bar.update(self.state)
         solve_time = time.perf_counter() - solve_start
-        pbar.close()
+        self.progress_bar.close()
         logger.info(f" Solve completed in {solve_time:.2f} seconds")
         logger.info(f" Empty CVs: {self.state.n_empty_cvs}, fill time: {self.state.current_time:.2f} seconds")
         if not self.simulation_parameters.lightweight and self.simulation_parameters.in_memory_solve:
@@ -248,23 +237,15 @@ class Solver:
         self.state.step_completed = False
         self.state.step_end_time = self.state.current_time + time_interval
         total_cvs = self.mesh.mesh_view.n_nodes
-        filled_cvs = total_cvs - self.state.n_empty_cvs
-        pbar = tqdm(total=total_cvs, initial=filled_cvs,
-                    desc="Fill progress",
-                    bar_format="{l_bar}{bar}| t={postfix[0]:.2f}s [{elapsed}<{remaining}]",
-                    postfix=[self.state.current_time],
-                    ncols=80, disable=not self.simulation_parameters.progress_bar)
+        self.progress_bar.show()
         while self.state.step_completed == False and self.state.n_empty_cvs > 0:
-            self.bcs.update(self.mesh, self.material_manager, self.gates_manager)
+            self.bcs.update(self.mesh, self.f_orig, self.material_manager, self.gates_manager)
             if len(self.bcs.dirichlet_idx) == 0 and len(self.bcs.neumann_idx) == 0:
                 self.solve_closed_inlets_time_step()
             else:
                 self.solve_time_step()
-            new_filled = total_cvs - self.state.n_empty_cvs
-            pbar.update(new_filled - pbar.n)
-            if self.simulation_parameters.progress_bar:
-                pbar.postfix[0] = self.state.current_time
-        pbar.close()
+            self.progress_bar.update(self.state)
+        # self.progress_bar.close()
         if not self.simulation_parameters.lightweight and self.simulation_parameters.in_memory_solve:
             solution = self.time_step_manager.pack_solution()
         return solution

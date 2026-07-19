@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lizzy._core.datatypes.solverdata import SolverSettings
+    from lizzy._core.solver.solverbcs import SolverBCs
 
 import numpy as np
 from .builtin.direct_solvers import solve_pressure_direct_dense, solve_pressure_direct_sparse
@@ -60,7 +61,7 @@ class PressureSolver:
         return p
 
     @staticmethod
-    def solve_with_mask(k_original, f_original, bcs, settings:SolverSettings):
+    def solve_with_mask(k_original, bcs:SolverBCs, settings:SolverSettings):
         """
         Optimized solver that extracts and solves only the free DOFs (submatrix approach).
         
@@ -74,10 +75,8 @@ class PressureSolver:
         ----------
         k_original : np.ndarray or sparse matrix
             Original (unmodified) stiffness matrix
-        f_original : np.ndarray
-            Original (unmodified) force vector
         bcs : SolverBCs
-            Boundary conditions object containing dirichlet_idx, dirichlet_vals, and p0_idx
+            Boundary conditions object containing dirichlet_idx, dirichlet_vals, f_neumann and p0_idx
         method : SolverType
             The solver type to use for the reduced system
         tol : float
@@ -94,6 +93,7 @@ class PressureSolver:
         np.ndarray
             Full pressure solution vector with all DOFs
         """
+        f = bcs.f_neumann
         method = settings.solver_type
         # Combine all Dirichlet DOFs (inlet pressures + empty node p=0 conditions)
         dirichlet_idx = np.concatenate([bcs.dirichlet_idx, bcs.p0_idx])
@@ -116,9 +116,9 @@ class PressureSolver:
         
         # Modify RHS to account for known Dirichlet values
         if issparse(K_constrained):
-            f_free = f_original[free_dofs] - K_constrained.dot(dirichlet_vals)
+            f_free = f[free_dofs] - K_constrained.dot(dirichlet_vals)
         else:
-            f_free = f_original[free_dofs] - K_constrained @ dirichlet_vals
+            f_free = f[free_dofs] - K_constrained @ dirichlet_vals
         
         # Convert to dense if using DIRECT_DENSE solver and matrix is sparse
         if method == SolverType.DIRECT_DENSE and issparse(K_free):

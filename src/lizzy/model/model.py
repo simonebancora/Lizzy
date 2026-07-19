@@ -607,8 +607,9 @@ class LizzyModel:
         self._solver = Solver(self._mesh, self._gates_manager, self._simulation_parameters,
                             self._material_manager, self._sensor_manager, solver_type,
                             solver_tol, solver_max_iter, solver_verbose, **solver_kwargs)
-
+        self._solver.initialise()
         self._state = State.POST_INIT
+        self.initialise_new_solution()
 
     def _validate_configuration(self):
         """Run all configuration checks before solver construction."""

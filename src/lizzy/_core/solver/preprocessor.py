@@ -31,28 +31,14 @@ from .fillsolver import FillSolver
 
 
 class Preprocessor:
-    def __init__(self, mesh:Mesh, fill_solver:FillSolver, vsolver:VelocitySolver, material_manager:MaterialManager, gates_manager:GatesManager, simulation_parameters:SimulationParameters, sensor_manager:SensorManager):
+    def __init__(self, mesh:Mesh, fill_solver:FillSolver, vsolver:VelocitySolver, sensor_manager:SensorManager):
         self.mesh = mesh
         self.fill_solver = fill_solver
         self.vsolver = vsolver
-        self.material_manager = material_manager
-        self.gates_manager = gates_manager
-        self.simulation_parameters = simulation_parameters
         self.sensor_manager = sensor_manager
         self._node_tree: KDTree | None = None
         self._element_tree: KDTree | None = None
 
-
-    # 1. check things were assigned
-    def assignment_checks(self):
-        if not self.simulation_parameters.has_been_assigned:
-            logger.warning(f" Simulation parameters were not assigned. Running with default values: output_interval={self.simulation_parameters.output_interval}")
-        if not self.material_manager._resin_was_assigned:
-            raise ConfigurationError("No resin assigned to the model. Create a resin using LizzyModel.create_resin and assign it using LizzyModel.assign_resin.")
-        self.gates_manager.assert_unique_boundary_assignments()
-        self.mesh.assert_all_elements_have_material()
-
-    # 3. setup control volumes
     def setup_cvs(self):
         cvs = self.mesh.CVs
         n_cvs = len(cvs)
@@ -62,16 +48,9 @@ class Preprocessor:
             node_idx_to_flux_ndarray[i] = cvs[i].compute_flux_terms()
         self.mesh.mesh_view.node_idx_to_flux_ndarray = node_idx_to_flux_ndarray
 
-    # 4. assign data to fill solver
     def assign_fill_solver_maps(self):
         self.fill_solver.map_cv_id_to_support_triangle_ids = self.mesh.mesh_view.node_idx_to_tri_idxs
         self.fill_solver.map_cv_id_to_flux_terms = self.mesh.mesh_view.node_idx_to_flux_ndarray
-    
-    # 5. assemble global stiffness matrix (singular)
-    def assemble_global_stiffnes_matrix(self):
-        mu = self.material_manager.assigned_resin.mu
-        K_sing, f_orig = fe.Assembly(self.mesh, mu, sparse=True)
-        return K_sing, f_orig
 
     def build_kdtrees(self):
         self._node_tree = KDTree(self.mesh.node_coords)
@@ -90,16 +69,7 @@ class Preprocessor:
         logger.info(" Preprocessing...")
         self.setup_cvs()
         self.assign_fill_solver_maps()
-        K_sing, f_orig = self.assemble_global_stiffnes_matrix()
         self.vsolver.precalculate_darcy_operator_and_nodal_v_operator(self.mesh.triangles, self.mesh.tri_conn_table, self.mesh.mesh_view.node_idx_to_n_tris)
         if self.sensor_manager.sensors:
             self.build_kdtrees()
             self.assign_nodes_to_sensors()
-        return K_sing, f_orig
-    
-    
-
-
-
-
-
