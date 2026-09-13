@@ -13,8 +13,10 @@ class SimulationParameters:
 
     Attributes
     ----------
+    output_criterion : str
+        Criterion used to trigger solution write-outs. Valid values are "time" or "fill". Default: "time"
     output_interval : float
-        Interval of simulation time between solution write-outs [s]. Default: -1 (write-out every numerical time step)
+        Interval between solution write-outs, expressed in the unit of `output_criterion`: simulation time [s] if "time", or fill factor percentage if "fill". Default: -1 (write-out every numerical time step)
     fill_tolerance : float
         Tolerance on the fill factor to consider a CV as filled. Default: 0.01
     end_step_when_sensor_triggered : bool
