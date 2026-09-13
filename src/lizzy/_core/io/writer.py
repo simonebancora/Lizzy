@@ -12,7 +12,6 @@ from enum import Enum, auto
 import numpy as np
 import meshio
 import h5py
-import textwrap
 from lizzy._core.datatypes import Solution
 
 logger = logging.getLogger("lizzy.io")

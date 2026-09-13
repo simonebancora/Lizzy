@@ -19,7 +19,7 @@ logger = logging.getLogger("lizzy.solver")
 from lizzy._core.gates.gates import InletType
 
 class SolverBCs:
-    __slots__ = ("dirichlet_idx", "dirichlet_vals", "neumann_idx", "neumann_vals", "p0_idx", "p0_val")
+    __slots__ = ("dirichlet_idx", "dirichlet_vals", "neumann_idx", "neumann_vals", "p0_idx", "p0_val", "f_neumann")
 
     def __init__(self):
         self.dirichlet_idx = np.empty(0, dtype=np.uint32)
@@ -28,8 +28,9 @@ class SolverBCs:
         self.neumann_vals = np.empty(0, dtype=np.float64)
         self.p0_idx = np.empty(0, dtype=np.uint32)
         self.p0_val = 0.0
+        self.f_neumann = None
     
-    def update(self, mesh:Mesh, material_manager:MaterialManager, gates_manager:GatesManager):
+    def update(self, mesh:Mesh, f_orig:np.ndarray, material_manager:MaterialManager, gates_manager:GatesManager):
         # TODO this is more "update inlet dirichlet bcs" since it only applies pressure (doesn't add empty 0 pressure). It can be faster, but it doesn't run often (only at beginning of time intervals) so it's not critical
         self.dirichlet_idx = np.empty(0, dtype=np.uint32)
         self.dirichlet_vals = np.empty(0, dtype=np.float64)
@@ -88,6 +89,12 @@ class SolverBCs:
             self.p0_val = vent_obj.vacuum_pressure
         else:
             self.p0_val = 0.0
+        
+        # apply neumann values to f
+        f_neumann = f_orig.copy()
+        for i in range(len(self.neumann_idx)):
+            f_neumann[self.neumann_idx[i]] += self.neumann_vals[i]
+        self.f_neumann = f_neumann
     
     def reset(self):
         self.dirichlet_idx = np.empty(0, dtype=np.uint32)

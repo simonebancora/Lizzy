@@ -12,6 +12,8 @@ import numpy as np
 import meshio
 import textwrap
 
+from lizzy.exceptions import MeshError
+
 logger = logging.getLogger("lizzy.io")
 
 def extract_unique_nodes(node_ids_list):
@@ -22,7 +24,28 @@ def extract_unique_nodes(node_ids_list):
     non_repeated_nodes = np.unique(repeated_nodes)
     return non_repeated_nodes
 
-# class syntax
+def populate_mesh_data(all_nodes_coords,
+                    nodes_conn,
+                    *,
+                    physical_lines_conn=None,
+                    physical_domains=None,
+                    physical_lines=None,
+                    physical_nodes_ids=None,
+                    physical_domain_names=None,
+                    physical_line_names=None) -> dict:
+    mesh_data = {
+        'all_nodes_coords'      : all_nodes_coords,
+        'nodes_conn'            : nodes_conn,
+        'physical_lines_conn'   : {} if physical_lines_conn is None else physical_lines_conn,
+        'physical_domains'      : {} if physical_domains is None else physical_domains,
+        'physical_lines'        : {} if physical_lines is None else physical_lines,
+        'physical_nodes'        : {} if physical_nodes_ids is None else physical_nodes_ids,
+        'physical_domain_names' : [] if physical_domain_names is None else physical_domain_names,
+        'physical_line_names'   : [] if physical_line_names is None else physical_line_names,
+        }
+
+    return mesh_data
+
 class Format(Enum):
     MSH = auto()
     INP = auto()
@@ -40,24 +63,35 @@ class Reader:
     def __init__(self, ):
         self.mesh_data:dict = {} # A dict containing all the mesh info from the gmsh file
         self.case_name:str = None
-    
+        self.mesh_format:Format = None
+
     def read_mesh_file(self, mesh_path: str | os.PathLike) -> None:
         mesh_path = Path(mesh_path)
         self.case_name = self.__read_case_name(mesh_path)
         logger.info(f" Reading mesh file: {mesh_path}")
-        _format = self._detect_format()
-        match _format:
+        self.mesh_format = self._detect_format(mesh_path)
+        match self.mesh_format:
             case Format.MSH:
                 self.mesh_data = self._read_gmsh_file(mesh_path)
+            case Format.STL:
+                self.mesh_data = self._read_stl_file(mesh_path)
 
     def __read_case_name(self, mesh_path:Path):
         case_name = mesh_path.stem
         return case_name
 
-    def _detect_format(self):
-        """Read the ending of the mesh file path and detect the correct format. 
-        NOT IMPLEMENTED"""
-        return Format.MSH
+    def _detect_format(self, mesh_path:Path) -> Format:
+        """Detect the mesh format from the file extension."""
+        suffix = mesh_path.suffix.lower()
+        format_by_suffix = {
+            ".msh": Format.MSH,
+            ".stl": Format.STL,
+        }
+        try:
+            return format_by_suffix[suffix]
+        except KeyError:
+            supported = ", ".join(sorted(format_by_suffix))
+            raise MeshError(f"Unsupported mesh file format '{suffix}'. Supported formats: {supported}.")
 
     def _read_gmsh_file(self, mesh_path:Path) -> dict:
         """
@@ -90,24 +124,45 @@ class Reader:
         # get node ids for nodes in the physical lines
         for key in physical_lines:
             physical_nodes_ids[key] = extract_unique_nodes(mesh_file.cells_dict["line"][physical_lines[key]])
+        
+        return populate_mesh_data(all_nodes_coords,
+                                nodes_conn,
+                                physical_lines_conn=physical_lines_conn,
+                                physical_domains=physical_domains,
+                                physical_lines=physical_lines,
+                                physical_nodes_ids=physical_nodes_ids,
+                                physical_domain_names=physical_domain_names,
+                                physical_line_names=physical_line_names)
 
-        mesh_data = {
-            'all_nodes_coords'      : all_nodes_coords,
-            'nodes_conn'            : nodes_conn,
-            'physical_lines_conn'   : physical_lines_conn,
-            'physical_domains'      : physical_domains,
-            'physical_lines'        : physical_lines,
-            'physical_nodes'        : physical_nodes_ids,
-            'physical_domain_names': physical_domain_names,
-            'physical_line_names'  : physical_line_names,
-            }
-        return mesh_data
-    
+    def _read_stl_file(self, mesh_path:Path) -> dict:
+        """
+        Reads a mesh file in .stl format. STL format carry no named regions, so all
+        triangles are placed in a single physical domain named 'STL_DOMAIN'. There are no physical lines.
+        """
+        try:
+            mesh_file = meshio.read(mesh_path, file_format="stl")
+        except meshio._exceptions.ReadError:
+            raise FileNotFoundError(f"Mesh file not found: {mesh_path}")
+
+        all_nodes_coords : np.ndarray = mesh_file.points
+        nodes_conn = mesh_file.cells_dict["triangle"]
+
+        # single default domain covering all triangles
+        physical_domains = {"STL_DOMAIN": np.arange(len(nodes_conn))}
+        physical_domain_names = ["STL_DOMAIN"]
+
+        return populate_mesh_data(all_nodes_coords,
+                                nodes_conn,
+                                physical_domains=physical_domains,
+                                physical_domain_names=physical_domain_names)
+
     def print_mesh_info(self) -> None:
         """Returns some information about the mesh.
         """
+        format_labels = {Format.MSH: "MSH (v4 ASCII)", Format.STL: "STL"}
+        format_label = format_labels.get(self.mesh_format, "unknown")
         info = textwrap.dedent(rf"""
-        Mesh file format: MSH (v4 ASCII),
+        Mesh file format: {format_label},
         Case name:    {self.case_name}
         Mesh contains {len(self.mesh_data['all_nodes_coords'])} nodes, {len(self.mesh_data['nodes_conn'])} elements.
         Physical domains:        {self.mesh_data['physical_domain_names']}

@@ -37,7 +37,7 @@ class SolverState:
         'mesh', 'fill_factor_array', 'p_array', 'v_array', 'v_nodal_array', 'free_surface_array',
         'cv_volumes_array', 'cv_idx_to_support_cv_idxs', 'active_cv_ids', 'current_mu',
         'current_time', 'time_step_counter', 'n_empty_cvs',
-        'next_wo_time', 'step_end_time', 'step_completed',
+        'next_wo_time', 'step_end_time', 'step_completed', 'next_wo_fill'
     )
     def __init__(self, mesh:Mesh):
         self.mesh = mesh
@@ -58,6 +58,7 @@ class SolverState:
         self.next_wo_time = np.inf
         self.step_end_time = np.inf
         self.step_completed = False
+        self.next_wo_fill = np.inf
     
     def reset(self):
         self.fill_factor_array: np.ndarray = np.zeros(len(self.mesh.nodes), dtype=float)

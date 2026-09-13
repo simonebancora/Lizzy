@@ -223,7 +223,7 @@ class LizzyModel:
     # ===========================================================================
 
     @preinit_only
-    def set_simulation_parameters(self, *, output_interval:float = 10, fill_tolerance:float = 0.01, end_step_when_sensor_triggered:bool = False, lightweight:bool = False, in_memory_solve:bool = False, progress_bar:bool = False) -> None:
+    def set_simulation_parameters(self, *, output_criterion:str = "time", output_interval:float = 10, fill_tolerance:float = 0.01, end_step_when_sensor_triggered:bool = False, lightweight:bool = False, in_memory_solve:bool = False, progress_bar:bool = False) -> None:
         r"""
         Set values to one or more simulation parameters using keyword arguments.
 
@@ -233,7 +233,8 @@ class LizzyModel:
             Keyword arguments corresponding to parameter names and their new values.
             Valid keywords are:
 
-            - ``output_interval`` (float, optional): interval of simulation time between solution write-outs [s]. A negative value will write-out every numerical time step (not recommended). Default: 10
+            - ``output_criterion`` (str, optional): criterion to use for output_interval definition. Valid keys are "time" or "fill". Default: "time".
+            - ``output_interval`` (float, optional): value of the quantity selected as output_criterion (time or fill) between solution write-outs [s]. A negative value will write-out every numerical time step (not recommended). Default: 10
             - ``fill_tolerance`` (float, optional): tolerance on the fill factor to consider a CV as filled. Default: 0.01
             - ``end_step_when_sensor_triggered`` (bool, optional): if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
             - ``lightweight`` (bool, optional): if True, disables Solution packing after each solve, saving memory and computation time. :meth:`~LizzyModel.save_results` cannot be used in lightweight mode. Default: False
@@ -607,8 +608,9 @@ class LizzyModel:
         self._solver = Solver(self._mesh, self._gates_manager, self._simulation_parameters,
                             self._material_manager, self._sensor_manager, solver_type,
                             solver_tol, solver_max_iter, solver_verbose, **solver_kwargs)
-
+        self._solver.initialise()
         self._state = State.POST_INIT
+        self.initialise_new_solution()
 
     def _validate_configuration(self):
         """Run all configuration checks before solver construction."""
@@ -646,10 +648,7 @@ class LizzyModel:
                 default_result_name = self._model_name + '_RES'
                 self._solver.initialize_streaming_writer(default_result_name)
         
-        if time_interval is not None:
-            self._latest_solution = self._solver.solve_time_interval(time_interval)
-        else:
-            self._latest_solution = self._solver.solve()
+        self._latest_solution = self._solver.solve(time_interval)
         return self._latest_solution
 
     @postinit_only
@@ -674,7 +673,7 @@ class LizzyModel:
                 default_result_name = self._model_name + '_RES'
                 self._solver.initialize_streaming_writer(default_result_name)
         
-        self._latest_solution = self._solver.solve_time_interval(time_interval)
+        self._latest_solution = self._solver.solve(time_interval)
         return self._latest_solution
     
     @postinit_only
