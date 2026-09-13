@@ -234,7 +234,7 @@ class LizzyModel:
             Valid keywords are:
 
             - ``output_criterion`` (str, optional): criterion to use for output_interval definition. Valid keys are "time" or "fill". Default: "time".
-            - ``output_interval`` (float, optional): value of the quantity selected as output_criterion (time or fill) between solution write-outs [s]. A negative value will write-out every numerical time step (not recommended). Default: 10
+            - ``output_interval`` (float, optional): interval between solution write-outs, expressed in the unit of output_criterion: simulation time [s] if "time", or fill factor percentage if "fill". A negative value will write-out every numerical time step (not recommended). Default: 10
             - ``fill_tolerance`` (float, optional): tolerance on the fill factor to consider a CV as filled. Default: 0.01
             - ``end_step_when_sensor_triggered`` (bool, optional): if True, ends current solution step and creates a write-out when a sensor changes state. Default: False
             - ``lightweight`` (bool, optional): if True, disables Solution packing after each solve, saving memory and computation time. :meth:`~LizzyModel.save_results` cannot be used in lightweight mode. Default: False
