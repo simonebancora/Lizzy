@@ -103,6 +103,7 @@ class Solver:
         self.mesh.empty_cvs()
         self.gates_manager.reset_inlets()
         self.state.next_wo_time = self.simulation_parameters.output_interval # TODO: this one and the next (current mu) are initialised manually... not pretty
+        self.state.next_wo_fill = self.simulation_parameters.output_interval # this needs to be celaned up and go into the timestep manager
         self.state.current_mu = self.material_manager.assigned_resin.mu
         self.bcs.update(self.mesh, self.f_orig, self.material_manager, self.gates_manager)
         self.fill_initial_cvs(self.state)
@@ -144,28 +145,33 @@ class Solver:
         """Returns the streaming writer instance, or None if in_memory_solve=True."""
         return self._streaming_writer
 
-    def handle_wo_criterion(self, dt):
+    def handle_wo_criterion(self, dt, criterion:str="time"):
         write_out = False
-        next_time = self.state.current_time + dt
+        if criterion == "time":
+            next_time = self.state.current_time + dt
 
-        if next_time >= self.state.step_end_time:
-            dt = self.state.step_end_time - self.state.current_time
-            write_out = True
-            self.state.step_completed = True
-            # Advance next_wo_time past step_end_time to avoid the duplicated Solution time bug that results in missing time step in Paraview. #TODO: this stuff is terrible: urge refactor of the whole write-out management. Works for now.
-            if self.simulation_parameters.output_interval > 0.0:
-                while self.state.next_wo_time <= self.state.step_end_time:
-                    self.state.next_wo_time += self.simulation_parameters.output_interval
-            return dt, write_out
-        
-        if self.simulation_parameters.output_interval > 0.0:
-            if next_time >= self.state.next_wo_time:
-                dt = self.state.next_wo_time - self.state.current_time
-                self.state.next_wo_time += self.simulation_parameters.output_interval
+            if next_time >= self.state.step_end_time:
+                dt = self.state.step_end_time - self.state.current_time
                 write_out = True
-        else:
-            write_out = True
+                self.state.step_completed = True
+                # Advance next_wo_time past step_end_time to avoid the duplicated Solution time bug that results in missing time step in Paraview. #TODO: this stuff is terrible: urge refactor of the whole write-out management. Works for now.
+                if self.simulation_parameters.output_interval > 0.0:
+                    while self.state.next_wo_time <= self.state.step_end_time:
+                        self.state.next_wo_time += self.simulation_parameters.output_interval
+                return dt, write_out
             
+            if self.simulation_parameters.output_interval > 0.0:
+                if next_time >= self.state.next_wo_time:
+                    dt = self.state.next_wo_time - self.state.current_time
+                    self.state.next_wo_time += self.simulation_parameters.output_interval
+                    write_out = True
+            else:
+                write_out = True
+        elif criterion == "fill":
+            fill = 1 - (self.state.n_empty_cvs / self.mesh.mesh_view.n_nodes)
+            if fill >= self.state.next_wo_fill/100:
+                write_out = True
+                self.state.next_wo_fill += self.simulation_parameters.output_interval
         return dt, write_out
 
     def handle_wo_by_sensor_triggered(self, current_write_out, fill_factor_array):
@@ -186,7 +192,7 @@ class Solver:
 
         self.fill_solver.update_active_cvs_and_free_surface(self.state)
         dt_candidate = self.fill_solver.calculate_time_step(self.state)
-        dt, write_out = self.handle_wo_criterion(dt_candidate)
+        dt, write_out = self.handle_wo_criterion(dt_candidate, self.simulation_parameters.output_criterion)
 
         self.fill_solver.fill_current_time_step(self.state, dt, self.simulation_parameters.fill_tolerance)
 
@@ -247,7 +253,7 @@ class Solver:
 
     def solve_closed_inlets_time_step(self):
         dt = self.simulation_parameters.output_interval
-        dt, write_out = self.handle_wo_criterion(dt)
+        dt, write_out = self.handle_wo_criterion(dt, self.simulation_parameters.output_criterion)
         if dt == 0.0:
             # skip this false time interval. TODO: There must be a better way to do this, but it works for now.
             return

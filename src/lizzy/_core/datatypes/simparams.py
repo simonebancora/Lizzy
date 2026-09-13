@@ -26,6 +26,7 @@ class SimulationParameters:
 
 
     """
+    output_criterion: str = "time"
     output_interval: float = -1
     fill_tolerance: float = 0.01
     has_been_assigned : bool = False
@@ -38,6 +39,7 @@ class SimulationParameters:
         """Prints the currently assigned simulation parameters to the console."""
         params = textwrap.dedent(rf"""
         Currently assigned simulation parameters:
+        - "output_criterion": {self.output_criterion},
         - "output_interval": {self.output_interval} [s],
         - "fill_tolerance": {self.fill_tolerance},
         - "end_step_when_sensor_triggered": {self.end_step_when_sensor_triggered},
