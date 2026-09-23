@@ -7,7 +7,7 @@ You should have received a copy of the GNU Affero General Public License along w
 -->
 
 [![Tests](https://github.com/simonebancora/Lizzy/actions/workflows/tests.yaml/badge.svg)](https://github.com/simonebancora/Lizzy/actions/workflows/tests.yaml)
-[![DOI](https://zenodo.org/badge/954238467.svg)](https://doi.org/10.5281/zenodo.15110049)
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.15110049-1682D4?logo=zenodo&logoColor=white)](https://doi.org/10.5281/zenodo.15110049)
 
 # Lizzy
 Introducing Lizzy, a Liquid Composite Molding (LCM) simulation package written in Python.
